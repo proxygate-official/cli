@@ -15,7 +15,8 @@ program
   .version('0.1.0')
   .description('ProxyGate CLI -- interact with the ProxyGate API marketplace')
   .option('--gateway <url>', 'Override gateway URL from config')
-  .option('--keypair <path>', 'Override keypair path from config');
+  .option('--keypair <path>', 'Override keypair path from config')
+  .option('--json', 'Output raw JSON instead of formatted text');
 
 registerInitCommand(program);
 registerBalanceCommand(program);

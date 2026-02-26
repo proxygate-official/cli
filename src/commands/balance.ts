@@ -14,11 +14,16 @@ export function registerBalanceCommand(program: Command): void {
     .command('balance')
     .description('Check your credit balance')
     .action(async () => {
-      const parentOpts = program.opts<{ gateway?: string; keypair?: string }>();
+      const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 
       try {
         const client = await getClient(parentOpts);
         const result = await client.balance();
+
+        if (parentOpts.json) {
+          console.log(JSON.stringify(result, null, 2));
+          return;
+        }
 
         console.log(bold('Credit Balance'));
         console.log();

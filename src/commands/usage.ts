@@ -31,7 +31,7 @@ export function registerUsageCommand(program: Command): void {
         to?: string;
         limit: string;
       }) => {
-        const parentOpts = program.opts<{ gateway?: string; keypair?: string }>();
+        const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 
         try {
           const client = await getClient(parentOpts);
@@ -41,6 +41,11 @@ export function registerUsageCommand(program: Command): void {
             to: opts.to,
             limit: parseInt(opts.limit, 10),
           });
+
+          if (parentOpts.json) {
+            console.log(JSON.stringify(result, null, 2));
+            return;
+          }
 
           // Summary per service
           if (result.summary.length > 0) {

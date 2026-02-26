@@ -15,7 +15,7 @@ import { red, dim, cyan } from '../format.js';
  * TypeScript cannot statically verify arbitrary dynamic path segments.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function traverseChain(proxy: ProxyChain, segments: string[]): any {
+export function traverseChain(proxy: ProxyChain, segments: string[]): any {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let chain: any = proxy;
   for (const seg of segments) {

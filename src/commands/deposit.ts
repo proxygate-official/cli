@@ -15,19 +15,26 @@ export function registerDepositCommand(program: Command): void {
     .command('deposit')
     .description('Deposit credits via x402 payment')
     .action(async () => {
-      const parentOpts = program.opts<{ gateway?: string; keypair?: string }>();
+      const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 
       try {
         const client = await getClient(parentOpts);
 
-        console.log(
-          yellow(
-            'Note: Deposit requires x402 payment. This is a simplified CLI flow.',
-          ),
-        );
-        console.log();
+        if (!parentOpts.json) {
+          console.log(
+            yellow(
+              'Note: Deposit requires x402 payment. This is a simplified CLI flow.',
+            ),
+          );
+          console.log();
+        }
 
         const result = await client.deposit();
+
+        if (parentOpts.json) {
+          console.log(JSON.stringify(result, null, 2));
+          return;
+        }
 
         console.log(bold('Deposit Successful'));
         console.log();

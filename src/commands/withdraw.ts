@@ -14,7 +14,7 @@ export function registerWithdrawCommand(program: Command): void {
     .description('Withdraw credits to USDC')
     .requiredOption('-a, --amount <micro-cents>', 'Amount to withdraw in micro-cents')
     .action(async (opts: { amount: string }) => {
-      const parentOpts = program.opts<{ gateway?: string; keypair?: string }>();
+      const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 
       try {
         const client = await getClient(parentOpts);
@@ -26,6 +26,11 @@ export function registerWithdrawCommand(program: Command): void {
         }
 
         const result = await client.withdraw({ amount });
+
+        if (parentOpts.json) {
+          console.log(JSON.stringify(result, null, 2));
+          return;
+        }
 
         console.log(bold('Withdrawal Successful'));
         console.log();

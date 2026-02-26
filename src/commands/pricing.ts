@@ -37,11 +37,16 @@ export function registerPricingCommand(program: Command): void {
     .description('View available API pricing')
     .option('-s, --service <name>', 'Filter by service name')
     .action(async (opts: { service?: string }) => {
-      const parentOpts = program.opts<{ gateway?: string; keypair?: string }>();
+      const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 
       try {
         const client = await getClient(parentOpts);
         const result = await client.pricing({ service: opts.service });
+
+        if (parentOpts.json) {
+          console.log(JSON.stringify(result, null, 2));
+          return;
+        }
 
         if (result.services.length === 0) {
           console.log(dim('No services found.'));
