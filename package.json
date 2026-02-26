@@ -1,0 +1,23 @@
+{
+  "name": "@proxygate/cli",
+  "version": "0.1.0",
+  "description": "ProxyGate CLI -- terminal interface for the ProxyGate API marketplace",
+  "type": "module",
+  "bin": {
+    "proxygate": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@proxygate/sdk": "workspace:*",
+    "commander": "^14.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.7.0"
+  }
+}
