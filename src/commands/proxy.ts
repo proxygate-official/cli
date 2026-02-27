@@ -1,60 +1,38 @@
 import type { Command } from 'commander';
-import { ProxyGateError } from '@proxygate/sdk';
-import type { ProxyChain, SSEEvent } from '@proxygate/sdk';
+import { ProxyGateError, parseSSE } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
-import { red, dim, cyan } from '../format.js';
-
-/**
- * Traverse the proxy chain using path segments.
- *
- * Given segments ['openai', 'v1', 'chat', 'completions'], this builds
- * the chain: client.proxy.openai.v1.chat.completions
- *
- * NOTE: Using `any` for the chain traversal is acceptable here because
- * ProxyChain uses a recursive index signature (Proxy-based), and
- * TypeScript cannot statically verify arbitrary dynamic path segments.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function traverseChain(proxy: ProxyChain, segments: string[]): any {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let chain: any = proxy;
-  for (const seg of segments) {
-    chain = chain[seg];
-  }
-  return chain;
-}
+import { red, dim } from '../format.js';
 
 /**
  * Register the `proxygate proxy` command.
  *
- * Sends a request through the ProxyGate proxy to an upstream API.
- * Supports GET, POST (with JSON body), and SSE streaming.
+ * Sends a request through the ProxyGate proxy to an upstream API
+ * using the listing-centric proxy(listingId, path, body, options?) API.
  *
  * @example
- * proxygate proxy openai/v1/chat/completions -d '{"model":"gpt-4","messages":[...]}'
- * proxygate proxy openai/v1/models -X GET
- * proxygate proxy openai/v1/chat/completions -d '...' --stream
+ * proxygate proxy abc-123 /v1/chat/completions -d '{"model":"gpt-4","messages":[...]}'
+ * proxygate proxy abc-123 /v1/models -X GET
+ * proxygate proxy abc-123 /v1/chat/completions -d '...' --stream
  */
 export function registerProxyCommand(program: Command): void {
   program
     .command('proxy')
     .description('Send a request through the ProxyGate proxy')
-    .argument('<service/path>', 'Service and path (e.g., openai/v1/chat/completions)')
+    .argument('<listing-id>', 'Listing ID to proxy through')
+    .argument('<path>', 'API path (e.g., /v1/chat/completions)')
     .option('-d, --data <json>', 'Request body as JSON string')
     .option('-X, --method <method>', 'HTTP method (default: POST if data, GET otherwise)')
     .option('--stream', 'Stream SSE response')
     .action(
       async (
-        servicePath: string,
+        listingId: string,
+        path: string,
         opts: { data?: string; method?: string; stream?: boolean },
       ) => {
         const parentOpts = program.opts<{ gateway?: string; keypair?: string }>();
 
         try {
           const client = await getClient(parentOpts);
-
-          const segments = servicePath.split('/');
-          const chain = traverseChain(client.proxy, segments);
 
           // Parse request body
           let body: unknown = undefined;
@@ -67,44 +45,29 @@ export function registerProxyCommand(program: Command): void {
             }
           }
 
+          // Determine HTTP method
+          const method = (opts.method ?? (body ? 'POST' : 'GET')).toUpperCase();
+          console.error(dim(`${method} ${listingId}${path}`));
+
           // Streaming mode
           if (opts.stream) {
-            console.error(dim(`Streaming ${servicePath}...`));
+            console.error(dim(`Streaming ${listingId}${path}...`));
 
-            const events: AsyncGenerator<SSEEvent> = chain.stream(body);
-            for await (const event of events) {
+            const response = await client.proxy(listingId, path, body, { method });
+            if (!response.body) {
+              console.error(red('Error: No response body for streaming'));
+              process.exit(1);
+            }
+
+            for await (const event of parseSSE(response)) {
               if (event.data === '[DONE]') break;
               process.stdout.write(event.data + '\n');
             }
             return;
           }
 
-          // Determine HTTP method
-          const method = (opts.method ?? (body ? 'POST' : 'GET')).toUpperCase();
-          console.error(dim(`${method} ${servicePath}`));
-
           // Execute request
-          let response: Response;
-          switch (method) {
-            case 'GET':
-              response = await chain.get();
-              break;
-            case 'POST':
-              response = await chain.post(body);
-              break;
-            case 'PUT':
-              response = await chain.put(body);
-              break;
-            case 'PATCH':
-              response = await chain.patch(body);
-              break;
-            case 'DELETE':
-              response = await chain.delete();
-              break;
-            default:
-              response = await chain.post(body);
-              break;
-          }
+          const response = await client.proxy(listingId, path, body, { method });
 
           // Print response
           const text = await response.text();
