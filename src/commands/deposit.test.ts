@@ -6,7 +6,9 @@ const mockDeposit = vi.fn();
 vi.mock('@proxygate/sdk', () => ({
   ProxyGateClient: {
     create: vi.fn().mockResolvedValue({
-      deposit: (...args: unknown[]) => mockDeposit(...args),
+      vault: {
+        deposit: (...args: unknown[]) => mockDeposit(...args),
+      },
     }),
   },
   ProxyGateError: class extends Error {
@@ -28,10 +30,10 @@ vi.mock('../config.js', () => ({
 }));
 
 const DEPOSIT_RESULT = {
-  balance: 6_500_000,
-  deposited: 5_000_000,
-  currency: 'micro_cents',
-  usdc_equivalent: '5.00',
+  balance: 3_500_000,
+  deposited: 1_000_000,
+  tx_signature: '5abcXYZ123def456ghi789jkl012mno345pqr678stu901vwx234yz567abc890',
+  currency: 'lamports',
 };
 
 describe('deposit command', () => {
@@ -57,31 +59,52 @@ describe('deposit command', () => {
     await program.parseAsync(['node', 'proxygate', 'deposit', ...args]);
   };
 
-  it('outputs formatted deposit result by default', async () => {
+  it('outputs formatted vault deposit result by default', async () => {
     mockDeposit.mockResolvedValue(DEPOSIT_RESULT);
-    await runDeposit();
+    await runDeposit('--amount', '1000000');
 
     const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
-    expect(output).toContain('Deposit Successful');
-    expect(output).toContain('$5.00');
-    expect(output).toContain('$6.50');
+    expect(output).toContain('Vault Deposit');
+    expect(output).toContain('5abcXYZ123def456');
+    expect(output).toContain('1.000000 USDC');
+    expect(output).toContain('3.500000 USDC');
   });
 
   it('outputs raw JSON with --json flag', async () => {
     mockDeposit.mockResolvedValue(DEPOSIT_RESULT);
-    await runDeposit('--json');
+    await runDeposit('--amount', '1000000', '--json');
 
     expect(logSpy).toHaveBeenCalledTimes(1);
     const parsed: unknown = JSON.parse(logSpy.mock.calls[0][0] as string);
     expect(parsed).toEqual(DEPOSIT_RESULT);
   });
 
-  it('--json skips the yellow warning note', async () => {
+  it('passes correct amount to client.vault.deposit()', async () => {
     mockDeposit.mockResolvedValue(DEPOSIT_RESULT);
-    await runDeposit('--json');
+    await runDeposit('--amount', '5000000');
 
-    const allOutput = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
-    expect(allOutput).not.toContain('Note:');
-    expect(allOutput).not.toContain('x402');
+    expect(mockDeposit).toHaveBeenCalledWith({ amount: 5_000_000 });
+  });
+
+  it('passes rpc option when provided', async () => {
+    mockDeposit.mockResolvedValue(DEPOSIT_RESULT);
+    await runDeposit('--amount', '1000000', '--rpc', 'https://my-rpc.com');
+
+    expect(mockDeposit).toHaveBeenCalledWith({
+      amount: 1_000_000,
+      rpcUrl: 'https://my-rpc.com',
+    });
+  });
+
+  it('exits with error for invalid amount', async () => {
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit');
+    });
+
+    await expect(runDeposit('--amount', '-100')).rejects.toThrow('process.exit');
+
+    const errOutput = vi.spyOn(console, 'error').mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    expect(errOutput).toContain('positive integer');
+    mockExit.mockRestore();
   });
 });
