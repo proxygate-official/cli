@@ -27,17 +27,10 @@ vi.mock('../config.js', () => ({
   }),
 }));
 
-const WITHDRAW_COOLDOWN_RESULT = {
-  status: 'cooldown_started' as const,
-  message: 'Settling pending calls. Cooldown started (60 seconds).',
-  cooldown_ms: 60_000,
-  unsettled_calls: 3,
-};
-
-const WITHDRAW_READY_RESULT = {
-  status: 'ready' as const,
-  message: 'No pending calls. You may withdraw on-chain after cooldown expires.',
-  cooldown_ms: 60_000,
+const WITHDRAW_COMPLETE_RESULT = {
+  status: 'complete' as const,
+  tx_signature: '5abc123xyz789txsig',
+  amount_withdrawn: 2_000_000,
 };
 
 describe('withdraw command', () => {
@@ -64,50 +57,42 @@ describe('withdraw command', () => {
     await program.parseAsync(['node', 'proxygate', 'withdraw', ...args]);
   };
 
-  it('outputs formatted cooldown result when unsettled calls exist', async () => {
-    mockWithdraw.mockResolvedValue(WITHDRAW_COOLDOWN_RESULT);
+  it('outputs formatted complete result with TX signature and amount', async () => {
+    mockWithdraw.mockResolvedValue(WITHDRAW_COMPLETE_RESULT);
     await runWithdraw();
 
     const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
     expect(output).toContain('Vault Withdrawal');
-    expect(output).toContain('Cooldown started (60 seconds)');
-    expect(output).toContain('3 calls being settled');
-  });
-
-  it('outputs formatted ready result when no unsettled calls', async () => {
-    mockWithdraw.mockResolvedValue(WITHDRAW_READY_RESULT);
-    await runWithdraw();
-
-    const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
-    expect(output).toContain('Vault Withdrawal');
-    expect(output).toContain('Ready to withdraw on-chain');
+    expect(output).toContain('Complete');
+    expect(output).toContain('5abc123xyz789txsig');
+    expect(output).toContain('2.000000 USDC');
   });
 
   it('outputs raw JSON with --json flag', async () => {
-    mockWithdraw.mockResolvedValue(WITHDRAW_COOLDOWN_RESULT);
+    mockWithdraw.mockResolvedValue(WITHDRAW_COMPLETE_RESULT);
     await runWithdraw('--json');
 
     expect(logSpy).toHaveBeenCalledTimes(1);
     const parsed: unknown = JSON.parse(logSpy.mock.calls[0][0] as string);
-    expect(parsed).toEqual(WITHDRAW_COOLDOWN_RESULT);
+    expect(parsed).toEqual(WITHDRAW_COMPLETE_RESULT);
   });
 
   it('passes amount when provided', async () => {
-    mockWithdraw.mockResolvedValue(WITHDRAW_READY_RESULT);
+    mockWithdraw.mockResolvedValue(WITHDRAW_COMPLETE_RESULT);
     await runWithdraw('--amount', '2000000');
 
     expect(mockWithdraw).toHaveBeenCalledWith({ amount: 2_000_000 });
   });
 
   it('calls withdraw without amount when omitted (withdraw all)', async () => {
-    mockWithdraw.mockResolvedValue(WITHDRAW_READY_RESULT);
+    mockWithdraw.mockResolvedValue(WITHDRAW_COMPLETE_RESULT);
     await runWithdraw();
 
     expect(mockWithdraw).toHaveBeenCalledWith({});
   });
 
   it('passes rpc option when provided', async () => {
-    mockWithdraw.mockResolvedValue(WITHDRAW_READY_RESULT);
+    mockWithdraw.mockResolvedValue(WITHDRAW_COMPLETE_RESULT);
     await runWithdraw('--amount', '1000000', '--rpc', 'https://my-rpc.com');
 
     expect(mockWithdraw).toHaveBeenCalledWith({

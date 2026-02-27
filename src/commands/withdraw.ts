@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
 import { ProxyGateError } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
-import { bold, green, yellow, red, dim } from '../format.js';
+import { bold, green, red, dim } from '../format.js';
 
 /**
  * Format a USDC amount from lamports (base units, 6 decimals).
@@ -49,24 +49,12 @@ export function registerWithdrawCommand(program: Command): void {
 
         console.log(bold('Vault Withdrawal'));
         console.log();
+        // SDK withdraw() handles cooldown polling internally and always
+        // returns a 'complete' result with tx_signature and amount_withdrawn.
+        console.log(`  ${green('Status:')}        Complete`);
+        console.log(`  ${green('TX Signature:')}  ${result.tx_signature}`);
+        console.log(`  ${green('Withdrawn:')}     ${formatUsdc(result.amount_withdrawn)}`);
 
-        if (result.status === 'cooldown_started') {
-          const cooldownSec = result.cooldown_ms ? Math.round(result.cooldown_ms / 1000) : 60;
-          console.log(`  ${yellow('Status:')}        Cooldown started (${cooldownSec} seconds)`);
-          if (result.unsettled_calls !== undefined) {
-            console.log(`  ${yellow('Unsettled:')}     ${result.unsettled_calls} calls being settled`);
-          }
-          console.log(`  ${dim('Message:')}       ${result.message}`);
-        } else if (result.status === 'cooldown_active') {
-          const remainingSec = result.cooldown_remaining_ms
-            ? Math.round(result.cooldown_remaining_ms / 1000)
-            : 60;
-          console.log(`  ${yellow('Status:')}        Cooldown active (${remainingSec}s remaining)`);
-          console.log(`  ${dim('Message:')}       ${result.message}`);
-        } else if (result.status === 'ready') {
-          console.log(`  ${green('Status:')}        Ready to withdraw on-chain`);
-          console.log(`  ${dim('Message:')}       ${result.message}`);
-        }
       } catch (err) {
         if (err instanceof ProxyGateError) {
           console.error(red(`Error [${err.code}]: ${err.message}`));
