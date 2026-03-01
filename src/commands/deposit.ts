@@ -53,14 +53,19 @@ export function registerDepositCommand(program: Command): void {
         if (err instanceof ProxyGateError) {
           console.error(red(`Error [${err.code}]: ${err.message}`));
           if (err.action) console.error(dim(`Suggestion: ${err.action}`));
-          if (err.code === 'vault_not_found' || err.code === 'deposit_not_found') {
+          if (err.code === 'vault_not_found') {
             console.error();
-            console.error(
-              dim(
-                'Ensure you have USDC in your wallet and have sent a deposit TX on-chain.\n' +
-                  'The vault must be initialized before confirming a deposit.',
-              ),
-            );
+            console.error(dim('Troubleshooting:'));
+            console.error(dim('  1. The on-chain transaction may not be confirmed yet — wait a few seconds and retry'));
+            console.error(dim('  2. Ensure you have sufficient USDC in your wallet'));
+            console.error(dim('  3. The vault auto-initializes on first deposit — no separate setup needed'));
+          }
+          if (err.code === 'deposit_not_found') {
+            console.error();
+            console.error(dim('Troubleshooting:'));
+            console.error(dim('  1. The transaction may still be confirming — wait and retry'));
+            console.error(dim('  2. This deposit may have already been confirmed (duplicate)'));
+            console.error(dim('  3. Check the transaction on Solana Explorer'));
           }
           process.exit(1);
         }
