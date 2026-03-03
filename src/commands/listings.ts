@@ -149,22 +149,21 @@ export function registerListingsCommand(program: Command): void {
         const result = await client.listings.list();
 
         if (opts.table) {
-          if (result.data.length === 0) {
+          if (result.listings.length === 0) {
             console.log(dim('No listings found. Create one with: proxygate listings create'));
             return;
           }
 
-          console.log(bold(`Seller Listings (${result.data.length})`));
+          console.log(bold(`Seller Listings (${result.listings.length})`));
           console.log();
 
-          const headers = ['ID', 'Service', 'Status', 'RPM', 'Price', 'Categories'];
-          const rows = result.data.map((l) => [
+          const headers = ['ID', 'Service', 'Status', 'RPM', 'Price'];
+          const rows = result.listings.map((l) => [
             l.id.slice(0, 8),
-            l.service_name,
+            l.service_catalog?.name ?? 'unknown',
             l.is_active ? green('active') : yellow('paused'),
-            `${l.available_resale_rpm}/${l.total_rpm}`,
+            `${l.total_rpm - (l.reserved_rpm ?? 0)}/${l.total_rpm}`,
             String(l.price_per_request),
-            l.categories.join(', ') || dim('none'),
           ]);
           console.log(formatTable(headers, rows));
           return;

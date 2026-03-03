@@ -3,7 +3,7 @@ import { access } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { ProxyGateClient, ProxyGateError } from '@proxygate/sdk';
-import type { PricingListing } from '@proxygate/sdk';
+import type { PricingServiceEntry } from '@proxygate/sdk';
 import { saveConfig, loadConfig, CONFIG_PATH } from '../config.js';
 import { bold, green, yellow, red, dim, cyan, formatCurrency, formatTable } from '../format.js';
 
@@ -26,13 +26,13 @@ async function fileExists(path: string): Promise<boolean> {
   }
 }
 
-function formatPrice(listing: PricingListing): string {
-  if (listing.pricing_model === 'per_token') {
-    const input = listing.input_price_per_token ?? 0;
-    const output = listing.output_price_per_token ?? 0;
-    return `${formatCurrency(input)}/${formatCurrency(output)} per token`;
+function formatPrice(svc: PricingServiceEntry): string {
+  if (svc.pricing_unit === 'per_token' || svc.pricing_unit === 'both') {
+    const input = svc.price_per_input_token_usdc ?? 0;
+    const output = svc.price_per_output_token_usdc ?? 0;
+    return `$${input}/$${output} per token`;
   }
-  return `${formatCurrency(listing.price_per_request ?? 0)} per req`;
+  return `$${svc.price_per_request_usdc} per req`;
 }
 
 function formatUsdc(lamports: number): string {
@@ -194,23 +194,20 @@ export function registerGettingStartedCommand(program: Command): void {
         if (pricing.services.length === 0) {
           console.log(dim('  No APIs listed yet.'));
         } else {
-          for (const svc of pricing.services) {
-            console.log(`  ${bold(cyan(svc.service))}`);
-
-            const headers = ['Seller', 'Price', 'Uptime'];
-            const rows = svc.listings.map((l) => [
-              l.seller_id.slice(0, 8) + '...',
-              formatPrice(l),
-              l.uptime_pct !== undefined ? `${l.uptime_pct.toFixed(1)}%` : '-',
-            ]);
-            const table = formatTable(headers, rows);
-            // Indent each line
-            for (const line of table.split('\n')) {
-              console.log(`  ${line}`);
-            }
-            console.log();
+          const headers = ['Service', 'Price', 'Sellers', 'RPM'];
+          const rows = pricing.services.map((svc) => [
+            `${svc.name} (${svc.service})`,
+            formatPrice(svc),
+            String(svc.sellers),
+            String(svc.available_rpm),
+          ]);
+          const table = formatTable(headers, rows);
+          // Indent each line
+          for (const line of table.split('\n')) {
+            console.log(`  ${line}`);
           }
-          console.log(dim('  Use `proxygate pricing --json` to see full listing IDs.'));
+          console.log();
+          console.log(dim('  Use `proxygate pricing --json` to see full details.'));
         }
       } catch {
         console.log(dim('  Could not fetch pricing.'));

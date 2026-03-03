@@ -62,7 +62,7 @@ export function registerUsageCommand(program: Command): void {
 
             for (const s of result.summary) {
               console.log(
-                `  ${cyan(s.service)}  ${s.total_requests} requests  ${formatCurrency(s.total_cost)}  avg ${s.avg_latency.toFixed(0)}ms`,
+                `  ${cyan(s.service)}${s.model ? ` (${s.model})` : ''}  ${s.request_count} requests  ${formatCurrency(s.total_cost_micro_cents)}`,
               );
             }
             console.log();
@@ -79,7 +79,7 @@ export function registerUsageCommand(program: Command): void {
 
           const headers = ['Time', 'Service', 'Status', 'Latency', 'Cost'];
           const rows = result.usage.map((u) => [
-            new Date(u.timestamp).toLocaleString(),
+            new Date(u.created_at).toLocaleString(),
             u.service,
             String(u.status_code),
             `${u.latency_ms}ms`,
@@ -88,9 +88,9 @@ export function registerUsageCommand(program: Command): void {
 
           console.log(formatTable(headers, rows));
 
-          if (result.usage.length >= parseInt(opts.limit, 10)) {
+          if (result.has_more) {
             console.log();
-            console.log(dim('Use --limit to see more entries.'));
+            console.log(dim('More entries available. Use --limit to fetch more.'));
           }
         } catch (err) {
           if (err instanceof ProxyGateError) {

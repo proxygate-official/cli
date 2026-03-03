@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import { ProxyGateError } from '@proxygate/sdk';
-import type { PricingListing } from '@proxygate/sdk';
+import type { PricingServiceEntry } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
 import {
   bold,
@@ -9,20 +9,19 @@ import {
   cyan,
   formatTable,
   formatCurrency,
-  formatWallet,
 } from '../format.js';
 
 /**
- * Format a listing's price for display.
- * Per-token pricing shows input/output rates; per-request shows flat price.
+ * Format a service entry's price for display.
+ * Per-token pricing shows input/output USDC rates; per-request shows flat price.
  */
-function formatPrice(listing: PricingListing): string {
-  if (listing.pricing_model === 'per_token') {
-    const input = listing.input_price_per_token ?? 0;
-    const output = listing.output_price_per_token ?? 0;
-    return `${formatCurrency(input)}/${formatCurrency(output)} per token`;
+function formatPrice(svc: PricingServiceEntry): string {
+  if (svc.pricing_unit === 'per_token' || svc.pricing_unit === 'both') {
+    const input = svc.price_per_input_token_usdc ?? 0;
+    const output = svc.price_per_output_token_usdc ?? 0;
+    return `$${input}/$${output} per token`;
   }
-  return `${formatCurrency(listing.price_per_request ?? 0)} per req`;
+  return `$${svc.price_per_request_usdc} per req`;
 }
 
 /**
@@ -60,22 +59,17 @@ export function registerPricingCommand(program: Command): void {
           return;
         }
 
-        for (const svc of result.services) {
-          console.log(bold(cyan(svc.service)));
+        const headers = ['Service', 'Type', 'Price', 'Sellers', 'Available RPM'];
+        const rows = result.services.map((svc) => [
+          `${bold(cyan(svc.name))} ${dim(`(${svc.service})`)}`,
+          svc.pricing_unit,
+          formatPrice(svc),
+          String(svc.sellers),
+          String(svc.available_rpm),
+        ]);
 
-          const headers = ['Seller', 'Model', 'Price', 'Uptime', 'Latency'];
-          const rows = svc.listings.map((l) => [
-            formatWallet(l.seller_id),
-            l.pricing_model,
-            formatPrice(l),
-            l.uptime_pct !== undefined ? `${l.uptime_pct.toFixed(1)}%` : '-',
-            l.latency_ms !== undefined ? `${l.latency_ms}ms` : '-',
-          ]);
-
-          console.log(formatTable(headers, rows));
-          console.log();
-        }
-
+        console.log(formatTable(headers, rows));
+        console.log();
         console.log(dim(`Last updated: ${result.last_updated}`));
       } catch (err) {
         if (err instanceof ProxyGateError) {
