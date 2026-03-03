@@ -8,6 +8,7 @@ import { registerUsageCommand } from './commands/usage.js';
 import { registerProxyCommand } from './commands/proxy.js';
 import { registerDepositCommand } from './commands/deposit.js';
 import { registerWithdrawCommand } from './commands/withdraw.js';
+import { registerWithdrawConfirmCommand } from './commands/withdraw-confirm.js';
 
 const program = new Command('proxygate');
 
@@ -25,5 +26,6 @@ registerUsageCommand(program);
 registerProxyCommand(program);
 registerDepositCommand(program);
 registerWithdrawCommand(program);
+registerWithdrawConfirmCommand(program);
 
 program.parse();
