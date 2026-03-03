@@ -10,6 +10,7 @@ import { registerProxyCommand } from './commands/proxy.js';
 import { registerDepositCommand } from './commands/deposit.js';
 import { registerWithdrawCommand } from './commands/withdraw.js';
 import { registerWithdrawConfirmCommand } from './commands/withdraw-confirm.js';
+import { registerListingsCommand } from './commands/listings.js';
 
 const program = new Command('proxygate');
 
@@ -29,7 +30,9 @@ program
       '  $ proxygate getting-started        First time? Start here\n' +
       '  $ proxygate pricing                Browse available APIs\n' +
       '  $ proxygate balance                Check your USDC balance\n' +
-      '  $ proxygate proxy <id> <path> -d \'{"model":"gpt-4",...}\'\n\n' +
+      '  $ proxygate proxy <id> <path> -d \'{"model":"gpt-4",...}\'\n' +
+      '  $ proxygate listings list           List your seller listings\n' +
+      '  $ proxygate listings create         Create a new listing (interactive)\n\n' +
       'Config: ~/.proxygate/config.json\n' +
       'Docs:   https://gateway.proxygate.ai/docs',
   );
@@ -43,5 +46,6 @@ registerProxyCommand(program);
 registerDepositCommand(program);
 registerWithdrawCommand(program);
 registerWithdrawConfirmCommand(program);
+registerListingsCommand(program);
 
 program.parse();
