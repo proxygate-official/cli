@@ -15,12 +15,21 @@ import { bold, green, yellow, red, dim, formatCurrency } from '../format.js';
 export function registerInitCommand(program: Command): void {
   program
     .command('init')
-    .description('Initialize ProxyGate CLI configuration')
+    .description('Save gateway URL + keypair path to ~/.proxygate/config.json')
     .option('--gateway <url>', 'Gateway URL', 'https://gateway.proxygate.ai')
     .option(
       '--keypair <path>',
-      'Path to Solana keypair JSON file',
+      'Path to Solana keypair JSON file (64-byte array)',
       '~/.config/solana/id.json',
+    )
+    .addHelpText(
+      'after',
+      '\nExamples:\n' +
+        '  $ proxygate init\n' +
+        '  $ proxygate init --keypair ~/.proxygate/keypair.json\n' +
+        '  $ proxygate init --gateway http://localhost:3001 --keypair ./dev-keypair.json\n\n' +
+        "Don't have a keypair? Generate one:\n" +
+        '  $ solana-keygen new --outfile ~/.proxygate/keypair.json --no-bip39-passphrase',
     )
     .action(async (opts: { gateway: string; keypair: string }) => {
       console.log(bold('ProxyGate Init'));

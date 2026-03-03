@@ -12,10 +12,10 @@ vi.mock('@proxygate/sdk', () => ({
   ProxyGateError: class ProxyGateError extends Error {
     code: string;
     action?: string;
-    constructor(msg: string, code: string, action?: string) {
-      super(msg);
-      this.code = code;
-      this.action = action;
+    constructor(gatewayError: { error: string; message: string; action?: string }, _statusCode: number) {
+      super(gatewayError.message);
+      this.code = gatewayError.error;
+      this.action = gatewayError.action;
     }
   },
   parseSSE: vi.fn(),
@@ -164,7 +164,10 @@ describe('proxy command', () => {
 
   it('catches ProxyGateError and formats error with code and action', async () => {
     const { ProxyGateError } = await import('@proxygate/sdk');
-    mockProxy.mockRejectedValue(new ProxyGateError('Insufficient credits', 'CREDITS_EXHAUSTED', 'Deposit more USDC'));
+    mockProxy.mockRejectedValue(new ProxyGateError(
+      { error: 'CREDITS_EXHAUSTED', message: 'Insufficient credits', action: 'Deposit more USDC' },
+      402,
+    ));
 
     const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit');

@@ -19,7 +19,14 @@ function formatUsdc(lamports: number): string {
 export function registerBalanceCommand(program: Command): void {
   program
     .command('balance')
-    .description('Check your vault balance')
+    .description('Show your USDC vault balance (total, available, pending, cooldown)')
+    .addHelpText(
+      'after',
+      '\nExamples:\n' +
+        '  $ proxygate balance\n' +
+        '  $ proxygate balance --json          # Machine-readable output\n' +
+        '  $ proxygate balance --json | jq .available',
+    )
     .action(async () => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 

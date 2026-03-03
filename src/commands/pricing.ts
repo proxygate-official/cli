@@ -34,8 +34,15 @@ function formatPrice(listing: PricingListing): string {
 export function registerPricingCommand(program: Command): void {
   program
     .command('pricing')
-    .description('View available API pricing')
-    .option('-s, --service <name>', 'Filter by service name')
+    .description('Browse available APIs, sellers, and pricing (no auth required)')
+    .option('-s, --service <name>', 'Filter by service name (e.g., openai, anthropic)')
+    .addHelpText(
+      'after',
+      '\nExamples:\n' +
+        '  $ proxygate pricing\n' +
+        '  $ proxygate pricing --service openai\n' +
+        '  $ proxygate pricing --json          # Get listing IDs for proxy command',
+    )
     .action(async (opts: { service?: string }) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 

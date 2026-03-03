@@ -19,11 +19,19 @@ import {
 export function registerUsageCommand(program: Command): void {
   program
     .command('usage')
-    .description('View usage history')
-    .option('-s, --service <name>', 'Filter by service name')
-    .option('--from <date>', 'Start date (ISO 8601)')
+    .description('View your API usage history with per-service summaries')
+    .option('-s, --service <name>', 'Filter by service (e.g., openai, anthropic)')
+    .option('--from <date>', 'Start date (ISO 8601, e.g., 2026-03-01)')
     .option('--to <date>', 'End date (ISO 8601)')
-    .option('-l, --limit <n>', 'Number of entries to show', '20')
+    .option('-l, --limit <n>', 'Number of entries to show (default: 20)', '20')
+    .addHelpText(
+      'after',
+      '\nExamples:\n' +
+        '  $ proxygate usage\n' +
+        '  $ proxygate usage --service openai --limit 50\n' +
+        '  $ proxygate usage --from 2026-03-01 --to 2026-03-03\n' +
+        '  $ proxygate usage --json | jq ".usage[] | {service, cost_micro_cents}"',
+    )
     .action(
       async (opts: {
         service?: string;

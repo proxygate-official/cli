@@ -19,9 +19,24 @@ function formatUsdc(lamports: number): string {
 export function registerDepositCommand(program: Command): void {
   program
     .command('deposit')
-    .description('Deposit USDC into your vault')
-    .requiredOption('-a, --amount <lamports>', 'Amount to deposit in USDC base units (1 USDC = 1000000)')
-    .option('--rpc <url>', 'Solana RPC URL override')
+    .description('Deposit USDC from your Solana wallet into your ProxyGate vault')
+    .requiredOption(
+      '-a, --amount <lamports>',
+      'Amount in USDC base units (1 USDC = 1,000,000 lamports)',
+    )
+    .option('--rpc <url>', 'Solana RPC URL (default: devnet)')
+    .addHelpText(
+      'after',
+      '\nExamples:\n' +
+        '  $ proxygate deposit -a 5000000     # Deposit 5 USDC\n' +
+        '  $ proxygate deposit -a 1000000     # Deposit 1 USDC\n' +
+        '  $ proxygate deposit -a 10000000 --rpc https://api.mainnet-beta.solana.com\n\n' +
+        'USDC amounts:\n' +
+        '  1 USDC     = 1,000,000\n' +
+        '  5 USDC     = 5,000,000\n' +
+        '  10 USDC    = 10,000,000\n\n' +
+        'The vault auto-initializes on your first deposit.',
+    )
     .action(async (opts: { amount: string; rpc?: string }) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 

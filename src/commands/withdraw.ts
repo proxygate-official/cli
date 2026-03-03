@@ -19,9 +19,18 @@ function formatUsdc(lamports: number): string {
 export function registerWithdrawCommand(program: Command): void {
   program
     .command('withdraw')
-    .description('Withdraw USDC from your vault')
-    .option('-a, --amount <lamports>', 'Amount to withdraw in USDC base units (omit to withdraw all)')
-    .option('--rpc <url>', 'Solana RPC URL override')
+    .description('Withdraw USDC from your vault back to your Solana wallet')
+    .option('-a, --amount <lamports>', 'Amount in USDC base units (omit to withdraw all available)')
+    .option('--rpc <url>', 'Solana RPC URL (default: devnet)')
+    .addHelpText(
+      'after',
+      '\nExamples:\n' +
+        '  $ proxygate withdraw                # Withdraw all available\n' +
+        '  $ proxygate withdraw -a 2000000     # Withdraw 2 USDC\n' +
+        '  $ proxygate withdraw --rpc https://api.mainnet-beta.solana.com\n\n' +
+        'Withdrawals go through a cooldown period to finalize pending settlements.\n' +
+        'The CLI handles polling automatically.',
+    )
     .action(async (opts: { amount?: string; rpc?: string }) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 

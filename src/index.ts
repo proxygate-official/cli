@@ -2,6 +2,7 @@
 
 import { Command } from 'commander';
 import { registerInitCommand } from './commands/init.js';
+import { registerGettingStartedCommand } from './commands/getting-started.js';
 import { registerBalanceCommand } from './commands/balance.js';
 import { registerPricingCommand } from './commands/pricing.js';
 import { registerUsageCommand } from './commands/usage.js';
@@ -14,12 +15,27 @@ const program = new Command('proxygate');
 
 program
   .version('0.1.0')
-  .description('ProxyGate CLI -- interact with the ProxyGate API marketplace')
-  .option('--gateway <url>', 'Override gateway URL from config')
-  .option('--keypair <path>', 'Override keypair path from config')
-  .option('--json', 'Output raw JSON instead of formatted text');
+  .description(
+    'ProxyGate CLI — the Airbnb for API capacity.\n\n' +
+      'Buy access to AI APIs with USDC on Solana. Sellers list unused quota,\n' +
+      'agents purchase access through a transparent proxy. Keys never leave the server.',
+  )
+  .option('--gateway <url>', 'Override gateway URL (default: from config)')
+  .option('--keypair <path>', 'Path to Solana keypair JSON file (default: from config)')
+  .option('--json', 'Machine-readable JSON output (for scripting)')
+  .addHelpText(
+    'after',
+    '\nQuick start:\n' +
+      '  $ proxygate getting-started        First time? Start here\n' +
+      '  $ proxygate pricing                Browse available APIs\n' +
+      '  $ proxygate balance                Check your USDC balance\n' +
+      '  $ proxygate proxy <id> <path> -d \'{"model":"gpt-4",...}\'\n\n' +
+      'Config: ~/.proxygate/config.json\n' +
+      'Docs:   https://gateway.proxygate.ai/docs',
+  );
 
 registerInitCommand(program);
+registerGettingStartedCommand(program);
 registerBalanceCommand(program);
 registerPricingCommand(program);
 registerUsageCommand(program);

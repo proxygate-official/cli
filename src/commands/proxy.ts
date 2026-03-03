@@ -17,12 +17,23 @@ import { red, dim } from '../format.js';
 export function registerProxyCommand(program: Command): void {
   program
     .command('proxy')
-    .description('Send a request through the ProxyGate proxy')
-    .argument('<listing-id>', 'Listing ID to proxy through')
-    .argument('<path>', 'API path (e.g., /v1/chat/completions)')
+    .description('Send a proxied request to an upstream API through a seller listing')
+    .argument('<listing-id>', 'Listing UUID (get from `proxygate pricing --json`)')
+    .argument('<path>', 'Upstream API path (e.g., /v1/chat/completions)')
     .option('-d, --data <json>', 'Request body as JSON string')
-    .option('-X, --method <method>', 'HTTP method (default: POST if data, GET otherwise)')
-    .option('--stream', 'Stream SSE response')
+    .option('-X, --method <method>', 'HTTP method (default: POST if -d given, GET otherwise)')
+    .option('--stream', 'Stream SSE response chunks to stdout')
+    .addHelpText(
+      'after',
+      '\nExamples:\n' +
+        '  $ proxygate proxy abc-123 /v1/chat/completions \\\n' +
+        "    -d '{\"model\":\"gpt-4\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]}'\n\n" +
+        '  $ proxygate proxy abc-123 /v1/models -X GET\n\n' +
+        '  $ proxygate proxy abc-123 /v1/chat/completions --stream \\\n' +
+        "    -d '{\"model\":\"gpt-4\",\"messages\":[...],\"stream\":true}'\n\n" +
+        'The listing ID determines which seller and service to use.\n' +
+        'Get listing IDs with: proxygate pricing --json',
+    )
     .action(
       async (
         listingId: string,

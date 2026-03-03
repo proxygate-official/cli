@@ -1,16 +1,42 @@
 {
   "name": "@proxygate/cli",
   "version": "0.1.0",
-  "description": "ProxyGate CLI -- terminal interface for the ProxyGate API marketplace",
+  "description": "ProxyGate CLI — terminal interface for the ProxyGate API marketplace. Buy access to AI APIs with USDC on Solana.",
   "type": "module",
   "bin": {
     "proxygate": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "proxygate",
+    "cli",
+    "api",
+    "proxy",
+    "solana",
+    "usdc",
+    "ai",
+    "marketplace"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/proxygate/proxygate",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://proxygate.ai",
+  "engines": {
+    "node": ">=18.0.0"
   },
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "dev": "tsx src/index.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepublishOnly": "pnpm build"
   },
   "dependencies": {
     "@proxygate/sdk": "workspace:*",

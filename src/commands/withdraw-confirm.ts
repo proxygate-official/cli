@@ -20,8 +20,16 @@ function formatUsdc(lamports: number): string {
 export function registerWithdrawConfirmCommand(program: Command): void {
   program
     .command('withdraw-confirm')
-    .description('Confirm a completed on-chain withdrawal with the gateway (recovery)')
-    .requiredOption('--tx <signature>', 'Solana transaction signature')
+    .description('Confirm an on-chain withdrawal with the gateway (recovery tool)')
+    .requiredOption('--tx <signature>', 'Solana transaction signature to confirm')
+    .addHelpText(
+      'after',
+      '\nWhen to use this:\n' +
+        '  If `proxygate withdraw` crashed after the on-chain TX succeeded but\n' +
+        '  before the gateway was notified, use this to complete the process.\n\n' +
+        'Example:\n' +
+        '  $ proxygate withdraw-confirm --tx 5UyT3...abc',
+    )
     .action(async (opts: { tx: string }) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 
