@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import type { Command } from 'commander';
 import { ProxyGateError } from '@proxygate/sdk';
 import type {
@@ -202,6 +203,7 @@ export function registerListingsCommand(program: Command): void {
     .option('--categories <slugs>', 'Category slugs (comma-separated)')
     .option('--description <text>', 'Listing description')
     .option('--allowed-paths <paths>', 'Allowed paths (comma-separated)')
+    .option('--endpoints <file>', 'Path to JSON file containing EndpointSpec[]')
     .option('--validation-endpoint <path>', 'Validation endpoint path')
     .action(async (opts: {
       nonInteractive?: boolean;
@@ -224,6 +226,7 @@ export function registerListingsCommand(program: Command): void {
       categories?: string;
       description?: string;
       allowedPaths?: string;
+      endpoints?: string;
       validationEndpoint?: string;
     }) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
@@ -267,6 +270,7 @@ export function registerListingsCommand(program: Command): void {
             ...(opts.oauth2ClientSecret ? { oauth2_client_secret: opts.oauth2ClientSecret } : {}),
             ...(opts.oauth2ServiceAccountJson ? { oauth2_service_account_json: opts.oauth2ServiceAccountJson } : {}),
             ...(opts.allowedPaths ? { allowed_paths: opts.allowedPaths.split(',').map((s) => s.trim()) } : {}),
+            ...(opts.endpoints ? { endpoints: JSON.parse(await readFile(opts.endpoints, 'utf-8')) } : {}),
             ...(opts.validationEndpoint ? { validation_endpoint: opts.validationEndpoint } : {}),
           };
         } else {
@@ -364,6 +368,7 @@ export function registerListingsCommand(program: Command): void {
     .option('--categories <slugs>', 'Category slugs (comma-separated)')
     .option('--description <text>', 'Listing description')
     .option('--allowed-paths <paths>', 'Allowed paths (comma-separated)')
+    .option('--endpoints <file>', 'Path to JSON file containing EndpointSpec[]')
     .action(async (id: string, opts: {
       totalRpm?: string;
       reservedRpm?: string;
@@ -371,6 +376,7 @@ export function registerListingsCommand(program: Command): void {
       categories?: string;
       description?: string;
       allowedPaths?: string;
+      endpoints?: string;
     }) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 
@@ -382,6 +388,7 @@ export function registerListingsCommand(program: Command): void {
         if (opts.categories !== undefined) updates.category_slugs = opts.categories.split(',').map((s) => s.trim());
         if (opts.description !== undefined) updates.description = opts.description;
         if (opts.allowedPaths !== undefined) updates.allowed_paths = opts.allowedPaths.split(',').map((s) => s.trim());
+        if (opts.endpoints !== undefined) updates.endpoints = JSON.parse(await readFile(opts.endpoints, 'utf-8'));
 
         if (Object.keys(updates).length === 0) {
           console.error(red('Error: at least one update flag is required'));
