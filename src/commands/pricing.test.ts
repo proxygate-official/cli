@@ -29,17 +29,20 @@ const PRICING_RESULT = {
   services: [
     {
       service: 'openai',
-      listings: [
-        {
-          seller_id: 'Abc123DefGhi456Jkl789Mno012Pqr345Stu678Vwx9',
-          pricing_model: 'per_request',
-          price_per_request: 2000,
-          uptime_pct: 99.5,
-          latency_ms: 120,
-        },
-      ],
+      name: 'OpenAI',
+      pricing_unit: 'per_request',
+      price_per_request_micro_cents: 2000,
+      price_per_request_usdc: 0.00002,
+      price_per_input_token_micro_cents: null,
+      price_per_output_token_micro_cents: null,
+      price_per_input_token_usdc: null,
+      price_per_output_token_usdc: null,
+      available_rpm: 120,
+      sellers: 3,
     },
   ],
+  has_more: false,
+  cursor: null,
   currency: 'micro_cents',
   deposit_endpoint: '/v1/deposit',
   last_updated: '2026-02-26T00:00:00Z',
@@ -74,8 +77,8 @@ describe('pricing command', () => {
 
     const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
     expect(output).toContain('openai');
-    expect(output).toContain('Seller');
-    expect(output).toContain('99.5%');
+    expect(output).toContain('Sellers');
+    expect(output).toContain('120');
   });
 
   it('outputs raw JSON with --json flag', async () => {
