@@ -12,6 +12,11 @@ import { registerWithdrawCommand } from './commands/withdraw.js';
 import { registerWithdrawConfirmCommand } from './commands/withdraw-confirm.js';
 import { registerListingsCommand } from './commands/listings.js';
 import { registerTunnelCommand } from './commands/tunnel.js';
+import { registerSettlementsCommand } from './commands/settlements.js';
+import { registerApisCommand } from './commands/apis.js';
+import { registerServicesCommand } from './commands/services.js';
+import { registerCategoriesCommand } from './commands/categories.js';
+import { registerRateCommand } from './commands/rate.js';
 
 const program = new Command('proxygate');
 
@@ -50,5 +55,10 @@ registerWithdrawCommand(program);
 registerWithdrawConfirmCommand(program);
 registerListingsCommand(program);
 registerTunnelCommand(program);
+registerSettlementsCommand(program);
+registerApisCommand(program);
+registerServicesCommand(program);
+registerCategoriesCommand(program);
+registerRateCommand(program);
 
 program.parse();
