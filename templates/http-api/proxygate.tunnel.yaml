@@ -1,0 +1,9 @@
+services:
+  - name: {{name}}
+    port: {{port}}
+    price_per_request: {{price}}
+    description: "{{name}} API service"
+    endpoints:
+      - method: POST
+        path: /v1/analyze
+        description: Analyze input data

@@ -1,0 +1,13 @@
+services:
+  - name: {{name}}
+    port: {{port}}
+    price_per_request: {{price}}
+    description: "{{name}} — LLM-powered agent"
+    docs: ./openapi.yaml
+    endpoints:
+      - method: POST
+        path: /v1/review
+        description: Stream a code review for the given snippet
+      - method: POST
+        path: /v1/summarize
+        description: Summarize text to a given length

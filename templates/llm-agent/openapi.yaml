@@ -1,0 +1,56 @@
+openapi: "3.1.0"
+info:
+  title: "{{name}}"
+  version: "0.1.0"
+  description: LLM-powered agent with code review and summarization.
+paths:
+  /v1/review:
+    post:
+      summary: Review code (streaming SSE)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  description: Source code to review
+                language:
+                  type: string
+                  description: Programming language (optional)
+      responses:
+        "200":
+          description: SSE stream of review chunks
+          content:
+            text/event-stream: {}
+  /v1/summarize:
+    post:
+      summary: Summarize text
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+                max_length:
+                  type: integer
+                  description: Max words (default 100)
+      responses:
+        "200":
+          description: Summary response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: string
+                  model:
+                    type: string

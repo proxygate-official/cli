@@ -186,12 +186,29 @@ export function registerTunnelCommand(program: Command): void {
           },
 
           onDisconnected(reason) {
-            console.log(`${timestamp()} ${yellow('Disconnected:')} ${reason}`);
+            let hint = '';
+            if (reason.includes('4408') || reason.includes('Heartbeat')) {
+              hint = ' (network issue or gateway restart)';
+            }
+            console.log(`${timestamp()} ${yellow('Disconnected:')} ${reason}${hint}`);
             console.log(dim('Reconnecting in 5s...'));
           },
 
           onError(error) {
-            console.error(`${timestamp()} ${red('Error:')} ${error.message}`);
+            let hint = '';
+            const msg = error.message;
+            if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
+              hint = '\n    Is your server running? Start it with: npm run dev';
+            } else if (msg.includes('invalid_services') || msg.includes('Invalid service name')) {
+              hint = '\n    Service names must be lowercase alphanumeric + hyphens (e.g., "my-api")';
+            } else if (msg.includes('401') || msg.includes('Authentication')) {
+              hint = "\n    Run 'proxygate init' to configure your wallet";
+            } else if (msg.includes('4409') || msg.includes('Duplicate')) {
+              hint = '\n    You already have a tunnel open for this wallet. Close the other connection first.';
+            } else if (msg.includes('timed out')) {
+              hint = '\n    Check your service logs — the request took longer than 30 seconds';
+            }
+            console.error(`${timestamp()} ${red('Error:')} ${msg}${hint}`);
           },
 
           onRequest(requestId, service, path) {
