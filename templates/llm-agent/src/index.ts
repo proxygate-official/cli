@@ -1,9 +1,9 @@
-import { Hono } from 'hono';
+import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi';
 import { streamSSE } from 'hono/streaming';
 import { serve } from '@hono/node-server';
 import OpenAI from 'openai';
 
-const app = new Hono();
+const app = new OpenAPIHono();
 
 // Lazy-init so the server starts even without OPENAI_API_KEY set
 let _openai: OpenAI | null = null;
@@ -12,16 +12,61 @@ function openai(): OpenAI {
   return _openai;
 }
 
-// Health check
-app.get('/', (c) => c.json({ status: 'ok', service: '{{name}}' }));
+// --- Schemas ---
 
-// Streaming code review endpoint
-app.post('/v1/review', async (c) => {
-  const { code, language } = await c.req.json<{ code: string; language?: string }>();
+const ReviewBody = z
+  .object({
+    code: z.string().openapi({ description: 'Source code to review' }),
+    language: z.string().optional().openapi({ description: 'Programming language' }),
+  })
+  .openapi('ReviewRequest');
 
-  if (!code) {
-    return c.json({ error: 'Missing "code" field in request body' }, 400);
-  }
+const SummarizeBody = z
+  .object({
+    text: z.string().openapi({ description: 'Text to summarize' }),
+    max_length: z.number().int().optional().openapi({ description: 'Max words (default 100)' }),
+  })
+  .openapi('SummarizeRequest');
+
+const SummarizeResponse = z
+  .object({
+    summary: z.string(),
+    model: z.string(),
+    usage: z.unknown().optional(),
+  })
+  .openapi('SummarizeResponse');
+
+// --- Routes ---
+
+const healthRoute = createRoute({
+  method: 'get',
+  path: '/',
+  responses: {
+    200: {
+      content: { 'application/json': { schema: z.object({ status: z.string(), service: z.string() }) } },
+      description: 'Health check',
+    },
+  },
+});
+
+app.openapi(healthRoute, (c) =>
+  c.json({ status: 'ok', service: '{{name}}' }),
+);
+
+const reviewRoute = createRoute({
+  method: 'post',
+  path: '/v1/review',
+  request: {
+    body: { content: { 'application/json': { schema: ReviewBody } }, required: true },
+  },
+  responses: {
+    200: { description: 'SSE stream of review chunks', content: { 'text/event-stream': { schema: z.any() } } },
+    400: { description: 'Missing code field' },
+  },
+});
+
+app.openapi(reviewRoute, async (c) => {
+  const { code, language } = c.req.valid('json');
 
   const stream = await openai().chat.completions.create({
     model: 'gpt-4o-mini',
@@ -46,13 +91,23 @@ app.post('/v1/review', async (c) => {
   });
 });
 
-// Non-streaming summarize endpoint
-app.post('/v1/summarize', async (c) => {
-  const { text, max_length } = await c.req.json<{ text: string; max_length?: number }>();
+const summarizeRoute = createRoute({
+  method: 'post',
+  path: '/v1/summarize',
+  request: {
+    body: { content: { 'application/json': { schema: SummarizeBody } }, required: true },
+  },
+  responses: {
+    200: {
+      content: { 'application/json': { schema: SummarizeResponse } },
+      description: 'Summary response',
+    },
+    400: { description: 'Missing text field' },
+  },
+});
 
-  if (!text) {
-    return c.json({ error: 'Missing "text" field in request body' }, 400);
-  }
+app.openapi(summarizeRoute, async (c) => {
+  const { text, max_length } = c.req.valid('json');
 
   const response = await openai().chat.completions.create({
     model: 'gpt-4o-mini',
@@ -72,6 +127,16 @@ app.post('/v1/summarize', async (c) => {
   });
 });
 
+// --- OpenAPI spec ---
+
+app.doc('/openapi.json', {
+  openapi: '3.1.0',
+  info: { title: '{{name}}', version: '0.1.0', description: '{{name}} — LLM-powered agent' },
+});
+
+// --- Server ---
+
 const port = {{port}};
 console.log(`{{name}} listening on http://localhost:${port}`);
+console.log(`OpenAPI spec: http://localhost:${port}/openapi.json`);
 serve({ fetch: app.fetch, port });
