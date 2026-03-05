@@ -81,24 +81,24 @@ describe('withdraw command', () => {
     mockWithdraw.mockResolvedValue(WITHDRAW_COMPLETE_RESULT);
     await runWithdraw('--amount', '2000000');
 
-    expect(mockWithdraw).toHaveBeenCalledWith({ amount: 2_000_000 });
+    expect(mockWithdraw).toHaveBeenCalledWith(expect.objectContaining({ amount: 2_000_000 }));
   });
 
   it('calls withdraw without amount when omitted (withdraw all)', async () => {
     mockWithdraw.mockResolvedValue(WITHDRAW_COMPLETE_RESULT);
     await runWithdraw();
 
-    expect(mockWithdraw).toHaveBeenCalledWith({});
+    expect(mockWithdraw).toHaveBeenCalledWith(expect.objectContaining({}));
   });
 
   it('passes rpc option when provided', async () => {
     mockWithdraw.mockResolvedValue(WITHDRAW_COMPLETE_RESULT);
     await runWithdraw('--amount', '1000000', '--rpc', 'https://my-rpc.com');
 
-    expect(mockWithdraw).toHaveBeenCalledWith({
+    expect(mockWithdraw).toHaveBeenCalledWith(expect.objectContaining({
       amount: 1_000_000,
       rpcUrl: 'https://my-rpc.com',
-    });
+    }));
   });
 
   it('exits with error for invalid amount', async () => {

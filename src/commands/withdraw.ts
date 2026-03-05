@@ -49,7 +49,14 @@ export function registerWithdrawCommand(program: Command): void {
         const result = await client.vault.withdraw({
           ...(amount !== undefined ? { amount } : {}),
           ...(opts.rpc ? { rpcUrl: opts.rpc } : {}),
+          onProgress: (info) => {
+            if (!parentOpts.json) {
+              const secs = Math.ceil(info.remainingMs / 1000);
+              process.stdout.write(`\x1b[2K\r  ${dim(`Cooldown: ${secs}s remaining...`)}`);
+            }
+          },
         });
+        if (!parentOpts.json) process.stdout.write('\x1b[2K\r'); // clear progress line
 
         if (parentOpts.json) {
           console.log(JSON.stringify(result, null, 2));
