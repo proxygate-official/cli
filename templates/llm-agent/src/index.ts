@@ -4,7 +4,13 @@ import { serve } from '@hono/node-server';
 import OpenAI from 'openai';
 
 const app = new Hono();
-const openai = new OpenAI(); // Uses OPENAI_API_KEY env var
+
+// Lazy-init so the server starts even without OPENAI_API_KEY set
+let _openai: OpenAI | null = null;
+function openai(): OpenAI {
+  if (!_openai) _openai = new OpenAI();
+  return _openai;
+}
 
 // Health check
 app.get('/', (c) => c.json({ status: 'ok', service: '{{name}}' }));
@@ -17,7 +23,7 @@ app.post('/v1/review', async (c) => {
     return c.json({ error: 'Missing "code" field in request body' }, 400);
   }
 
-  const stream = await openai.chat.completions.create({
+  const stream = await openai().chat.completions.create({
     model: 'gpt-4o-mini',
     stream: true,
     messages: [
@@ -48,7 +54,7 @@ app.post('/v1/summarize', async (c) => {
     return c.json({ error: 'Missing "text" field in request body' }, 400);
   }
 
-  const response = await openai.chat.completions.create({
+  const response = await openai().chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
       {
