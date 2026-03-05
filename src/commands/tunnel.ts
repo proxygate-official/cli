@@ -1,10 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { homedir } from 'node:os';
 import type { Command } from 'commander';
 import yaml from 'js-yaml';
-import nacl from 'tweetnacl';
-import { createTunnelClient } from '@proxygate/sdk';
+import { ProxyGate } from '@proxygate/sdk';
 import type { TunnelServiceConfig } from '@proxygate/sdk';
 import { loadConfig } from '../config.js';
 import { bold, green, yellow, red, dim, cyan } from '../format.js';
@@ -35,68 +33,6 @@ interface TunnelYamlConfig {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/** Base58 alphabet (same as Solana). */
-const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-
-/** Encode bytes as base58 string. */
-function encodeBase58(bytes: Uint8Array): string {
-  const digits = [0];
-  for (const byte of bytes) {
-    let carry = byte;
-    for (let j = 0; j < digits.length; j++) {
-      carry += digits[j] << 8;
-      digits[j] = carry % 58;
-      carry = (carry / 58) | 0;
-    }
-    while (carry > 0) {
-      digits.push(carry % 58);
-      carry = (carry / 58) | 0;
-    }
-  }
-  let result = '';
-  for (const byte of bytes) {
-    if (byte === 0) result += BASE58_ALPHABET[0];
-    else break;
-  }
-  for (let i = digits.length - 1; i >= 0; i--) {
-    result += BASE58_ALPHABET[digits[i]];
-  }
-  return result;
-}
-
-/** Load and parse a Solana keypair JSON file, returning secretKey + walletAddress. */
-async function loadKeypair(keypairPath: string): Promise<{
-  secretKey: Uint8Array;
-  walletAddress: string;
-}> {
-  let resolvedPath = keypairPath;
-  if (resolvedPath.startsWith('~')) {
-    resolvedPath = resolvedPath.replace(/^~/, homedir());
-  }
-  resolvedPath = resolve(resolvedPath);
-
-  const raw = await readFile(resolvedPath, 'utf-8');
-  const keyArray: unknown = JSON.parse(raw);
-
-  if (
-    !Array.isArray(keyArray) ||
-    keyArray.length !== 64 ||
-    !keyArray.every((n) => typeof n === 'number')
-  ) {
-    throw new Error(
-      `Invalid keypair file: expected JSON array of 64 numbers, got ${
-        Array.isArray(keyArray) ? `array of ${keyArray.length}` : typeof keyArray
-      }`,
-    );
-  }
-
-  const secretKey = Uint8Array.from(keyArray as number[]);
-  const publicKey = nacl.sign.keyPair.fromSecretKey(secretKey).publicKey;
-  const walletAddress = encodeBase58(publicKey);
-
-  return { secretKey, walletAddress };
-}
 
 /** Check if a local service is reachable (non-fatal). */
 async function checkService(name: string, port: number): Promise<boolean> {
@@ -200,13 +136,11 @@ export function registerTunnelCommand(program: Command): void {
         }
 
         // ---------------------------------------------------------------
-        // 3. Load keypair
+        // 3. Print header
         // ---------------------------------------------------------------
-        const { secretKey, walletAddress } = await loadKeypair(keypairPath);
-
         console.log(bold('ProxyGate Tunnel'));
         console.log();
-        console.log(`  ${dim('Wallet:')}  ${walletAddress}`);
+        console.log(`  ${dim('Keypair:')} ${keypairPath}`);
         console.log(`  ${dim('Gateway:')} ${gatewayUrl}`);
         console.log();
 
@@ -228,12 +162,14 @@ export function registerTunnelCommand(program: Command): void {
         console.log();
 
         // ---------------------------------------------------------------
-        // 5. Create tunnel client and connect
+        // 5. Connect using SDK ProxyGate.serve()
         // ---------------------------------------------------------------
-        const client = createTunnelClient({
+        console.log(dim('Connecting to gateway...'));
+        console.log();
+
+        const tunnel = await ProxyGate.serve({
           gatewayUrl,
-          walletAddress,
-          secretKey,
+          keypair: keypairPath,
           services,
 
           onConnected(listings) {
@@ -275,20 +211,12 @@ export function registerTunnelCommand(program: Command): void {
           shuttingDown = true;
           console.log();
           console.log(dim('Disconnecting tunnel...'));
-          client.disconnect();
+          tunnel.disconnect();
           process.exit(0);
         }
 
         process.on('SIGINT', shutdown);
         process.on('SIGTERM', shutdown);
-
-        // ---------------------------------------------------------------
-        // 7. Connect
-        // ---------------------------------------------------------------
-        console.log(dim('Connecting to gateway...'));
-        console.log();
-
-        await client.connect();
 
         // Keep process alive
         await new Promise(() => {});
