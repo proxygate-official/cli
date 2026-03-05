@@ -127,7 +127,8 @@ export function registerListingsCommand(program: Command): void {
         '  pause <id>                   Pause a listing\n' +
         '  unpause <id>                 Unpause a listing\n' +
         '  delete <id>                  Delete a listing\n' +
-        '  rotate-key <id>              Rotate API key or OAuth2 credentials\n\n' +
+        '  rotate-key <id>              Rotate API key or OAuth2 credentials\n' +
+        '  docs <id>                    View API documentation for a listing\n\n' +
         'Examples:\n' +
         '  $ proxygate listings list                  JSON output (default)\n' +
         '  $ proxygate listings list --table          Table format\n' +
@@ -537,6 +538,55 @@ export function registerListingsCommand(program: Command): void {
 
         const result = await client.listings.rotateKey(id, rotateOpts);
         console.log(JSON.stringify(result, null, 2));
+      } catch (err) {
+        handleError(err);
+      }
+    });
+
+  // -------------------------------------------------------------------------
+  // listings docs <id>
+  // -------------------------------------------------------------------------
+  listings
+    .command('docs <id>')
+    .description('View API documentation for a listing')
+    .option('--raw', 'Output raw content (OpenAPI spec or markdown)')
+    .action(async (id: string, opts: { raw?: boolean }) => {
+      const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
+
+      try {
+        const client = await getClient(parentOpts);
+        const docs = await client.docs(id);
+
+        if (!docs) {
+          console.log(dim('No documentation found for this listing.'));
+          return;
+        }
+
+        if (opts.raw) {
+          console.log(docs.content);
+          return;
+        }
+
+        // Structured output
+        console.log(bold(`Documentation (${docs.doc_type})`));
+        console.log(dim(`Listing: ${docs.listing_id}`));
+        console.log(dim(`Updated: ${docs.updated_at}`));
+        console.log();
+
+        if (docs.doc_type === 'openapi' && docs.parsed_endpoints) {
+          console.log(bold('Endpoints:'));
+          console.log();
+          const headers = ['Method', 'Path', 'Summary'];
+          const rows = (docs.parsed_endpoints as Array<{ method?: string; path?: string; summary?: string }>).map((ep) => [
+            ep.method ?? '',
+            ep.path ?? '',
+            truncate(ep.summary ?? '', 50),
+          ]);
+          console.log(formatTable(headers, rows));
+        } else {
+          // For markdown or OpenAPI without parsed endpoints, show raw
+          console.log(docs.content);
+        }
       } catch (err) {
         handleError(err);
       }
