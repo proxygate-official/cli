@@ -17,9 +17,10 @@ const program = new Command('proxygate');
 program
   .version('0.1.0')
   .description(
-    'ProxyGate CLI — the Airbnb for API capacity.\n\n' +
-      'Buy access to AI APIs with USDC on Solana. Sellers list unused quota,\n' +
-      'agents purchase access through a transparent proxy. Keys never leave the server.',
+    'ProxyGate CLI — the Stripe for AI agents.\n\n' +
+      'Autonomous payments, API access, and service discovery for the machine economy.\n' +
+      'Sellers list unused quota, agents purchase access through a transparent proxy.\n' +
+      'Keys never leave the server.',
   )
   .option('--gateway <url>', 'Override gateway URL (default: from config)')
   .option('--keypair <path>', 'Path to Solana keypair JSON file (default: from config)')
