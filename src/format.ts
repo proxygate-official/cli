@@ -106,3 +106,14 @@ export function formatWallet(wallet: string): string {
   if (wallet.length <= 11) return wallet;
   return `${wallet.slice(0, 4)}...${wallet.slice(-4)}`;
 }
+
+/**
+ * Format a USDC amount from lamports (base units, 6 decimals).
+ *
+ * @example
+ * formatUsdc(5_000_000) // "5.000000 USDC"
+ * formatUsdc(123)       // "0.000123 USDC"
+ */
+export function formatUsdc(lamports: number): string {
+  return `${(lamports / 1_000_000).toFixed(6)} USDC`;
+}

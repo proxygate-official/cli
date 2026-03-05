@@ -1,0 +1,46 @@
+import type { Command } from 'commander';
+import { getClient } from '../../helpers.js';
+import { bold, green, yellow, dim, formatTable } from '../../format.js';
+import { handleError } from './helpers.js';
+
+/** Register the `listings list` subcommand. */
+export function registerListSubcommand(listings: Command, program: Command): void {
+  listings
+    .command('list')
+    .description('List all your seller listings')
+    .option('--table', 'Display in human-readable table format')
+    .action(async (opts: { table?: boolean }) => {
+      const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
+
+      try {
+        const client = await getClient(parentOpts);
+        const result = await client.listings.list();
+
+        if (opts.table) {
+          if (result.listings.length === 0) {
+            console.log(dim('No listings found. Create one with: proxygate listings create'));
+            return;
+          }
+
+          console.log(bold(`Seller Listings (${result.listings.length})`));
+          console.log();
+
+          const headers = ['ID', 'Service', 'Status', 'RPM', 'Price'];
+          const rows = result.listings.map((l) => [
+            l.id.slice(0, 8),
+            l.service_catalog?.name ?? 'unknown',
+            l.is_active ? green('active') : yellow('paused'),
+            `${l.total_rpm - (l.reserved_rpm ?? 0)}/${l.total_rpm}`,
+            String(l.price_per_request),
+          ]);
+          console.log(formatTable(headers, rows));
+          return;
+        }
+
+        // JSON output (default)
+        console.log(JSON.stringify(result, null, 2));
+      } catch (err) {
+        handleError(err);
+      }
+    });
+}

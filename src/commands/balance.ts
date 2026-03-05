@@ -1,14 +1,7 @@
 import type { Command } from 'commander';
 import { ProxyGateError } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
-import { bold, green, yellow, red, dim } from '../format.js';
-
-/**
- * Format a USDC amount from lamports (base units, 6 decimals).
- */
-function formatUsdc(lamports: number): string {
-  return `${(lamports / 1_000_000).toFixed(6)} USDC`;
-}
+import { bold, green, yellow, red, dim, formatUsdc } from '../format.js';
 
 /**
  * Register the `proxygate balance` command.
