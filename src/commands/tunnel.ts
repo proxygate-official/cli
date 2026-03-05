@@ -268,17 +268,23 @@ export function registerTunnelCommand(program: Command): void {
         // ---------------------------------------------------------------
         let shuttingDown = false;
 
-        function shutdown(): void {
+        async function shutdown(): Promise<void> {
           if (shuttingDown) return;
           shuttingDown = true;
           console.log();
-          console.log(dim('Disconnecting tunnel...'));
+          console.log(dim('Draining tunnel (waiting for in-flight requests)...'));
+          try {
+            await client.drain();
+            console.log(dim('Drain complete. Disconnecting...'));
+          } catch {
+            console.log(dim('Drain failed. Disconnecting...'));
+          }
           client.disconnect();
           process.exit(0);
         }
 
-        process.on('SIGINT', shutdown);
-        process.on('SIGTERM', shutdown);
+        process.on('SIGINT', () => { shutdown(); });
+        process.on('SIGTERM', () => { shutdown(); });
 
         // ---------------------------------------------------------------
         // 7. Connect
