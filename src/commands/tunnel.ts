@@ -28,6 +28,7 @@ interface TunnelYamlConfig {
       path: string;
       description?: string;
     }>;
+    docs?: string;
   }>;
 }
 
@@ -141,6 +142,7 @@ export function registerTunnelCommand(program: Command): void {
         '      port: 8080\n' +
         '      price_per_request: 1000\n' +
         '      description: My local API service\n' +
+        '      docs: ./openapi.yaml          # auto-uploaded on connect\n' +
         '      paths:\n' +
         '        - /v1/*\n',
     )
