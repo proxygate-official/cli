@@ -6,6 +6,7 @@ import { registerPauseSubcommand, registerUnpauseSubcommand } from './pause-unpa
 import { registerDeleteSubcommand } from './delete.js';
 import { registerRotateKeySubcommand } from './rotate-key.js';
 import { registerDocsSubcommand } from './docs.js';
+import { registerHeadersSubcommand } from './headers.js';
 
 /**
  * Register the `proxygate listings` command group.
@@ -29,7 +30,8 @@ export function registerListingsCommand(program: Command): void {
         '  unpause <id>                 Unpause a listing\n' +
         '  delete <id>                  Delete a listing\n' +
         '  rotate-key <id>              Rotate API key or OAuth2 credentials\n' +
-        '  docs <id>                    View API documentation for a listing\n\n' +
+        '  docs <id>                    View API documentation for a listing\n' +
+        '  headers <id>                 Manage upstream headers\n\n' +
         'Examples:\n' +
         '  $ proxygate listings list                  JSON output (default)\n' +
         '  $ proxygate listings list --table          Table format\n' +
@@ -45,4 +47,5 @@ export function registerListingsCommand(program: Command): void {
   registerDeleteSubcommand(listings, program);
   registerRotateKeySubcommand(listings, program);
   registerDocsSubcommand(listings, program);
+  registerHeadersSubcommand(listings, program);
 }
