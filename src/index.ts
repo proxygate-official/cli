@@ -41,7 +41,12 @@ program
       '  $ proxygate getting-started        First time? Start here\n' +
       '  $ proxygate pricing                Browse available APIs\n' +
       '  $ proxygate balance                Check your USDC balance\n' +
-      '  $ proxygate proxy <id> <path> -d \'{"model":"gpt-4",...}\'\n' +
+      '  $ proxygate proxy <id> <path> -d \'{"model":"gpt-4",...}\'\n\n' +
+      'Build & sell an agent:\n' +
+      '  $ proxygate create                 Scaffold a new agent project\n' +
+      '  $ proxygate test                   Validate your service locally\n' +
+      '  $ proxygate tunnel                 Go live on ProxyGate\n\n' +
+      'Manage listings:\n' +
       '  $ proxygate listings list           List your seller listings\n' +
       '  $ proxygate listings create         Create a new listing (interactive)\n\n' +
       'Config: ~/.proxygate/config.json\n' +
