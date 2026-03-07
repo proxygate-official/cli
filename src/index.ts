@@ -18,6 +18,9 @@ import { registerServicesCommand } from './commands/services.js';
 import { registerCategoriesCommand } from './commands/categories.js';
 import { registerRateCommand } from './commands/rate.js';
 import { registerJobsCommand } from './commands/jobs.js';
+import { registerCreateCommand } from './commands/create.js';
+import { registerTestCommand } from './commands/test-service.js';
+import { registerDevCommand } from './commands/dev.js';
 
 const program = new Command('proxygate');
 
@@ -62,5 +65,8 @@ registerServicesCommand(program);
 registerCategoriesCommand(program);
 registerRateCommand(program);
 registerJobsCommand(program);
+registerCreateCommand(program);
+registerTestCommand(program);
+registerDevCommand(program);
 
 program.parse();

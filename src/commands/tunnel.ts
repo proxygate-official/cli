@@ -2,11 +2,10 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { Command } from 'commander';
 import yaml from 'js-yaml';
-import { createTunnelClient } from '@proxygate/sdk';
+import { ProxyGate } from '@proxygate/sdk';
 import type { TunnelServiceConfig } from '@proxygate/sdk';
 import { loadConfig } from '../config.js';
-import { bold, red, dim, green, yellow } from '../format.js';
-import { loadKeypair, checkService, onConnected, onDisconnected, onError, onRequest } from './tunnel-handlers.js';
+import { bold, red, dim, green, yellow, cyan } from '../format.js';
 
 interface TunnelYamlConfig {
   services: Array<{
@@ -18,9 +17,40 @@ interface TunnelYamlConfig {
     price_per_output_token?: number;
     paths?: string[];
     description?: string;
-    endpoints?: Array<{ method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'; path: string; description?: string }>;
+    endpoints?: Array<{
+      method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+      path: string;
+      description?: string;
+    }>;
+    docs?: string;
   }>;
 }
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Check if a local service is reachable (non-fatal). */
+async function checkService(name: string, port: number): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    await fetch(`http://localhost:${port}`, { signal: controller.signal });
+    clearTimeout(timeout);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Format a timestamp for log output. */
+function timestamp(): string {
+  return dim(new Date().toISOString().replace('T', ' ').replace('Z', ''));
+}
+
+// ---------------------------------------------------------------------------
+// Command registration
+// ---------------------------------------------------------------------------
 
 /**
  * Register the `proxygate tunnel` command.
@@ -31,10 +61,21 @@ export function registerTunnelCommand(program: Command): void {
     .command('tunnel')
     .description('Expose local services to ProxyGate via a reverse tunnel')
     .option('-c, --config <path>', 'Path to tunnel YAML config', 'proxygate.tunnel.yaml')
-    .addHelpText('after',
-      '\nExamples:\n  $ proxygate tunnel\n  $ proxygate tunnel -c my-services.yaml\n\n' +
-      'Config file format (proxygate.tunnel.yaml):\n  services:\n    - name: my-api\n' +
-      '      port: 8080\n      price_per_request: 1000\n      paths:\n        - /v1/*\n')
+    .addHelpText(
+      'after',
+      '\nExamples:\n' +
+        '  $ proxygate tunnel\n' +
+        '  $ proxygate tunnel -c my-services.yaml\n\n' +
+        'Config file format (proxygate.tunnel.yaml):\n' +
+        '  services:\n' +
+        '    - name: my-api\n' +
+        '      port: 8080\n' +
+        '      price_per_request: 1000\n' +
+        '      description: My local API service\n' +
+        '      docs: ./openapi.yaml          # auto-uploaded on connect\n' +
+        '      paths:\n' +
+        '        - /v1/*\n',
+    )
     .action(async (opts: { config: string }) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string }>();
       try {
@@ -66,10 +107,12 @@ export function registerTunnelCommand(program: Command): void {
           if (!svc.port || typeof svc.port !== 'number') { console.error(red(`Error: Service "${svc.name}" must have a "port" (number).`)); process.exit(1); }
         }
 
-        const { secretKey, walletAddress } = await loadKeypair(keypairPath);
+        // ---------------------------------------------------------------
+        // Print header
+        // ---------------------------------------------------------------
         console.log(bold('ProxyGate Tunnel'));
         console.log();
-        console.log(`  ${dim('Wallet:')}  ${walletAddress}`);
+        console.log(`  ${dim('Keypair:')} ${keypairPath}`);
         console.log(`  ${dim('Gateway:')} ${gatewayUrl}`);
         console.log();
 
@@ -82,9 +125,61 @@ export function registerTunnelCommand(program: Command): void {
         }
         console.log();
 
-        const client = createTunnelClient({
-          gatewayUrl, walletAddress, secretKey, services,
-          onConnected, onDisconnected, onError, onRequest,
+        // ---------------------------------------------------------------
+        // Connect using SDK ProxyGate.serve()
+        // ---------------------------------------------------------------
+        console.log(dim('Connecting to gateway...'));
+        console.log();
+
+        const tunnel = await ProxyGate.serve({
+          gatewayUrl,
+          keypair: keypairPath,
+          services,
+
+          onConnected(listings) {
+            console.log(green('Connected! Your services are live:'));
+            console.log();
+            for (const listing of listings) {
+              console.log(`  ${bold(listing.service)}`);
+              console.log(`    ${cyan(listing.endpoint)}`);
+              console.log(`    ${dim(`Listing ID: ${listing.id}`)}`);
+              console.log();
+            }
+            console.log(dim('Press Ctrl+C to disconnect.'));
+            console.log();
+          },
+
+          onDisconnected(reason) {
+            let hint = '';
+            if (reason.includes('4408') || reason.includes('Heartbeat')) {
+              hint = ' (network issue or gateway restart)';
+            }
+            console.log(`${timestamp()} ${yellow('Disconnected:')} ${reason}${hint}`);
+            console.log(dim('Reconnecting in 5s...'));
+          },
+
+          onError(error) {
+            let hint = '';
+            const msg = error.message;
+            if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
+              hint = '\n    Is your server running? Start it with: npm run dev';
+            } else if (msg.includes('invalid_services') || msg.includes('Invalid service name')) {
+              hint = '\n    Service names must be lowercase alphanumeric + hyphens (e.g., "my-api")';
+            } else if (msg.includes('401') || msg.includes('Authentication')) {
+              hint = "\n    Run 'proxygate init' to configure your wallet";
+            } else if (msg.includes('4409') || msg.includes('Duplicate')) {
+              hint = '\n    You already have a tunnel open for this wallet. Close the other connection first.';
+            } else if (msg.includes('timed out')) {
+              hint = '\n    Check your service logs — the request took longer than 30 seconds';
+            }
+            console.error(`${timestamp()} ${red('Error:')} ${msg}${hint}`);
+          },
+
+          onRequest(requestId, service, path) {
+            console.log(
+              `${timestamp()} ${green('>>>')} ${bold(service)} ${path} ${dim(requestId.slice(0, 8))}`,
+            );
+          },
         });
 
         let shuttingDown = false;
@@ -93,17 +188,15 @@ export function registerTunnelCommand(program: Command): void {
           shuttingDown = true;
           console.log();
           console.log(dim('Draining tunnel (waiting for in-flight requests)...'));
-          try { await client.drain(); console.log(dim('Drain complete. Disconnecting...')); }
+          try { await tunnel.drain(); console.log(dim('Drain complete. Disconnecting...')); }
           catch { console.log(dim('Drain failed. Disconnecting...')); }
-          client.disconnect();
+          tunnel.disconnect();
           process.exit(0);
         }
         process.on('SIGINT', () => { shutdown(); });
         process.on('SIGTERM', () => { shutdown(); });
 
-        console.log(dim('Connecting to gateway...'));
-        console.log();
-        await client.connect();
+        // Keep process alive
         await new Promise(() => {});
       } catch (err) {
         console.error(red(`Error: ${err instanceof Error ? err.message : String(err)}`));
