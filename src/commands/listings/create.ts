@@ -94,7 +94,7 @@ async function buildNonInteractiveOpts(o: CreateCliOpts): Promise<CreateListingO
     ...(o.oauth2Scopes ? { oauth2_scopes: o.oauth2Scopes } : {}),
     ...(o.oauth2ClientId ? { oauth2_client_id: o.oauth2ClientId } : {}),
     ...(o.oauth2ClientSecret ? { oauth2_client_secret: o.oauth2ClientSecret } : {}),
-    ...(o.oauth2ServiceAccountJson ? { oauth2_service_account_json: o.oauth2ServiceAccountJson } : {}),
+    ...(o.oauth2ServiceAccountJson ? { oauth2_service_account_json: await readFile(o.oauth2ServiceAccountJson, 'utf-8') } : {}),
     ...(o.allowedPaths ? { allowed_paths: o.allowedPaths.split(',').map((s) => s.trim()) } : {}),
     ...(o.endpoints ? { endpoints: JSON.parse(await readFile(o.endpoints, 'utf-8')) } : {}),
     ...(o.validationEndpoint ? { validation_endpoint: o.validationEndpoint } : {}),
