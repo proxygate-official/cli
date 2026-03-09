@@ -1,7 +1,8 @@
 import type { Command } from 'commander';
-import { ProxyGateError, parseSSE } from '@proxygate/sdk';
+import type { ShieldMode } from '@proxygate/sdk';
+import { ProxyGateError, parseSSE, parseShieldInfo } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
-import { red, dim } from '../format.js';
+import { red, dim, yellow, cyan } from '../format.js';
 
 /**
  * Register the `proxygate proxy` command.
@@ -23,6 +24,7 @@ export function registerProxyCommand(program: Command): void {
     .option('-d, --data <json>', 'Request body as JSON string')
     .option('-X, --method <method>', 'HTTP method (default: POST if -d given, GET otherwise)')
     .option('--stream', 'Stream SSE response chunks to stdout')
+    .option('--shield <mode>', 'Shield scanning mode: monitor, strict, or off')
     .addHelpText(
       'after',
       '\nExamples:\n' +
@@ -38,7 +40,7 @@ export function registerProxyCommand(program: Command): void {
       async (
         listingId: string,
         path: string,
-        opts: { data?: string; method?: string; stream?: boolean },
+        opts: { data?: string; method?: string; stream?: boolean; shield?: string },
       ) => {
         const parentOpts = program.opts<{ gateway?: string; keypair?: string }>();
 
@@ -56,19 +58,33 @@ export function registerProxyCommand(program: Command): void {
             }
           }
 
+          // Validate shield mode
+          const validShieldModes = ['monitor', 'strict', 'off'];
+          let shield: ShieldMode | undefined;
+          if (opts.shield) {
+            if (!validShieldModes.includes(opts.shield)) {
+              console.error(red(`Error: Invalid shield mode '${opts.shield}'. Use: monitor, strict, or off`));
+              process.exit(1);
+            }
+            shield = opts.shield as ShieldMode;
+          }
+
           // Determine HTTP method
           const method = (opts.method ?? (body ? 'POST' : 'GET')).toUpperCase();
-          console.error(dim(`${method} ${listingId}${path}`));
+          const shieldLabel = shield ? ` [shield:${shield}]` : '';
+          console.error(dim(`${method} ${listingId}${path}${shieldLabel}`));
 
           // Streaming mode
           if (opts.stream) {
             console.error(dim(`Streaming ${listingId}${path}...`));
 
-            const response = await client.proxy(listingId, path, body, { method });
+            const response = await client.proxy(listingId, path, body, { method, shield });
             if (!response.body) {
               console.error(red('Error: No response body for streaming'));
               process.exit(1);
             }
+
+            printShieldInfo(response);
 
             for await (const event of parseSSE(response)) {
               if (event.data === '[DONE]') break;
@@ -78,7 +94,27 @@ export function registerProxyCommand(program: Command): void {
           }
 
           // Execute request
-          const response = await client.proxy(listingId, path, body, { method });
+          const response = await client.proxy(listingId, path, body, { method, shield });
+
+          // Handle shield block (422)
+          if (response.status === 422) {
+            const text = await response.text();
+            let blocked: Record<string, unknown> | null = null;
+            try { blocked = JSON.parse(text) as Record<string, unknown>; } catch { /* not JSON */ }
+            if (blocked?.code === 'shield_blocked') {
+              console.error(yellow(`Shield blocked response (score: ${blocked.shield_score})`));
+              console.error(yellow(`Flags: ${(blocked.shield_flags as string[])?.join(', ') ?? 'unknown'}`));
+              console.error(dim(blocked.message as string));
+              if (blocked.refunded) console.error(dim('Credits refunded.'));
+              process.exit(1);
+            }
+            console.log(text);
+            console.error(dim(`Status: ${response.status}`));
+            return;
+          }
+
+          // Print shield info to stderr
+          printShieldInfo(response);
 
           // Print response
           const text = await response.text();
@@ -103,4 +139,13 @@ export function registerProxyCommand(program: Command): void {
         }
       },
     );
+}
+
+function printShieldInfo(response: Response): void {
+  const info = parseShieldInfo(response);
+  if (!info) return;
+  const parts = [cyan(`Shield: ${info.mode}`)];
+  if (info.score !== undefined) parts.push(`score: ${info.score.toFixed(3)}`);
+  if (info.flags && info.flags !== 'none') parts.push(yellow(`flags: ${info.flags}`));
+  console.error(dim(parts.join(' | ')));
 }

@@ -28,6 +28,7 @@ interface CreateCliOpts {
   allowedPaths?: string;
   endpoints?: string;
   validationEndpoint?: string;
+  shield?: string;
 }
 
 /** Register the `listings create` subcommand. */
@@ -57,6 +58,7 @@ export function registerCreateSubcommand(listings: Command, program: Command): v
     .option('--allowed-paths <paths>', 'Allowed paths (comma-separated)')
     .option('--endpoints <file>', 'Path to JSON file containing EndpointSpec[]')
     .option('--validation-endpoint <path>', 'Validation endpoint path')
+    .option('--shield <on|off>', 'Enable Shield response scanning (default: off)')
     .action(async (opts: CreateCliOpts) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
       try {
@@ -98,6 +100,7 @@ async function buildNonInteractiveOpts(o: CreateCliOpts): Promise<CreateListingO
     ...(o.allowedPaths ? { allowed_paths: o.allowedPaths.split(',').map((s) => s.trim()) } : {}),
     ...(o.endpoints ? { endpoints: JSON.parse(await readFile(o.endpoints, 'utf-8')) } : {}),
     ...(o.validationEndpoint ? { validation_endpoint: o.validationEndpoint } : {}),
+    ...(o.shield === 'on' ? { shield_enabled: true } : {}),
   };
 }
 

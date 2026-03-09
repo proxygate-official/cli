@@ -16,6 +16,7 @@ export function registerUpdateSubcommand(listings: Command, program: Command): v
     .option('--description <text>', 'Listing description')
     .option('--allowed-paths <paths>', 'Allowed paths (comma-separated)')
     .option('--endpoints <file>', 'Path to JSON file containing EndpointSpec[]')
+    .option('--shield <on|off>', 'Enable or disable Shield response scanning')
     .action(async (id: string, opts: {
       totalRpm?: string;
       reservedRpm?: string;
@@ -24,6 +25,7 @@ export function registerUpdateSubcommand(listings: Command, program: Command): v
       description?: string;
       allowedPaths?: string;
       endpoints?: string;
+      shield?: string;
     }) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 
@@ -36,10 +38,17 @@ export function registerUpdateSubcommand(listings: Command, program: Command): v
         if (opts.description !== undefined) updates.description = opts.description;
         if (opts.allowedPaths !== undefined) updates.allowed_paths = opts.allowedPaths.split(',').map((s) => s.trim());
         if (opts.endpoints !== undefined) updates.endpoints = JSON.parse(await readFile(opts.endpoints, 'utf-8'));
+        if (opts.shield !== undefined) {
+          if (opts.shield !== 'on' && opts.shield !== 'off') {
+            console.error(red('Error: --shield must be "on" or "off"'));
+            process.exit(1);
+          }
+          updates.shield_enabled = opts.shield === 'on';
+        }
 
         if (Object.keys(updates).length === 0) {
           console.error(red('Error: at least one update flag is required'));
-          console.error(dim('Available: --total-rpm, --reserved-rpm, --price, --categories, --description, --allowed-paths'));
+          console.error(dim('Available: --total-rpm, --reserved-rpm, --price, --categories, --description, --allowed-paths, --shield'));
           process.exit(1);
         }
 

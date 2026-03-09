@@ -19,6 +19,7 @@ vi.mock('@proxygate/sdk', () => ({
     }
   },
   parseSSE: vi.fn(),
+  parseShieldInfo: vi.fn().mockReturnValue(null),
 }));
 
 vi.mock('../config.js', () => ({
@@ -66,6 +67,7 @@ describe('proxy command', () => {
 
     expect(mockProxy).toHaveBeenCalledWith('abc-123', '/v1/models', undefined, {
       method: 'GET',
+      shield: undefined,
     });
   });
 
@@ -82,6 +84,7 @@ describe('proxy command', () => {
 
     expect(mockProxy).toHaveBeenCalledWith('abc-123', '/v1/chat/completions', body, {
       method: 'POST',
+      shield: undefined,
     });
   });
 
@@ -99,7 +102,7 @@ describe('proxy command', () => {
       'abc-123',
       '/v1/resource',
       { key: 'val' },
-      { method: 'PUT' },
+      { method: 'PUT', shield: undefined },
     );
   });
 
@@ -210,6 +213,98 @@ describe('proxy command', () => {
     expect(stdoutSpy).toHaveBeenCalledWith('{"chunk":2}\n');
     // [DONE] should NOT be written
     expect(stdoutSpy).not.toHaveBeenCalledWith('[DONE]\n');
+  });
+
+  it('passes --shield mode to proxy options', async () => {
+    mockProxy.mockResolvedValue(
+      new Response(JSON.stringify({ result: 'ok' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    await runProxy('abc-123', '/v1/models', '--shield', 'strict');
+
+    expect(mockProxy).toHaveBeenCalledWith('abc-123', '/v1/models', undefined, {
+      method: 'GET',
+      shield: 'strict',
+    });
+  });
+
+  it('exits with error for invalid shield mode', async () => {
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit');
+    });
+
+    await expect(runProxy('abc-123', '/v1/models', '--shield', 'invalid')).rejects.toThrow(
+      'process.exit',
+    );
+
+    const errOutput = errorSpy.mock.calls
+      .map((c: unknown[]) => c[0])
+      .join('\n');
+    expect(errOutput).toContain('Invalid shield mode');
+    mockExit.mockRestore();
+  });
+
+  it('handles shield blocked response (422)', async () => {
+    mockProxy.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: 'response_blocked',
+          code: 'shield_blocked',
+          shield_score: 0.89,
+          shield_flags: ['pi_and_jailbreak', 'malicious_uris'],
+          refunded: true,
+          message: 'Response blocked by Shield',
+        }),
+        { status: 422, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit');
+    });
+
+    await expect(runProxy('abc-123', '/v1/chat/completions', '--shield', 'strict')).rejects.toThrow(
+      'process.exit',
+    );
+
+    const errOutput = errorSpy.mock.calls
+      .map((c: unknown[]) => c[0])
+      .join('\n');
+    expect(errOutput).toContain('Shield blocked');
+    expect(errOutput).toContain('0.89');
+    expect(errOutput).toContain('Credits refunded');
+    mockExit.mockRestore();
+  });
+
+  it('displays shield info from response headers', async () => {
+    const { parseShieldInfo } = await import('@proxygate/sdk');
+    vi.mocked(parseShieldInfo).mockReturnValue({
+      mode: 'monitored',
+      score: 0.12,
+      flags: 'none',
+    });
+
+    mockProxy.mockResolvedValue(
+      new Response(JSON.stringify({ result: 'ok' }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-ProxyGate-Shield': 'monitored',
+          'X-ProxyGate-Shield-Score': '0.12',
+          'X-ProxyGate-Shield-Flags': 'none',
+        },
+      }),
+    );
+
+    await runProxy('abc-123', '/v1/models', '--shield', 'monitor');
+
+    const errOutput = errorSpy.mock.calls
+      .map((c: unknown[]) => c[0])
+      .join('\n');
+    expect(errOutput).toContain('Shield: monitored');
   });
 
   it('exits with error when streaming with no response body', async () => {
