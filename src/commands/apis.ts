@@ -12,6 +12,7 @@ export function registerApisCommand(program: Command): void {
     .option('--sort <order>', 'Sort: price_asc, price_desc, popular, newest')
     .option('-q, --query <text>', 'Text search')
     .option('-l, --limit <n>', 'Max results', '20')
+    .option('--verified', 'Show only verified sellers')
     .addHelpText(
       'after',
       '\nExamples:\n' +
@@ -19,7 +20,7 @@ export function registerApisCommand(program: Command): void {
         '  $ proxygate apis --service openai --sort price_asc\n' +
         '  $ proxygate apis --category llm --json',
     )
-    .action(async (opts: { service?: string; category?: string; sort?: string; query?: string; limit: string }) => {
+    .action(async (opts: { service?: string; category?: string; sort?: string; query?: string; limit: string; verified?: boolean }) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 
       try {
@@ -30,6 +31,7 @@ export function registerApisCommand(program: Command): void {
           sort: opts.sort as 'price_asc' | 'price_desc' | 'popular' | 'newest' | undefined,
           q: opts.query,
           limit: parseInt(opts.limit, 10),
+          verified: opts.verified || undefined,
         });
 
         if (parentOpts.json) {
@@ -45,7 +47,7 @@ export function registerApisCommand(program: Command): void {
         console.log(bold(`API Listings (${result.data.length})`));
         console.log();
 
-        const headers = ['ID', 'Service', 'Seller', 'Price', 'RPM', 'Uptime', 'Trust'];
+        const headers = ['ID', 'Service', 'Seller', 'Price', 'RPM', 'Uptime', 'Trust', 'Verified'];
         const rows = result.data.map((l) => [
           l.listing_id.slice(0, 8),
           `${bold(cyan(l.service_name))} ${dim(`(${l.service})`)}`,
@@ -54,6 +56,7 @@ export function registerApisCommand(program: Command): void {
           String(l.available_rpm),
           `${l.uptime_percent.toFixed(1)}%`,
           l.trust_score.toFixed(2),
+          l.is_verified ? bold(cyan('yes')) : dim('no'),
         ]);
 
         console.log(formatTable(headers, rows));
