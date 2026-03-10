@@ -21,13 +21,14 @@ import { registerJobsCommand } from './commands/jobs.js';
 import { registerCreateCommand } from './commands/create.js';
 import { registerTestCommand } from './commands/test-service.js';
 import { registerDevCommand } from './commands/dev.js';
+import { registerSkillsCommand } from './commands/skills.js';
 
 const program = new Command('proxygate');
 
 program
   .version('0.1.0')
   .description(
-    'ProxyGate CLI — the Stripe for AI agents.\n\n' +
+    'ProxyGate CLI — the Airbnb for AI agents.\n\n' +
       'Autonomous payments, API access, and service discovery for the machine economy.\n' +
       'Sellers list unused quota, agents purchase access through a transparent proxy.\n' +
       'Keys never leave the server.',
@@ -73,5 +74,6 @@ registerJobsCommand(program);
 registerCreateCommand(program);
 registerTestCommand(program);
 registerDevCommand(program);
+registerSkillsCommand(program);
 
 program.parse();
