@@ -16,7 +16,7 @@ export function registerUpdateSubcommand(listings: Command, program: Command): v
     .option('--description <text>', 'Listing description')
     .option('--allowed-paths <paths>', 'Allowed paths (comma-separated)')
     .option('--endpoints <file>', 'Path to JSON file containing EndpointSpec[]')
-    .option('--shield <on|off>', 'Enable or disable Shield response scanning')
+    .option('--shield <on|off>', 'Enable or disable Shield request scanning (protects your API from malicious input)')
     .action(async (id: string, opts: {
       totalRpm?: string;
       reservedRpm?: string;

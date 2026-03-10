@@ -58,7 +58,7 @@ export function registerCreateSubcommand(listings: Command, program: Command): v
     .option('--allowed-paths <paths>', 'Allowed paths (comma-separated)')
     .option('--endpoints <file>', 'Path to JSON file containing EndpointSpec[]')
     .option('--validation-endpoint <path>', 'Validation endpoint path')
-    .option('--shield <on|off>', 'Enable Shield response scanning (default: off)')
+    .option('--shield <on|off>', 'Enable Shield request scanning (protects your API from malicious input) (default: off)')
     .action(async (opts: CreateCliOpts) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
       try {
@@ -125,6 +125,7 @@ async function runInteractiveCreate(): Promise<CreateListingOptions | null> {
   const categorySlugs = (await input({ message: 'Category slugs (comma-separated, e.g. "llm,ai"):' }))
     .split(',').map((s) => s.trim()).filter(Boolean);
   const description = (await input({ message: 'Description (optional, press Enter to skip):' })) || undefined;
+  const shieldEnabled = await confirm({ message: 'Enable Shield request scanning? (protects your API from malicious input)', default: false });
 
   console.log();
   console.log(bold('Review:'));
@@ -135,6 +136,7 @@ async function runInteractiveCreate(): Promise<CreateListingOptions | null> {
   console.log(`  Price:       ${pricePerRequest} micro-cents/req`);
   console.log(`  Categories:  ${categorySlugs.join(', ')}`);
   if (description) console.log(`  Description: ${truncate(description, 60)}`);
+  if (shieldEnabled) console.log(`  Shield:      enabled`);
   console.log();
 
   const confirmed = await confirm({ message: 'Create this listing?' });
@@ -144,5 +146,6 @@ async function runInteractiveCreate(): Promise<CreateListingOptions | null> {
     service_name: serviceName, service_base_url: baseUrl, auth_pattern: authPattern,
     total_rpm: totalRpm, reserved_rpm: reservedRpm, price_per_request: pricePerRequest,
     category_slugs: categorySlugs, ...(description ? { description } : {}), ...credentials,
+    ...(shieldEnabled ? { shield_enabled: true } : {}),
   };
 }

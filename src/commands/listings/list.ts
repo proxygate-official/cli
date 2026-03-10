@@ -25,13 +25,14 @@ export function registerListSubcommand(listings: Command, program: Command): voi
           console.log(bold(`Seller Listings (${result.listings.length})`));
           console.log();
 
-          const headers = ['ID', 'Service', 'Status', 'RPM', 'Price'];
+          const headers = ['ID', 'Service', 'Status', 'RPM', 'Price', 'Shield'];
           const rows = result.listings.map((l) => [
             l.id.slice(0, 8),
             l.service_catalog?.name ?? 'unknown',
             l.is_active ? green('active') : yellow('paused'),
             `${l.total_rpm - (l.reserved_rpm ?? 0)}/${l.total_rpm}`,
             String(l.price_per_request),
+            l.shield_enabled ? green('on') : dim('off'),
           ]);
           console.log(formatTable(headers, rows));
           return;
