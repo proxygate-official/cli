@@ -23,7 +23,7 @@ if [ -f "$CACHE_FILE" ]; then
 fi
 
 current=$(proxygate --version 2>/dev/null || echo "0.0.0")
-latest=$(npm view proxygate version 2>/dev/null || echo "0.0.0")
+latest=$(npm view @proxygate/cli version 2>/dev/null || echo "0.0.0")
 
 if [ "$current" = "$latest" ] || [ "$latest" = "0.0.0" ]; then
   cat > "$CACHE_FILE" <<JSON
@@ -33,4 +33,5 @@ else
   cat > "$CACHE_FILE" <<JSON
 {"update_available":true,"current":"$current","latest":"$latest","checked_at":"$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
 JSON
+  echo "ProxyGate update available: $current → $latest. Run /pg-update to upgrade."
 fi

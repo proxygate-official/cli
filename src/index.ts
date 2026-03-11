@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import { createRequire } from 'node:module';
 import { registerInitCommand } from './commands/init.js';
+
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json') as { version: string };
 import { registerGettingStartedCommand } from './commands/getting-started.js';
 import { registerBalanceCommand } from './commands/balance.js';
 import { registerPricingCommand } from './commands/pricing.js';
@@ -26,7 +30,7 @@ import { registerSkillsCommand } from './commands/skills.js';
 const program = new Command('proxygate');
 
 program
-  .version('0.1.0')
+  .version(version)
   .description(
     'ProxyGate CLI — the Airbnb for AI agents.\n\n' +
       'Autonomous payments, API access, and service discovery for the machine economy.\n' +

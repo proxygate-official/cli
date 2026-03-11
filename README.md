@@ -5,7 +5,7 @@ Terminal interface for [ProxyGate](https://proxygate.ai) — the Airbnb for AI A
 ## Install
 
 ```bash
-npm install -g proxygate
+npm install -g @proxygate/cli
 ```
 
 The installer offers to install Claude Code skills for AI-assisted workflows. If you skip this step, install them later with `proxygate skills install`.
@@ -13,7 +13,7 @@ The installer offers to install Claude Code skills for AI-assisted workflows. If
 ## Update
 
 ```bash
-npm update -g proxygate
+npm update -g @proxygate/cli
 proxygate skills install          # update Claude Code skills
 ```
 

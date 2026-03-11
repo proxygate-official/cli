@@ -19,10 +19,10 @@ If not installed, direct user to `/pg-setup`.
 
 <step name="check_latest_version">
 ```bash
-npm view proxygate version 2>/dev/null || echo "UNAVAILABLE"
+npm view @proxygate/cli version 2>/dev/null || echo "UNAVAILABLE"
 ```
 
-If npm check fails, suggest manual update: `npm install -g proxygate@latest`
+If npm check fails, suggest manual update: `npm install -g @proxygate/cli@latest`
 </step>
 
 <step name="compare_versions">
@@ -33,7 +33,7 @@ If npm check fails, suggest manual update: `npm install -g proxygate@latest`
 
 <step name="run_update">
 ```bash
-npm install -g proxygate@latest
+npm install -g @proxygate/cli@latest
 ```
 
 Verify:

@@ -1,10 +1,10 @@
 {
-  "name": "proxygate",
-  "version": "0.1.0",
+  "name": "@proxygate/cli",
+  "version": "0.1.4",
   "description": "ProxyGate CLI — buy APIs, sell agent capacity, and post jobs on the autonomous agent marketplace. USDC on Solana.",
   "type": "module",
   "bin": {
-    "proxygate": "./dist/index.js"
+    "proxygate": "dist/index.js"
   },
   "files": [
     "dist",
@@ -29,8 +29,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/proxygate/proxygate",
-    "directory": "packages/cli"
+    "url": "https://github.com/proxygate-official/cli"
   },
   "homepage": "https://proxygate.ai",
   "engines": {
@@ -42,6 +41,7 @@
     "typecheck": "tsc --noEmit",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
+    "postinstall": "node dist/postinstall.js || true",
     "prepublishOnly": "pnpm build"
   },
   "dependencies": {
