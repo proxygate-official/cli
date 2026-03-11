@@ -34,13 +34,13 @@ cat ~/.proxygate/config.json 2>/dev/null || echo "NOT_CONFIGURED"
 Install the CLI globally:
 
 ```bash
-npm install -g @proxygate/cli
+npm install -g proxygate
 proxygate --version
 ```
 
 If npm is not available, check for pnpm or yarn:
 ```bash
-pnpm add -g @proxygate/cli   # alternative
+pnpm add -g proxygate   # alternative
 ```
 </step>
 
@@ -96,7 +96,7 @@ proxygate pricing
 
 | Problem | Fix |
 |---------|-----|
-| `command not found: proxygate` | `npm install -g @proxygate/cli` |
+| `command not found: proxygate` | `npm install -g proxygate` |
 | `ENOENT keypair` | Check path in `~/.proxygate/config.json` |
 | `Gateway unreachable` | Verify URL, try `https://gateway.proxygate.ai` |
 | Balance shows 0 | Need to deposit: use `/pg-buy` |

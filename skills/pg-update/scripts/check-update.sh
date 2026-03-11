@@ -23,7 +23,7 @@ if [ -f "$CACHE_FILE" ]; then
 fi
 
 current=$(proxygate --version 2>/dev/null || echo "0.0.0")
-latest=$(npm view @proxygate/cli version 2>/dev/null || echo "0.0.0")
+latest=$(npm view proxygate version 2>/dev/null || echo "0.0.0")
 
 if [ "$current" = "$latest" ] || [ "$latest" = "0.0.0" ]; then
   cat > "$CACHE_FILE" <<JSON

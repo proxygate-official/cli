@@ -5,7 +5,7 @@ description: Use when updating ProxyGate CLI or SDK to latest version. Also trig
 
 # ProxyGate Update
 
-Check for and install updates to @proxygate/cli.
+Check for and install updates to proxygate.
 
 <process>
 
@@ -19,10 +19,10 @@ If not installed, direct user to `/pg-setup`.
 
 <step name="check_latest_version">
 ```bash
-npm view @proxygate/cli version 2>/dev/null || echo "UNAVAILABLE"
+npm view proxygate version 2>/dev/null || echo "UNAVAILABLE"
 ```
 
-If npm check fails, suggest manual update: `npm install -g @proxygate/cli@latest`
+If npm check fails, suggest manual update: `npm install -g proxygate@latest`
 </step>
 
 <step name="compare_versions">
@@ -33,7 +33,7 @@ If npm check fails, suggest manual update: `npm install -g @proxygate/cli@latest
 
 <step name="run_update">
 ```bash
-npm install -g @proxygate/cli@latest
+npm install -g proxygate@latest
 ```
 
 Verify:
