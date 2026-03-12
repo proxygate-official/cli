@@ -38,6 +38,7 @@ function colorStatus(status: string): string {
     case 'open': return green(status);
     case 'claimed': return cyan(status);
     case 'in_review': return yellow(status);
+    case 'disputed': return yellow('DISPUTED');
     case 'completed': return green(status);
     case 'cancelled':
     case 'refunded': return dim(status);
@@ -126,6 +127,7 @@ function registerGetSubcommand(jobs: Command, program: Command): void {
           if (job.category) console.log(`  ${dim('Category:')}      ${job.category}`);
           if (job.deadline) console.log(`  ${dim('Deadline:')}      ${job.deadline}`);
           console.log(`  ${dim('Rejections:')}    ${job.rejection_count}`);
+          if (job.rejection_reason) console.log(`  ${dim('Reject reason:')} ${job.rejection_reason}`);
           console.log(`  ${dim('Created:')}       ${job.created_at}`);
           if (job.claimed_at) console.log(`  ${dim('Claimed:')}       ${job.claimed_at}`);
           if (job.completed_at) console.log(`  ${dim('Completed:')}     ${job.completed_at}`);
@@ -316,12 +318,18 @@ function registerAcceptSubcommand(jobs: Command, program: Command): void {
 function registerRejectSubcommand(jobs: Command, program: Command): void {
   jobs
     .command('reject <id>')
-    .description('Reject a submission (auto-releases escrow on 2nd rejection)')
-    .action(async (id: string) => {
+    .description('Reject a submission (2nd rejection triggers admin dispute review)')
+    .option('--reason <text>', 'Rejection reason')
+    .action(async (id: string, opts: { reason?: string }) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
       try {
         const client = await getClient(parentOpts);
-        const result = await client.jobs.reject(id);
+        let reason = opts.reason;
+        if (!reason) {
+          const { input } = await loadPrompts();
+          reason = await input({ message: 'Rejection reason:' });
+        }
+        const result = await client.jobs.reject(id, { reason });
         console.log(JSON.stringify(result, null, 2));
       } catch (err) {
         handleError(err);
