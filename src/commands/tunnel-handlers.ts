@@ -2,41 +2,9 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { homedir } from 'node:os';
 import nacl from 'tweetnacl';
+import { encodeBase58 } from '@proxygate/sdk';
 import type { TunnelRegisteredListing } from '@proxygate/sdk';
 import { bold, green, yellow, red, dim, cyan } from '../format.js';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Base58 alphabet (same as Solana). */
-const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-
-/** Encode bytes as base58 string. */
-function encodeBase58(bytes: Uint8Array): string {
-  const digits = [0];
-  for (const byte of bytes) {
-    let carry = byte;
-    for (let j = 0; j < digits.length; j++) {
-      carry += digits[j] << 8;
-      digits[j] = carry % 58;
-      carry = (carry / 58) | 0;
-    }
-    while (carry > 0) {
-      digits.push(carry % 58);
-      carry = (carry / 58) | 0;
-    }
-  }
-  let result = '';
-  for (const byte of bytes) {
-    if (byte === 0) result += BASE58_ALPHABET[0];
-    else break;
-  }
-  for (let i = digits.length - 1; i >= 0; i--) {
-    result += BASE58_ALPHABET[digits[i]];
-  }
-  return result;
-}
 
 /** Load and parse a Solana keypair JSON file, returning secretKey + walletAddress. */
 export async function loadKeypair(keypairPath: string): Promise<{
