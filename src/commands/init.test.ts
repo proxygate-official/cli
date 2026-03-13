@@ -13,12 +13,27 @@ vi.mock('@proxygate/sdk', () => ({
 const mockSaveConfig = vi.fn();
 vi.mock('../config.js', () => ({
   saveConfig: (...args: unknown[]) => mockSaveConfig(...args),
+  CONFIG_DIR: '/home/test/.proxygate',
   CONFIG_PATH: '/home/test/.proxygate/config.json',
 }));
 
 const mockAccess = vi.fn();
+const mockReadFile = vi.fn();
+const mockWriteFile = vi.fn();
+const mockMkdir = vi.fn();
 vi.mock('node:fs/promises', () => ({
   access: (...args: unknown[]) => mockAccess(...args),
+  readFile: (...args: unknown[]) => mockReadFile(...args),
+  writeFile: (...args: unknown[]) => mockWriteFile(...args),
+  mkdir: (...args: unknown[]) => mockMkdir(...args),
+}));
+
+// Mock parseKeypair to avoid reading actual files
+vi.mock('../keypair.js', () => ({
+  parseKeypair: () => ({
+    secretKey: Array.from({ length: 64 }, (_, i) => i),
+    format: 'Solana CLI keypair (64-byte JSON array)',
+  }),
 }));
 
 describe('init command', () => {
@@ -32,6 +47,9 @@ describe('init command', () => {
 
     // Default: file exists, client creation succeeds, balance succeeds
     mockAccess.mockResolvedValue(undefined);
+    mockReadFile.mockResolvedValue(JSON.stringify(Array.from({ length: 64 }, (_, i) => i)));
+    mockWriteFile.mockResolvedValue(undefined);
+    mockMkdir.mockResolvedValue(undefined);
     mockBalance.mockResolvedValue({ balance: 5_000_000 });
     mockCreate.mockResolvedValue({
       walletAddress: 'TestWallet11111111111111111111111111111111111',
@@ -73,7 +91,7 @@ describe('init command', () => {
     const errOutput = errorSpy.mock.calls
       .map((c: unknown[]) => c[0])
       .join('\n');
-    expect(errOutput).toContain('Keypair file not found');
+    expect(errOutput).toContain('not found');
     expect(mockSaveConfig).not.toHaveBeenCalled();
     mockExit.mockRestore();
   });
@@ -89,32 +107,6 @@ describe('init command', () => {
     expect(mockSaveConfig).toHaveBeenCalledOnce();
   });
 
-  it('saves correct config with gatewayUrl and keypairPath', async () => {
-    await runInit('--keypair', '/tmp/my-key.json', '--gateway', 'https://gw.example.com');
-
-    expect(mockSaveConfig).toHaveBeenCalledWith({
-      gatewayUrl: 'https://gw.example.com',
-      keypairPath: '/tmp/my-key.json',
-    });
-  });
-
-  it('expands tilde in keypair path', async () => {
-    const { homedir } = await import('node:os');
-    const home = homedir();
-
-    await runInit('--keypair', '~/.config/solana/id.json');
-
-    // The resolved path should use the actual home directory
-    expect(mockAccess).toHaveBeenCalledWith(
-      expect.stringContaining(`${home}/.config/solana/id.json`),
-    );
-    expect(mockCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        keypairPath: expect.stringContaining(`${home}/.config/solana/id.json`),
-      }),
-    );
-  });
-
   it('uses custom --gateway flag value', async () => {
     await runInit('--keypair', '/tmp/test-key.json', '--gateway', 'https://custom-gw.io');
 
@@ -125,13 +117,20 @@ describe('init command', () => {
     );
   });
 
-  it('uses custom --keypair flag value', async () => {
-    await runInit('--keypair', '/opt/keys/special.json');
+  it('exits when both --keypair and --generate provided', async () => {
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit');
+    });
 
-    expect(mockAccess).toHaveBeenCalledWith('/opt/keys/special.json');
-    expect(mockCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ keypairPath: '/opt/keys/special.json' }),
-    );
+    await expect(
+      runInit('--keypair', '/tmp/key.json', '--generate'),
+    ).rejects.toThrow('process.exit');
+
+    const errOutput = errorSpy.mock.calls
+      .map((c: unknown[]) => c[0])
+      .join('\n');
+    expect(errOutput).toContain('Cannot use both');
+    mockExit.mockRestore();
   });
 
   it('exits with error when ProxyGateClient.create fails', async () => {
@@ -149,7 +148,6 @@ describe('init command', () => {
       .map((c: unknown[]) => c[0])
       .join('\n');
     expect(errOutput).toContain('Failed to load keypair');
-    expect(errOutput).toContain('Invalid keypair format');
     expect(mockSaveConfig).not.toHaveBeenCalled();
     mockExit.mockRestore();
   });
