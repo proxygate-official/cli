@@ -13,6 +13,7 @@ export function registerApisCommand(program: Command): void {
     .option('-q, --query <text>', 'Text search')
     .option('-l, --limit <n>', 'Max results', '20')
     .option('--verified', 'Show only verified sellers')
+    .option('-t, --type <type>', 'Filter by listing type (skill, product, dataset, service, connector)')
     .addHelpText(
       'after',
       '\nExamples:\n' +
@@ -20,7 +21,7 @@ export function registerApisCommand(program: Command): void {
         '  $ proxygate apis --service openai --sort price_asc\n' +
         '  $ proxygate apis --category llm --json',
     )
-    .action(async (opts: { service?: string; category?: string; sort?: string; query?: string; limit: string; verified?: boolean }) => {
+    .action(async (opts: { service?: string; category?: string; sort?: string; query?: string; limit: string; verified?: boolean; type?: string }) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 
       try {
@@ -32,6 +33,8 @@ export function registerApisCommand(program: Command): void {
           q: opts.query,
           limit: parseInt(opts.limit, 10),
           verified: opts.verified || undefined,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          type: opts.type as any,
         });
 
         if (parentOpts.json) {
@@ -47,10 +50,11 @@ export function registerApisCommand(program: Command): void {
         console.log(bold(`API Listings (${result.data.length})`));
         console.log();
 
-        const headers = ['ID', 'Service', 'Seller', 'Price', 'RPM', 'Uptime', 'Trust', 'Verified'];
+        const headers = ['ID', 'Service', 'Type', 'Seller', 'Price', 'RPM', 'Uptime', 'Trust', 'Verified'];
         const rows = result.data.map((l) => [
           l.listing_id.slice(0, 8),
           `${bold(cyan(l.service_name))} ${dim(`(${l.service})`)}`,
+          l.listing_type ?? 'api',
           formatWallet(l.seller_wallet),
           l.price_per_request_usdc != null ? `$${l.price_per_request_usdc}/req` : 'per-token',
           String(l.available_rpm),
