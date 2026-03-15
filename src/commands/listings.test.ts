@@ -24,6 +24,7 @@ vi.mock('@proxygate/sdk', () => ({
       docs: (...args: unknown[]) => mockDocs(...args),
     }),
   },
+  SHIELD_SURCHARGE_DISPLAY: '$0.005',
   ProxyGateError: class extends Error {
     code: string;
     action?: string;

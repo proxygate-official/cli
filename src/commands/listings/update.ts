@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import type { Command } from 'commander';
+import { SHIELD_SURCHARGE_DISPLAY } from '@proxygate/sdk';
 import { getClient } from '../../helpers.js';
 import { red, dim } from '../../format.js';
 import { handleError } from './helpers.js';
@@ -16,7 +17,7 @@ export function registerUpdateSubcommand(listings: Command, program: Command): v
     .option('--description <text>', 'Listing description')
     .option('--allowed-paths <paths>', 'Allowed paths (comma-separated)')
     .option('--endpoints <file>', 'Path to JSON file containing EndpointSpec[]')
-    .option('--shield <on|off>', 'Enable or disable Shield request scanning (protects your API from malicious input)')
+    .option('--shield <on|off>', `Shield request scanning — ${SHIELD_SURCHARGE_DISPLAY}/req from payout`)
     .action(async (id: string, opts: {
       totalRpm?: string;
       reservedRpm?: string;

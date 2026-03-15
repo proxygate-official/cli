@@ -20,6 +20,7 @@ vi.mock('@proxygate/sdk', () => ({
   },
   parseSSE: vi.fn(),
   parseShieldInfo: vi.fn().mockReturnValue(null),
+  SHIELD_SURCHARGE_DISPLAY: '$0.005',
 }));
 
 vi.mock('../config.js', () => ({

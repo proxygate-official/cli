@@ -1,8 +1,10 @@
 import { readFile } from 'node:fs/promises';
+import { extname } from 'node:path';
 import type { Command } from 'commander';
 import type { CreateListingOptions, ListingAuthPattern } from '@proxygate/sdk';
+import { SHIELD_SURCHARGE_DISPLAY } from '@proxygate/sdk';
 import { getClient } from '../../helpers.js';
-import { bold, red, dim } from '../../format.js';
+import { bold, red, dim, green } from '../../format.js';
 import { truncate, handleError, loadPrompts, promptCredentials } from './helpers.js';
 
 interface CreateCliOpts {
@@ -29,6 +31,13 @@ interface CreateCliOpts {
   endpoints?: string;
   validationEndpoint?: string;
   shield?: string;
+  docs?: string;
+}
+
+function detectDocType(filePath: string): 'openapi' | 'markdown' {
+  const ext = extname(filePath).toLowerCase();
+  if (ext === '.md' || ext === '.markdown') return 'markdown';
+  return 'openapi';
 }
 
 /** Register the `listings create` subcommand. */
@@ -39,7 +48,7 @@ export function registerCreateSubcommand(listings: Command, program: Command): v
     .option('--non-interactive', 'Use CLI flags instead of interactive prompts')
     .option('--service-name <name>', 'Service name')
     .option('--base-url <url>', 'Service base URL (https://...)')
-    .option('--auth-pattern <pattern>', 'Auth pattern: bearer, header, query, basic, oauth2_cc')
+    .option('--auth-pattern <pattern>', 'Auth pattern: none, bearer, header, query, basic, oauth2_cc')
     .option('--api-key <key>', 'API key (for bearer/header/query/basic)')
     .option('--header-name <name>', 'Custom header name (for header auth pattern)')
     .option('--query-param <name>', 'Query parameter name (for query auth pattern)')
@@ -58,7 +67,8 @@ export function registerCreateSubcommand(listings: Command, program: Command): v
     .option('--allowed-paths <paths>', 'Allowed paths (comma-separated)')
     .option('--endpoints <file>', 'Path to JSON file containing EndpointSpec[]')
     .option('--validation-endpoint <path>', 'Validation endpoint path')
-    .option('--shield <on|off>', 'Enable Shield request scanning (protects your API from malicious input) (default: off)')
+    .option('--shield <on|off>', `Shield request scanning — ${SHIELD_SURCHARGE_DISPLAY}/req from payout (default: off)`)
+    .option('--docs <file>', 'Path to OpenAPI spec (.yaml/.json) or markdown (.md) documentation')
     .action(async (opts: CreateCliOpts) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
       try {
@@ -69,6 +79,18 @@ export function registerCreateSubcommand(listings: Command, program: Command): v
         if (!createOpts) return;
         const result = await client.listings.create(createOpts);
         console.log(JSON.stringify(result, null, 2));
+
+        // Upload docs if --docs flag provided
+        if (opts.docs) {
+          try {
+            const content = await readFile(opts.docs, 'utf-8');
+            const docType = detectDocType(opts.docs);
+            await client.listings.uploadDocs(result.id, { doc_type: docType, content });
+            console.log(green(`Documentation uploaded (${docType})`));
+          } catch (docErr) {
+            console.error(red(`Warning: listing created but docs upload failed: ${docErr instanceof Error ? docErr.message : 'unknown'}`));
+          }
+        }
       } catch (err) {
         handleError(err);
       }
@@ -111,6 +133,7 @@ async function runInteractiveCreate(): Promise<CreateListingOptions | null> {
   const authPattern = await select<ListingAuthPattern>({
     message: 'Auth pattern:',
     choices: [
+      { value: 'none', name: 'No authentication (public API)' },
       { value: 'bearer', name: 'Bearer token (Authorization: Bearer ...)' },
       { value: 'header', name: 'Custom header (X-Api-Key: ...)' },
       { value: 'query', name: 'Query parameter (?api_key=...)' },
@@ -118,14 +141,14 @@ async function runInteractiveCreate(): Promise<CreateListingOptions | null> {
       { value: 'oauth2_cc', name: 'OAuth2 client credentials' },
     ],
   });
-  const credentials = await promptCredentials(authPattern);
+  const credentials = authPattern === 'none' ? {} : await promptCredentials(authPattern);
   const totalRpm = parseInt(await input({ message: 'Total RPM capacity:', default: '60' }), 10);
   const reservedRpm = parseInt(await input({ message: 'Reserved RPM (for your own use):', default: '0' }), 10);
   const pricePerRequest = parseInt(await input({ message: 'Price per request (micro-cents):', default: '1000' }), 10);
   const categorySlugs = (await input({ message: 'Category slugs (comma-separated, e.g. "llm,ai"):' }))
     .split(',').map((s) => s.trim()).filter(Boolean);
   const description = (await input({ message: 'Description (optional, press Enter to skip):' })) || undefined;
-  const shieldEnabled = await confirm({ message: 'Enable Shield request scanning? (protects your API from malicious input)', default: false });
+  const shieldEnabled = await confirm({ message: `Enable Shield request scanning? (${SHIELD_SURCHARGE_DISPLAY}/req deducted from your payout)`, default: false });
 
   console.log();
   console.log(bold('Review:'));

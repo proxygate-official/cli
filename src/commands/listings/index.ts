@@ -6,13 +6,14 @@ import { registerPauseSubcommand, registerUnpauseSubcommand } from './pause-unpa
 import { registerDeleteSubcommand } from './delete.js';
 import { registerRotateKeySubcommand } from './rotate-key.js';
 import { registerDocsSubcommand } from './docs.js';
+import { registerUploadDocsSubcommand } from './upload-docs.js';
 import { registerHeadersSubcommand } from './headers.js';
 
 /**
  * Register the `proxygate listings` command group.
  *
- * Provides 8 subcommands for seller listing management:
- * list, create, update, pause, unpause, delete, rotate-key, docs.
+ * Provides 10 subcommands for seller listing management:
+ * list, create, update, pause, unpause, delete, rotate-key, docs, upload-docs, headers.
  *
  * JSON output by default; use --table for human-readable output.
  */
@@ -31,6 +32,7 @@ export function registerListingsCommand(program: Command): void {
         '  delete <id>                  Delete a listing\n' +
         '  rotate-key <id>              Rotate API key or OAuth2 credentials\n' +
         '  docs <id>                    View API documentation for a listing\n' +
+        '  upload-docs <id> <file>      Upload OpenAPI or markdown docs for a listing\n' +
         '  headers <id>                 Manage upstream headers\n\n' +
         'Examples:\n' +
         '  $ proxygate listings list                  JSON output (default)\n' +
@@ -47,5 +49,6 @@ export function registerListingsCommand(program: Command): void {
   registerDeleteSubcommand(listings, program);
   registerRotateKeySubcommand(listings, program);
   registerDocsSubcommand(listings, program);
+  registerUploadDocsSubcommand(listings, program);
   registerHeadersSubcommand(listings, program);
 }

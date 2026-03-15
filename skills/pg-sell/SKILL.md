@@ -1,24 +1,17 @@
 ---
 name: pg-sell
-description: Use when selling API capacity on ProxyGate — creating listings, starting tunnels, managing keys, viewing earnings, or exposing local services. Make sure to use this skill whenever someone mentions "list API", "sell capacity", "create listing", "start tunnel", "expose service", "earnings", "go live", "monetize API", or wants to make their API available on ProxyGate.
+description: Use when selling API capacity on ProxyGate — creating listings, managing listings (update/pause/delete), rotating keys, uploading docs, starting tunnels, managing headers, viewing earnings, or exposing local services. Make sure to use this skill whenever someone mentions "list API", "sell capacity", "create listing", "start tunnel", "expose service", "earnings", "go live", "monetize API", "rotate key", "pause listing", or wants to make their API available on ProxyGate.
 ---
 
 # ProxyGate — Sell API Capacity
 
-Seller workflow: create listings, expose services via tunnel, manage earnings.
+Seller workflow: create listings, manage them, expose services via tunnel, track earnings.
 
-<purpose>
-Help the user list their API capacity on ProxyGate, expose services via reverse tunnel, scaffold agent projects, and track earnings.
-</purpose>
+## Process
 
-<required_reading>
-Verify CLI is configured first: `proxygate balance`. If this fails, use `/pg-setup` before continuing.
-</required_reading>
+### 1. Scaffold a project (optional)
 
-<process>
-
-<step name="scaffold_project">
-If building a new service, scaffold it first:
+If building a new service from scratch:
 
 ```bash
 proxygate create                                    # interactive
@@ -26,52 +19,89 @@ proxygate create my-agent --template http-api --port 3000
 proxygate create my-agent --template llm-agent --port 8080
 ```
 
-Templates: `http-api` (generic HTTP), `llm-agent` (LLM-based agent).
-</step>
+Templates: `http-api` (Hono REST API), `llm-agent` (Hono + OpenAI + streaming).
 
-<step name="test_locally">
+### 2. Test locally
+
 Validate endpoints before going live:
 
 ```bash
-proxygate test                                      # auto-detect from config
+proxygate test                                      # auto-detect from tunnel config
 proxygate test --endpoint "POST /v1/analyze" --payload '{"code":"x=1"}'
+proxygate test -c proxygate.tunnel.yaml
 ```
-</step>
 
-<step name="create_listing">
-Create a listing on ProxyGate:
+### 3. Create a listing
 
 ```bash
-proxygate listings create    # interactive — walks through service, pricing, etc.
+proxygate listings create    # interactive — walks through service, pricing, description, docs
 ```
 
-This is interactive and asks for: service name, pricing model, description, and endpoint info.
+Interactive mode asks for: service name, API key, pricing model, description, documentation, shield settings.
 
-View existing listings:
+Non-interactive:
 ```bash
-proxygate listings list
-proxygate listings list --table
-proxygate listings list --json
+proxygate listings create --non-interactive \
+  --service-name "My API" \
+  --service openai \
+  --price-per-request 5000 \
+  --total-rpm 100 \
+  --description "Fast GPT-4 access"
 ```
-</step>
 
-<step name="configure_tunnel">
-Create a tunnel config file (`proxygate.tunnel.yaml`):
+### 4. Manage listings
+
+```bash
+# View listings
+proxygate listings list                     # list your listings
+proxygate listings list --table             # table format with status, RPM, price
+
+# Update a listing
+proxygate listings update <id> --price 3000 --description "Updated pricing"
+
+# Pause/unpause (stop accepting requests temporarily)
+proxygate listings pause <id>
+proxygate listings unpause <id>
+
+# Delete permanently
+proxygate listings delete <id>
+
+# Rotate API key or OAuth2 credentials (no downtime)
+proxygate listings rotate-key <id> --key <new-api-key>
+proxygate listings rotate-key <id> --oauth2 <new-token>
+
+# Upload API documentation
+proxygate listings upload-docs <id> ./openapi.yaml    # OpenAPI or markdown
+
+# View docs for your listing
+proxygate listings docs <id>
+
+# Manage upstream headers
+proxygate listings headers <id>                        # list current headers
+proxygate listings headers <id> set X-Custom "value"   # add/update header
+proxygate listings headers <id> unset X-Custom         # remove header
+```
+
+### 5. Configure tunnel
+
+Create `proxygate.tunnel.yaml`:
 
 ```yaml
 services:
   - name: my-api
     port: 8080
-    price_per_request: 1000    # lamports (0.001 USDC)
+    price_per_request: 1000           # lamports (0.001 USDC)
     description: My AI service
-    docs: ./openapi.yaml
+    docs: ./openapi.yaml              # auto-uploaded on connect
     endpoints:
       - method: POST
         path: /v1/analyze
         description: Analyze code
+    paths:
+      - /v1/*
 ```
 
-For per-token pricing:
+Per-token pricing:
 ```yaml
 services:
   - name: llm-service
@@ -80,43 +110,37 @@ services:
     price_per_input_token: 100
     price_per_output_token: 300
 ```
-</step>
 
-<step name="start_tunnel">
-Expose services to ProxyGate:
+### 6. Start tunnel
 
 ```bash
-# Development (request logging + config file watching)
+# Development (request logging + config file watching + auto-reload)
 proxygate dev
 proxygate dev -c my-services.yaml
 
-# Production (stable connection, auto-reconnect)
+# Production (stable connection, auto-reconnect, graceful drain on Ctrl+C)
 proxygate tunnel
 proxygate tunnel -c proxygate.tunnel.yaml
 ```
 
-Dev mode watches the config file for changes and shows request logs. Production mode is for stable, long-running connections.
-</step>
+Dev mode shows live request/response logs with status, latency, and size. Production mode is for long-running stable connections with automatic reconnection.
 
-<step name="check_earnings">
-Monitor performance and earnings:
+### 7. Check earnings
 
 ```bash
-proxygate settlements              # earnings summary
-proxygate balance                  # current balance
-proxygate listings list            # check listing status
+proxygate settlements                              # earnings summary
+proxygate settlements -r seller                    # seller-specific view
+proxygate settlements -s openai --from 2026-03-01  # filtered
+proxygate balance                                  # current balance
+proxygate listings list --table                    # listing status overview
 ```
-</step>
 
-</process>
-
-## SDK — One-Liner Serve
-
-For programmatic use without CLI:
+## SDK — Programmatic Serving
 
 ```typescript
-import { ProxyGate } from '@proxygate/sdk';
+import { ProxyGate, ProxyGateClient } from '@proxygate/sdk';
 
+// One-liner: expose services immediately
 const tunnel = await ProxyGate.serve({
   keypair: '~/.proxygate/keypair.json',
   services: [
@@ -125,28 +149,46 @@ const tunnel = await ProxyGate.serve({
   onConnected(listings) { console.log('Live!', listings); },
 });
 
-// Graceful shutdown
-await tunnel.drain();    // waits for in-flight requests
+// Or via client for more control
+const client = await ProxyGateClient.create({
+  keypairPath: '~/.proxygate/keypair.json',
+});
+
+// Manage listings programmatically
+const { listings } = await client.listings.list();
+await client.listings.update('listing-id', { price_per_request: 3000 });
+await client.listings.pause('listing-id');
+await client.listings.unpause('listing-id');
+await client.listings.rotateKey('listing-id', { api_key: 'sk-new-key...' });
+await client.listings.uploadDocs('listing-id', {
+  doc_type: 'openapi',
+  content: fs.readFileSync('./openapi.yaml', 'utf-8'),
+});
+
+// Start tunnel
+const tunnel = await client.serve([
+  { name: 'my-api', port: 3000 },
+]);
+
+// Graceful shutdown (waits for in-flight requests)
+await tunnel.drain();
 tunnel.disconnect();
 ```
 
-<success_criteria>
+## Success criteria
+
 - [ ] Service running locally and responding to requests
 - [ ] Listing created (visible in `proxygate listings list`)
 - [ ] Tunnel connected (dev or production mode)
 - [ ] Incoming requests visible in dev mode logs
-</success_criteria>
 
-## Scope
+## Related skills
 
 | Need | Skill |
 |------|-------|
-| First-time setup | `/pg-setup` |
-| Buy API access | `/pg-buy` |
-| Sell API capacity | **This skill** (`pg-sell`) |
-| Check status | `/pg-status` |
-| Update CLI | `/pg-update` |
-
-## Reference
-
-For full CLI command reference, see [references/commands.md](references/commands.md).
+| First-time setup | `pg-setup` |
+| Buy API access | `pg-buy` |
+| Sell API capacity | **This skill** |
+| Job marketplace | `pg-jobs` |
+| Check status | `pg-status` |
+| Update CLI/SDK | `pg-update` |

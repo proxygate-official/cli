@@ -15,14 +15,20 @@ const HOOK_SCRIPT_PATH = join(
 );
 const HOOK_MARKER = 'proxygate-update-check';
 
+/** Skill install targets — Claude Code and Codex CLI use different directories. */
+const SKILL_TARGETS = [
+  { name: 'Claude Code', dir: join(homedir(), '.claude', 'skills') },
+  { name: 'Codex CLI', dir: join(homedir(), '.agents', 'skills') },
+] as const;
+
 export function registerSkillsCommand(program: Command): void {
   const skills = program
     .command('skills')
-    .description('Manage Claude Code skills for ProxyGate');
+    .description('Manage agent skills for ProxyGate');
 
   skills
     .command('install')
-    .description('Install ProxyGate skills for Claude Code (writes to ~/.claude/skills/)')
+    .description('Install ProxyGate skills for Claude Code and Codex CLI')
     .option('--json', 'JSON output')
     .action(installSkills);
 }
@@ -30,6 +36,12 @@ export function registerSkillsCommand(program: Command): void {
 interface SkillInfo {
   name: string;
   files: string[];
+}
+
+interface TargetResult {
+  target: string;
+  path: string;
+  installed: SkillInfo[];
 }
 
 async function installSkills(options: { json?: boolean }): Promise<void> {
@@ -46,39 +58,47 @@ async function installSkills(options: { json?: boolean }): Promise<void> {
     process.exit(1);
   }
 
-  const baseDir = join(homedir(), '.claude', 'skills');
-  const installed: SkillInfo[] = [];
+  const results: TargetResult[] = [];
 
-  for (const [skillName, files] of Object.entries(SKILLS)) {
-    const skillDir = join(baseDir, skillName);
-    const writtenFiles: string[] = [];
+  for (const target of SKILL_TARGETS) {
+    const installed: SkillInfo[] = [];
 
-    for (const [relativePath, content] of Object.entries(files)) {
-      const fullPath = join(skillDir, relativePath);
-      await mkdir(dirname(fullPath), { recursive: true });
-      await writeFile(fullPath, content, 'utf-8');
-      writtenFiles.push(relativePath);
+    for (const [skillName, files] of Object.entries(SKILLS)) {
+      const skillDir = join(target.dir, skillName);
+      const writtenFiles: string[] = [];
+
+      for (const [relativePath, content] of Object.entries(files)) {
+        const fullPath = join(skillDir, relativePath);
+        await mkdir(dirname(fullPath), { recursive: true });
+        await writeFile(fullPath, content, 'utf-8');
+        writtenFiles.push(relativePath);
+      }
+
+      installed.push({ name: skillName, files: writtenFiles });
     }
 
-    installed.push({ name: skillName, files: writtenFiles });
+    results.push({ target: target.name, path: target.dir, installed });
   }
 
   const hookRegistered = await registerUpdateHook();
 
   if (json) {
-    console.log(JSON.stringify({ installed, path: baseDir, hookRegistered }));
+    console.log(JSON.stringify({ results, hookRegistered }));
     return;
   }
 
   console.log();
-  for (const skill of installed) {
-    console.log(`  ${green('+')} ${skill.name} ${dim(`(${skill.files.length} files)`)}`);
+  for (const result of results) {
+    console.log(`  ${dim(result.target)}:`);
+    for (const skill of result.installed) {
+      console.log(`    ${green('+')} ${skill.name} ${dim(`(${skill.files.length} files)`)}`);
+    }
   }
   if (hookRegistered) {
     console.log(`  ${green('+')} SessionStart hook ${dim('(update checker)')}`);
   }
   console.log();
-  console.log(green(`Installed ${installed.length} skills to ${baseDir}`));
+  console.log(green(`Installed ${results[0].installed.length} skills to ${results.length} targets`));
 }
 
 async function registerUpdateHook(): Promise<boolean> {

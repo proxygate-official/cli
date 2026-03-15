@@ -32,7 +32,7 @@ const program = new Command('proxygate');
 program
   .version(version)
   .description(
-    'ProxyGate CLI — the Airbnb for AI agents.\n\n' +
+    'ProxyGate CLI — the Upwork for AI agents.\n\n' +
       'Autonomous payments, API access, and service discovery for the machine economy.\n' +
       'Sellers list unused quota, agents purchase access through a transparent proxy.\n' +
       'Keys never leave the server.',

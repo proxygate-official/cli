@@ -1,71 +1,59 @@
 ---
 name: pg-buy
-description: Use when buying API access through ProxyGate — depositing USDC, browsing available APIs, making proxy requests, or streaming responses. Make sure to use this skill whenever someone mentions "proxy request", "buy API", "deposit USDC", "browse APIs", "call API through proxygate", "make an API call", or wants to consume any API through ProxyGate, even if they don't explicitly say "buy".
+description: Use when buying API access through ProxyGate — depositing USDC, browsing available APIs, making proxy requests, streaming responses, or rating sellers. Make sure to use this skill whenever someone mentions "proxy request", "buy API", "deposit USDC", "browse APIs", "call API through proxygate", "make an API call", "find an API", "search APIs", or wants to consume any API through ProxyGate, even if they don't explicitly say "buy".
 ---
 
 # ProxyGate — Buy API Access
 
-Buyer workflow: deposit USDC, discover APIs, proxy requests, stream responses.
+Buyer workflow: deposit USDC, discover APIs, proxy requests, stream responses, rate sellers.
 
-<purpose>
-Help the user find APIs on ProxyGate, deposit USDC credits, send proxy requests, and manage their balance. Covers the full buyer lifecycle from funding to API consumption.
-</purpose>
+## Process
 
-<required_reading>
-Verify CLI is configured first: `proxygate balance`. If this fails, use `/pg-setup` before continuing.
-</required_reading>
-
-<process>
-
-<step name="check_balance">
-Check current balance to determine if deposit is needed:
+### 1. Check balance
 
 ```bash
 proxygate balance
 ```
 
-If balance is 0 or insufficient, proceed to deposit step.
-If balance is sufficient, skip to discover step.
-</step>
+Shows: total balance, pending settlement, available, cooldown status. If 0 or insufficient, deposit first.
 
-<step name="deposit">
-Deposit USDC from Solana wallet into ProxyGate vault:
+### 2. Deposit USDC
 
 ```bash
-# Amount in lamports (1 USDC = 1,000,000)
-proxygate deposit -a 5000000    # deposit 5 USDC
-proxygate deposit -a 1000000    # deposit 1 USDC
-proxygate deposit -a 10000000   # deposit 10 USDC
+proxygate deposit -a 5000000      # 5 USDC (amounts in lamports: 1 USDC = 1,000,000)
+proxygate deposit -a 1000000      # 1 USDC
 ```
 
-Verify deposit:
+Vault auto-initializes on first deposit. User needs USDC in their Solana wallet. Use `--rpc <url>` for custom RPC.
+
+### 3. Discover APIs
+
 ```bash
-proxygate balance
+# Browse all APIs with rich filtering
+proxygate apis                                    # all listings
+proxygate apis -s openai                          # filter by service
+proxygate apis -c ai-models                       # filter by category
+proxygate apis -q "code review"                   # semantic search
+proxygate apis --verified                         # verified sellers only
+proxygate apis --sort price_asc                   # sort: price_asc, price_desc, popular, newest
+proxygate apis -l 50                              # limit results
+
+# Aggregated views
+proxygate pricing                                 # pricing table (service, type, price, sellers, RPM)
+proxygate pricing -s anthropic --json             # machine-readable
+proxygate services                                # service stats (cheapest, avg latency, rating)
+proxygate categories                              # browse categories
+
+# Listing details & docs
+proxygate listings docs <listing-id>              # view API documentation
 ```
 
-The vault auto-initializes on first deposit. User needs USDC in their Solana wallet.
-</step>
+Note the `listing-id` from output — needed for proxy requests.
 
-<step name="discover_apis">
-Browse available APIs and find a listing ID:
+### 4. Proxy a request
 
 ```bash
-proxygate pricing                           # all APIs with pricing
-proxygate pricing --service openai          # filter by service
-proxygate pricing --json                    # machine-readable for parsing
-proxygate apis                              # list all APIs
-proxygate services                          # list services
-proxygate categories                        # list categories
-```
-
-Note the `listing-id` from the output — needed for proxy requests.
-</step>
-
-<step name="proxy_request">
-Send a request through ProxyGate:
-
-```bash
-# Basic request
+# POST request (default when -d is given)
 proxygate proxy <listing-id> /v1/chat/completions \
   -d '{"model":"gpt-4","messages":[{"role":"user","content":"Hello"}]}'
 
@@ -76,78 +64,109 @@ proxygate proxy <listing-id> /v1/models -X GET
 proxygate proxy <listing-id> /v1/chat/completions --stream \
   -d '{"model":"gpt-4","messages":[{"role":"user","content":"Hello"}],"stream":true}'
 
-# With shield scanning
-proxygate proxy <listing-id> /path -d '{}' --shield monitor
+# With shield scanning (content moderation)
+proxygate proxy <listing-id> /path --shield monitor    # log threats
+proxygate proxy <listing-id> /path --shield strict     # block threats
+proxygate proxy <listing-id> /path --shield off        # disable
 ```
 
-The listing ID determines which seller and service. Get IDs with: `proxygate pricing --json`
-</step>
+### 5. Rate a seller
 
-<step name="check_usage">
-Review usage and remaining balance:
+After a proxy request, rate the seller using the request ID from the response receipt:
 
 ```bash
-proxygate balance                           # current balance
-proxygate usage                             # request history
-proxygate usage --service openai --limit 50 # filtered
-proxygate usage --json                      # machine-readable
+proxygate rate --request-id <id> --up      # positive rating
+proxygate rate --request-id <id> --down    # negative rating
 ```
-</step>
 
-<step name="withdraw">
-Convert credits back to USDC (optional):
+### 6. Check usage
 
 ```bash
-proxygate withdraw -a 2000000               # withdraw 2 USDC
-proxygate withdraw                          # withdraw all
+proxygate usage                                   # recent request history
+proxygate usage -s openai -l 50                   # filtered by service
+proxygate usage --from 2026-03-01 --to 2026-03-14 # date range
+proxygate usage --json                            # machine-readable
+
+proxygate settlements -r buyer                    # cost breakdown
+proxygate settlements -s openai --from 2026-03-01 # filtered
 ```
 
-After initiating, confirm with TX signature:
+### 7. Withdraw (optional)
+
+Convert credits back to USDC:
+
 ```bash
-proxygate withdraw-confirm -t <tx_signature>
+proxygate withdraw -a 2000000     # withdraw 2 USDC
+proxygate withdraw                # withdraw all available
 ```
-</step>
 
-</process>
+Recovery (if CLI crashes mid-withdrawal):
+```bash
+proxygate withdraw-confirm --tx <tx_signature>
+```
 
 ## SDK (Programmatic)
 
-For agent-to-agent use without the CLI:
+For agent-to-agent use without CLI:
 
 ```typescript
-import { ProxyGateClient } from '@proxygate/sdk';
+import { ProxyGateClient, parseSSE } from '@proxygate/sdk';
 
 const client = await ProxyGateClient.create({
   keypairPath: '~/.proxygate/keypair.json',
 });
 
 // Check balance
-const balance = await client.balance();
+const { balance, available } = await client.balance();
+
+// Browse APIs
+const apis = await client.apis({ service: 'openai', verified: true });
+const categories = await client.categories();
+const services = await client.services();
+
+// View listing docs
+const docs = await client.docs('listing-id');
 
 // Proxy a request
 const res = await client.proxy('listing-id', '/v1/chat/completions', {
   model: 'gpt-4',
   messages: [{ role: 'user', content: 'Hello' }],
 });
+
+// Stream with SSE
+const res = await client.proxy('listing-id', '/v1/chat/completions',
+  { model: 'gpt-4', messages: [...], stream: true },
+  { stream: true }
+);
+for await (const event of parseSSE(res)) {
+  process.stdout.write(event.data);
+}
+
+// Shield scanning
+const res = await client.proxy('listing-id', '/path', body, { shield: 'strict' });
+
+// Rate a seller
+await client.rate({ request_id: 'req-id', is_positive: true });
+
+// Usage & settlements
+const usage = await client.usage({ service: 'openai', limit: 50 });
+const settlements = await client.settlements({ role: 'buyer' });
 ```
 
-<success_criteria>
+## Success criteria
+
 - [ ] Balance checked and sufficient for request
-- [ ] Listing ID identified from pricing/apis output
+- [ ] Listing ID identified from apis/pricing output
 - [ ] Proxy request returns upstream API response
 - [ ] Usage reflects the completed request
-</success_criteria>
 
-## Scope
+## Related skills
 
 | Need | Skill |
 |------|-------|
-| First-time setup | `/pg-setup` |
-| Buy API access | **This skill** (`pg-buy`) |
-| Sell API capacity | `/pg-sell` |
-| Check status | `/pg-status` |
-| Update CLI | `/pg-update` |
-
-## Reference
-
-For full CLI command reference, see [references/commands.md](references/commands.md).
+| First-time setup | `pg-setup` |
+| Buy API access | **This skill** |
+| Sell API capacity | `pg-sell` |
+| Job marketplace | `pg-jobs` |
+| Check status | `pg-status` |
+| Update CLI/SDK | `pg-update` |

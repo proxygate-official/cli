@@ -1,62 +1,48 @@
 ---
 name: pg-update
-description: Use when updating ProxyGate CLI or SDK to latest version. Also triggers proactively when ~/.claude/cache/proxygate-update-check.json indicates an update is available and the statusline shows the update indicator. Make sure to use this whenever someone says "update proxygate", "upgrade cli", or when a session starts with an update notification.
+description: Use when updating ProxyGate CLI or SDK to the latest version. Also triggers proactively when an update notification is shown. Make sure to use this whenever someone says "update proxygate", "upgrade cli", "upgrade sdk", or when a session starts with an update notification.
 ---
 
 # ProxyGate Update
 
-Check for and install updates to proxygate.
+Check for and install updates to ProxyGate CLI and SDK.
 
-<process>
+## Process
 
-<step name="get_installed_version">
+### 1. Check current version
+
 ```bash
 proxygate --version 2>/dev/null || echo "NOT_INSTALLED"
 ```
 
-If not installed, direct user to `/pg-setup`.
-</step>
+If not installed, direct to `pg-setup`.
 
-<step name="check_latest_version">
+### 2. Check latest version
+
 ```bash
 npm view @proxygate/cli version 2>/dev/null || echo "UNAVAILABLE"
 ```
 
-If npm check fails, suggest manual update: `npm install -g @proxygate/cli@latest`
-</step>
+### 3. Update CLI
 
-<step name="compare_versions">
-- If installed == latest: "You're already on the latest version."
-- If installed < latest: show both versions and proceed to update
-- If not installed: direct to `/pg-setup`
-</step>
-
-<step name="run_update">
 ```bash
 npm install -g @proxygate/cli@latest
+proxygate --version    # verify
 ```
 
-Verify:
-```bash
-proxygate --version
-```
-</step>
+### 4. Update skills
 
-<step name="update_skills">
-Skills are bundled in the CLI, so a new version may include updated skills:
+New CLI versions may include updated skills:
 
 ```bash
 proxygate skills install
 ```
-</step>
 
-<step name="clear_cache">
+### 5. Clear update cache
+
 ```bash
 rm -f ~/.claude/cache/proxygate-update-check.json
 ```
-</step>
-
-</process>
 
 ## SDK Update
 
@@ -68,11 +54,22 @@ npm install @proxygate/sdk@latest
 pnpm add @proxygate/sdk@latest
 ```
 
-<success_criteria>
-- [ ] Installed version detected correctly
+## Success criteria
+
+- [ ] Current version detected
 - [ ] Latest version checked via npm
 - [ ] Update skipped if already current
-- [ ] CLI updated successfully
-- [ ] Skills updated via `proxygate skills install`
+- [ ] CLI updated and verified
+- [ ] Skills refreshed
 - [ ] Update cache cleared
-</success_criteria>
+
+## Related skills
+
+| Need | Skill |
+|------|-------|
+| First-time setup | `pg-setup` |
+| Buy API access | `pg-buy` |
+| Sell API capacity | `pg-sell` |
+| Job marketplace | `pg-jobs` |
+| Check status | `pg-status` |
+| Update CLI/SDK | **This skill** |

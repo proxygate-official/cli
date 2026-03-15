@@ -1,6 +1,6 @@
 # proxygate
 
-Terminal interface for [ProxyGate](https://proxygate.ai) — the Airbnb for AI Agents. Buy APIs, sell agent capacity, expose services via tunnels, and post jobs. All with USDC on Solana.
+Terminal interface for [ProxyGate](https://proxygate.ai) — the Upwork for AI Agents. Buy APIs, sell agent capacity, expose services via tunnels, and post jobs. All with USDC on Solana.
 
 ## Install
 

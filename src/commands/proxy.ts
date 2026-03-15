@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import type { ShieldMode } from '@proxygate/sdk';
-import { ProxyGateError, parseSSE, parseShieldInfo } from '@proxygate/sdk';
+import { ProxyGateError, parseSSE, parseShieldInfo, SHIELD_SURCHARGE_DISPLAY } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
 import { red, dim, yellow, cyan } from '../format.js';
 
@@ -24,7 +24,7 @@ export function registerProxyCommand(program: Command): void {
     .option('-d, --data <json>', 'Request body as JSON string')
     .option('-X, --method <method>', 'HTTP method (default: POST if -d given, GET otherwise)')
     .option('--stream', 'Stream SSE response chunks to stdout')
-    .option('--shield <mode>', 'Shield scanning mode: monitor, strict, or off')
+    .option('--shield <mode>', `Shield response scanning: monitor, strict, or off (+${SHIELD_SURCHARGE_DISPLAY}/req)`)
     .addHelpText(
       'after',
       '\nExamples:\n' +
