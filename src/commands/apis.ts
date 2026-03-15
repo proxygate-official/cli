@@ -33,8 +33,7 @@ export function registerApisCommand(program: Command): void {
           q: opts.query,
           limit: parseInt(opts.limit, 10),
           verified: opts.verified || undefined,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          type: opts.type as any,
+          type: opts.type as import('@proxygate/sdk').ListingType | undefined,
         });
 
         if (parentOpts.json) {
