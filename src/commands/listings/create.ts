@@ -48,7 +48,7 @@ export function registerCreateSubcommand(listings: Command, program: Command): v
     .option('--non-interactive', 'Use CLI flags instead of interactive prompts')
     .option('--service-name <name>', 'Service name')
     .option('--base-url <url>', 'Service base URL (https://...)')
-    .option('--auth-pattern <pattern>', 'Auth pattern: none, bearer, header, query, basic, oauth2_cc')
+    .option('--auth-pattern <pattern>', 'Auth pattern: none (public), bearer, header, query, basic, oauth2_cc')
     .option('--api-key <key>', 'API key (for bearer/header/query/basic)')
     .option('--header-name <name>', 'Custom header name (for header auth pattern)')
     .option('--query-param <name>', 'Query parameter name (for query auth pattern)')
@@ -104,7 +104,7 @@ async function buildNonInteractiveOpts(o: CreateCliOpts): Promise<CreateListingO
 
   return {
     service_name: o.serviceName, service_base_url: o.baseUrl,
-    auth_pattern: (o.authPattern as ListingAuthPattern) ?? 'bearer',
+    auth_pattern: (o.authPattern as ListingAuthPattern) ?? (o.apiKey ? 'bearer' : 'none'),
     total_rpm: parseInt(o.totalRpm, 10), reserved_rpm: parseInt(o.reservedRpm, 10),
     price_per_request: parseInt(o.price, 10),
     category_slugs: o.categories.split(',').map((s) => s.trim()),
