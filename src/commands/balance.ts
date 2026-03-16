@@ -43,6 +43,22 @@ export function registerBalanceCommand(program: Command): void {
         } else {
           console.log(`  ${dim('Cooldown:')}           No`);
         }
+
+        // Check seller earnings (non-blocking — don't fail the whole command)
+        try {
+          const settlements = await client.settlements({ role: 'seller' });
+          if (settlements.pending_payout_usdc && settlements.pending_payout_usdc > 0) {
+            console.log();
+            if (settlements.ata_status === 'missing') {
+              console.log(`  ${yellow('Pending Earnings:')}   $${settlements.pending_payout_usdc} (awaiting USDC token account)`);
+              console.log(dim(`  Run: spl-token create-account EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`));
+            } else if (settlements.pending_payout_usdc > 0) {
+              console.log(`  ${dim('Pending Earnings:')}   $${settlements.pending_payout_usdc}`);
+            }
+          }
+        } catch {
+          // Seller earnings check is optional — ignore failures
+        }
       } catch (err) {
         if (err instanceof ProxyGateError) {
           console.error(red(`Error [${err.code}]: ${err.message}`));

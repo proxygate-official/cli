@@ -2,7 +2,7 @@ import type { Command } from 'commander';
 import { ProxyGateError } from '@proxygate/sdk';
 import type { SettlementDaily, SettlementSummary } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
-import { bold, green, red, dim, formatTable } from '../format.js';
+import { bold, green, yellow, red, dim, formatTable } from '../format.js';
 
 function isBuyerSummary(s: SettlementSummary): s is { total_requests: number; total_cost_usdc: number; total_fees_usdc: number } {
   return 'total_cost_usdc' in s;
@@ -79,6 +79,17 @@ export function registerSettlementsCommand(program: Command): void {
         });
 
         console.log(formatTable(headers, rows));
+
+        // Show ATA missing hint for sellers with pending earnings
+        if (result.role === 'seller' && result.pending_payout_usdc && result.pending_payout_usdc > 0) {
+          console.log();
+          if (result.ata_status === 'missing') {
+            console.log(yellow(`  Pending Earnings: $${result.pending_payout_usdc} — create a USDC token account to receive payouts`));
+            console.log(dim(`  Run: spl-token create-account EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`));
+          } else {
+            console.log(dim(`  Pending Settlement: $${result.pending_payout_usdc}`));
+          }
+        }
       } catch (err) {
         if (err instanceof ProxyGateError) {
           console.error(red(`Error [${err.code}]: ${err.message}`));
