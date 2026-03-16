@@ -26,6 +26,8 @@ import { registerCreateCommand } from './commands/create.js';
 import { registerTestCommand } from './commands/test-service.js';
 import { registerDevCommand } from './commands/dev.js';
 import { registerSkillsCommand } from './commands/skills.js';
+import { registerMetadataCommand } from './commands/metadata.js';
+import { registerCommandsMetaCommand } from './commands/commands-meta.js';
 
 const program = new Command('proxygate');
 
@@ -79,5 +81,7 @@ registerCreateCommand(program);
 registerTestCommand(program);
 registerDevCommand(program);
 registerSkillsCommand(program);
+registerMetadataCommand(program);
+registerCommandsMetaCommand(program);
 
 program.parse();
