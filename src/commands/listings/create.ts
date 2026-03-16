@@ -32,7 +32,17 @@ interface CreateCliOpts {
   validationEndpoint?: string;
   shield?: string;
   docs?: string;
+  type?: string;
+  endpointUrl?: string;
+  fileUrl?: string;
+  bulkUrl?: string;
+  webhookUrl?: string;
+  relayUrl?: string;
+  relayMethod?: string;
+  platform?: string;
 }
+
+type ListingTypeValue = 'proxy' | 'skill' | 'product' | 'dataset' | 'service' | 'connector';
 
 function detectDocType(filePath: string): 'openapi' | 'markdown' {
   const ext = extname(filePath).toLowerCase();
@@ -69,6 +79,14 @@ export function registerCreateSubcommand(listings: Command, program: Command): v
     .option('--validation-endpoint <path>', 'Validation endpoint path')
     .option('--shield <on|off>', `Shield request scanning — ${SHIELD_SURCHARGE_DISPLAY}/req from payout (default: off)`)
     .option('--docs <file>', 'Path to OpenAPI spec (.yaml/.json) or markdown (.md) documentation')
+    .option('--type <type>', 'Listing type: proxy, skill, product, dataset, service, connector (default: proxy)')
+    .option('--endpoint-url <url>', 'Skill endpoint URL (required for --type skill)')
+    .option('--file-url <url>', 'Product file URL (required for --type product)')
+    .option('--bulk-url <url>', 'Dataset bulk data URL (required for --type dataset)')
+    .option('--webhook-url <url>', 'Service webhook URL (required for --type service)')
+    .option('--relay-url <url>', 'Connector relay URL (required for --type connector)')
+    .option('--relay-method <method>', 'Service HTTP method: GET, POST, PUT (default: POST)')
+    .option('--platform <name>', 'Connector platform: slack, notion, discord, github, custom')
     .action(async (opts: CreateCliOpts) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
       try {
@@ -97,10 +115,35 @@ export function registerCreateSubcommand(listings: Command, program: Command): v
     });
 }
 
+function buildTypeMetadata(listingType: ListingTypeValue, o: CreateCliOpts): Record<string, unknown> | undefined {
+  switch (listingType) {
+    case 'skill':
+      if (!o.endpointUrl) { console.error(red('Error: --endpoint-url required for --type skill')); process.exit(1); }
+      return { endpoint_url: o.endpointUrl };
+    case 'product':
+      if (!o.fileUrl) { console.error(red('Error: --file-url required for --type product')); process.exit(1); }
+      return { file_url: o.fileUrl };
+    case 'dataset':
+      if (!o.bulkUrl) { console.error(red('Error: --bulk-url required for --type dataset')); process.exit(1); }
+      return { bulk_url: o.bulkUrl };
+    case 'service':
+      if (!o.webhookUrl) { console.error(red('Error: --webhook-url required for --type service')); process.exit(1); }
+      return { webhook_url: o.webhookUrl, relay_method: o.relayMethod ?? 'POST' };
+    case 'connector':
+      if (!o.relayUrl) { console.error(red('Error: --relay-url required for --type connector')); process.exit(1); }
+      return { relay_url: o.relayUrl, platform: o.platform ?? 'custom' };
+    default:
+      return undefined;
+  }
+}
+
 async function buildNonInteractiveOpts(o: CreateCliOpts): Promise<CreateListingOptions> {
   if (!o.serviceName) { console.error(red('Error: --service-name is required in non-interactive mode')); process.exit(1); }
   if (!o.baseUrl) { console.error(red('Error: --base-url is required in non-interactive mode')); process.exit(1); }
   if (!o.categories) { console.error(red('Error: --categories is required in non-interactive mode')); process.exit(1); }
+
+  const listingType = (o.type ?? 'proxy') as ListingTypeValue;
+  const typeMetadata = buildTypeMetadata(listingType, o);
 
   return {
     service_name: o.serviceName, service_base_url: o.baseUrl,
@@ -108,6 +151,8 @@ async function buildNonInteractiveOpts(o: CreateCliOpts): Promise<CreateListingO
     total_rpm: parseInt(o.totalRpm, 10), reserved_rpm: parseInt(o.reservedRpm, 10),
     price_per_request: parseInt(o.price, 10),
     category_slugs: o.categories.split(',').map((s) => s.trim()),
+    ...(listingType !== 'proxy' ? { listing_type: listingType } : {}),
+    ...(typeMetadata ? { type_metadata: typeMetadata } : {}),
     ...(o.description ? { description: o.description } : {}),
     ...(o.apiKey ? { api_key: o.apiKey } : {}),
     ...(o.headerName ? { header_name: o.headerName } : {}),
@@ -128,30 +173,77 @@ async function buildNonInteractiveOpts(o: CreateCliOpts): Promise<CreateListingO
 
 async function runInteractiveCreate(): Promise<CreateListingOptions | null> {
   const { input, select, confirm } = await loadPrompts();
-  const serviceName = await input({ message: 'Service name:' });
-  const baseUrl = await input({ message: 'Service base URL (https://):' });
-  const authPattern = await select<ListingAuthPattern>({
-    message: 'Auth pattern:',
+
+  // Type selection first
+  const listingType = await select<string>({
+    message: 'Listing type:',
     choices: [
-      { value: 'none', name: 'No authentication (public API)' },
-      { value: 'bearer', name: 'Bearer token (Authorization: Bearer ...)' },
-      { value: 'header', name: 'Custom header (X-Api-Key: ...)' },
-      { value: 'query', name: 'Query parameter (?api_key=...)' },
-      { value: 'basic', name: 'Basic auth (Authorization: Basic ...)' },
-      { value: 'oauth2_cc', name: 'OAuth2 client credentials' },
+      { value: 'proxy', name: 'API Proxy (forward requests to your API)' },
+      { value: 'skill', name: 'Skill (AI agent tool / MCP endpoint)' },
+      { value: 'product', name: 'Product (digital file / download)' },
+      { value: 'dataset', name: 'Dataset (bulk data access)' },
+      { value: 'service', name: 'Service (webhook / automation relay)' },
+      { value: 'connector', name: 'Connector (platform integration)' },
     ],
   });
-  const credentials = authPattern === 'none' ? {} : await promptCredentials(authPattern);
+
+  // Type-specific prompts
+  let typeMetadata: Record<string, unknown> | undefined;
+  switch (listingType) {
+    case 'skill':
+      typeMetadata = { endpoint_url: await input({ message: 'Skill endpoint URL (https://):' }) };
+      break;
+    case 'product':
+      typeMetadata = { file_url: await input({ message: 'Product file URL (https://):' }) };
+      break;
+    case 'dataset':
+      typeMetadata = { bulk_url: await input({ message: 'Dataset bulk URL (https://):' }) };
+      break;
+    case 'service':
+      typeMetadata = {
+        webhook_url: await input({ message: 'Webhook URL (https://):' }),
+        relay_method: await select({ message: 'Relay HTTP method:', choices: [{ value: 'POST' }, { value: 'GET' }, { value: 'PUT' }] }),
+      };
+      break;
+    case 'connector':
+      typeMetadata = {
+        relay_url: await input({ message: 'Relay URL (https://):' }),
+        platform: await select({ message: 'Platform:', choices: [{ value: 'slack' }, { value: 'notion' }, { value: 'discord' }, { value: 'github' }, { value: 'custom' }] }),
+      };
+      break;
+  }
+
+  const serviceName = await input({ message: 'Service name:' });
+  const baseUrl = await input({ message: 'Service base URL (https://):' });
+
+  // Product/dataset skip auth (default none)
+  const isNoCredType = listingType === 'product' || listingType === 'dataset';
+  const authPattern = isNoCredType
+    ? 'none' as ListingAuthPattern
+    : await select<ListingAuthPattern>({
+        message: 'Auth pattern:',
+        choices: [
+          { value: 'none', name: 'No authentication (public API)' },
+          { value: 'bearer', name: 'Bearer token (Authorization: Bearer ...)' },
+          { value: 'header', name: 'Custom header (X-Api-Key: ...)' },
+          { value: 'query', name: 'Query parameter (?api_key=...)' },
+          { value: 'basic', name: 'Basic auth (Authorization: Basic ...)' },
+          { value: 'oauth2_cc', name: 'OAuth2 client credentials' },
+        ],
+      });
+  const credentials = (authPattern === 'none') ? {} : await promptCredentials(authPattern);
+
   const totalRpm = parseInt(await input({ message: 'Total RPM capacity:', default: '60' }), 10);
   const reservedRpm = parseInt(await input({ message: 'Reserved RPM (for your own use):', default: '0' }), 10);
   const pricePerRequest = parseInt(await input({ message: 'Price per request (micro-cents):', default: '1000' }), 10);
   const categorySlugs = (await input({ message: 'Category slugs (comma-separated, e.g. "llm,ai"):' }))
     .split(',').map((s) => s.trim()).filter(Boolean);
   const description = (await input({ message: 'Description (optional, press Enter to skip):' })) || undefined;
-  const shieldEnabled = await confirm({ message: `Enable Shield request scanning? (${SHIELD_SURCHARGE_DISPLAY}/req deducted from your payout)`, default: false });
+  const shieldEnabled = isNoCredType ? false : await confirm({ message: `Enable Shield request scanning? (${SHIELD_SURCHARGE_DISPLAY}/req deducted from your payout)`, default: false });
 
   console.log();
   console.log(bold('Review:'));
+  if (listingType !== 'proxy') console.log(`  Type:        ${listingType}`);
   console.log(`  Service:     ${serviceName}`);
   console.log(`  Base URL:    ${baseUrl}`);
   console.log(`  Auth:        ${authPattern}`);
@@ -168,7 +260,10 @@ async function runInteractiveCreate(): Promise<CreateListingOptions | null> {
   return {
     service_name: serviceName, service_base_url: baseUrl, auth_pattern: authPattern,
     total_rpm: totalRpm, reserved_rpm: reservedRpm, price_per_request: pricePerRequest,
-    category_slugs: categorySlugs, ...(description ? { description } : {}), ...credentials,
+    category_slugs: categorySlugs,
+    ...(listingType !== 'proxy' ? { listing_type: listingType as ListingTypeValue } : {}),
+    ...(typeMetadata ? { type_metadata: typeMetadata } : {}),
+    ...(description ? { description } : {}), ...credentials,
     ...(shieldEnabled ? { shield_enabled: true } : {}),
   };
 }
