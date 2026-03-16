@@ -55,6 +55,46 @@ export function registerCreateSubcommand(listings: Command, program: Command): v
   listings
     .command('create')
     .description('Create a new seller listing')
+    .addHelpText('after', `
+Examples:
+  # API proxy with bearer auth
+  $ proxygate listings create --non-interactive \\
+      --service-name "My API" --base-url "https://api.example.com" \\
+      --auth-pattern bearer --api-key "sk-..." \\
+      --categories "ai" --price 10000
+
+  # Public API (no auth key needed)
+  $ proxygate listings create --non-interactive \\
+      --service-name "Weather API" --base-url "https://api.open-meteo.com" \\
+      --auth-pattern none --categories "weather" --price 10000
+
+  # Skill (AI agent tool / MCP endpoint)
+  $ proxygate listings create --non-interactive --type skill \\
+      --service-name "Code Review" --base-url "https://myskill.com" \\
+      --endpoint-url "https://myskill.com/invoke" \\
+      --categories "devtools" --price 50000
+
+  # Product (digital file download)
+  $ proxygate listings create --non-interactive --type product \\
+      --service-name "Training Dataset" --base-url "https://data.co" \\
+      --file-url "https://data.co/files/dataset.parquet" \\
+      --categories "data" --price 100000
+
+  # Service (webhook relay)
+  $ proxygate listings create --non-interactive --type service \\
+      --service-name "Email Sender" --base-url "https://hooks.co" \\
+      --webhook-url "https://hooks.co/send" --relay-method POST \\
+      --categories "communication" --price 20000
+
+  # Connector (platform integration)
+  $ proxygate listings create --non-interactive --type connector \\
+      --service-name "Slack Bot" --base-url "https://relay.co" \\
+      --relay-url "https://relay.co/slack" --platform slack \\
+      --categories "communication" --price 15000
+
+  # Interactive mode (guided prompts)
+  $ proxygate listings create
+`)
     .option('--non-interactive', 'Use CLI flags instead of interactive prompts')
     .option('--service-name <name>', 'Service name')
     .option('--base-url <url>', 'Service base URL (https://...)')
