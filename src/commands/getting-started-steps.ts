@@ -129,9 +129,16 @@ export function showNextSteps(hasBalance: boolean): void {
   if (!hasBalance) {
     console.log('  You need credits to make proxy requests.');
     console.log();
-    console.log(`  ${cyan('$ proxygate deposit -a 5000000')}     ${dim('# Deposit 5 USDC')}`);
+    console.log(bold('  Prerequisites:'));
+    console.log(`    1. Your wallet needs a ${bold('USDC token account')} on Solana mainnet`);
+    console.log('    2. Fund it with USDC');
+    console.log('    3. Keep some SOL for transaction fees (~0.01 SOL)');
     console.log();
-    console.log(dim('  Make sure your wallet has USDC and SOL for transaction fees.'));
+    console.log(dim('  Create a USDC token account (if you don\'t have one):'));
+    console.log(`  ${cyan('$ spl-token create-account EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v')}`);
+    console.log();
+    console.log('  Then deposit:');
+    console.log(`  ${cyan('$ proxygate deposit -a 5000000')}     ${dim('# Deposit 5 USDC')}`);
   } else {
     console.log('  You have credits! Try a proxy request:');
     console.log();
