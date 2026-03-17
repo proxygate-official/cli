@@ -25,7 +25,6 @@ Based on the user's intent, invoke the appropriate sub-skill using the `Skill` t
 1. **Always route** — never answer ProxyGate questions without loading the relevant sub-skill first
 2. **Multiple skills** — if the user's request spans multiple areas (e.g. "check my balance and make a proxy call"), invoke the most relevant skill first
 3. **When unclear** — if you can't determine intent, invoke `pg-status` to show an overview, then ask what they want to do
-4. **ProxyGate codebase** — if the user is working on the ProxyGate source code (apps/gateway, apps/web, packages/sdk, packages/cli), this skill does NOT apply. Only use this for interacting with ProxyGate as a user/operator via the CLI or SDK.
 
 ## Quick reference
 

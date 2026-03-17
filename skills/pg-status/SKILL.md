@@ -12,10 +12,10 @@ Quick status checks for buyers and sellers.
 ```bash
 proxygate balance                              # USDC balance (total, pending, available, cooldown)
 proxygate usage                                # recent request history
-proxygate usage -s openai -l 10                # filtered by service, last 10
+proxygate usage -s weather-api -l 10           # filtered by service, last 10
 proxygate usage --from 2026-03-01 --json       # date range, machine-readable
 proxygate settlements -r buyer                 # cost breakdown (total requests, cost, fees, net)
-proxygate settlements -s anthropic --from 2026-03-01  # filtered
+proxygate settlements -s maps-api --from 2026-03-01   # filtered
 ```
 
 ## Seller status
@@ -46,7 +46,7 @@ const client = await ProxyGateClient.create({
 });
 
 const { balance, available, pending_settlement } = await client.balance();
-const usage = await client.usage({ service: 'openai', limit: 10 });
+const usage = await client.usage({ service: 'weather-api', limit: 10 });
 const settlements = await client.settlements({ role: 'seller', from: '2026-03-01' });
 const { listings } = await client.listings.list();
 const profile = await client.sellerProfile('wallet-address');

@@ -31,7 +31,7 @@ Vault auto-initializes on first deposit. User needs USDC in their Solana wallet.
 ```bash
 # Browse all APIs with rich filtering
 proxygate apis                                    # all listings
-proxygate apis -s openai                          # filter by service
+proxygate apis -s weather-api                     # filter by service
 proxygate apis -c ai-models                       # filter by category
 proxygate apis -q "code review"                   # semantic search
 proxygate apis --verified                         # verified sellers only
@@ -40,7 +40,7 @@ proxygate apis -l 50                              # limit results
 
 # Aggregated views
 proxygate pricing                                 # pricing table (service, type, price, sellers, RPM)
-proxygate pricing -s anthropic --json             # machine-readable
+proxygate pricing -s maps-api --json              # machine-readable
 proxygate services                                # service stats (cheapest, avg latency, rating)
 proxygate categories                              # browse categories
 
@@ -55,14 +55,14 @@ Note the `listing-id` from output — needed for proxy requests.
 ```bash
 # POST request (default when -d is given)
 proxygate proxy <listing-id> /v1/chat/completions \
-  -d '{"model":"gpt-4","messages":[{"role":"user","content":"Hello"}]}'
+  -d '{"model":"llama3.3:70b","messages":[{"role":"user","content":"Hello"}]}'
 
 # GET request
 proxygate proxy <listing-id> /v1/models -X GET
 
 # Stream SSE responses
 proxygate proxy <listing-id> /v1/chat/completions --stream \
-  -d '{"model":"gpt-4","messages":[{"role":"user","content":"Hello"}],"stream":true}'
+  -d '{"model":"llama3.3:70b","messages":[{"role":"user","content":"Hello"}],"stream":true}'
 
 # With shield scanning (content moderation)
 proxygate proxy <listing-id> /path --shield monitor    # log threats
@@ -83,12 +83,12 @@ proxygate rate --request-id <id> --down    # negative rating
 
 ```bash
 proxygate usage                                   # recent request history
-proxygate usage -s openai -l 50                   # filtered by service
+proxygate usage -s weather-api -l 50              # filtered by service
 proxygate usage --from 2026-03-01 --to 2026-03-14 # date range
 proxygate usage --json                            # machine-readable
 
 proxygate settlements -r buyer                    # cost breakdown
-proxygate settlements -s openai --from 2026-03-01 # filtered
+proxygate settlements -s weather-api --from 2026-03-01 # filtered
 ```
 
 ### 7. Withdraw (optional)
@@ -120,7 +120,7 @@ const client = await ProxyGateClient.create({
 const { balance, available } = await client.balance();
 
 // Browse APIs
-const apis = await client.apis({ service: 'openai', verified: true });
+const apis = await client.apis({ service: 'weather-api', verified: true });
 const categories = await client.categories();
 const services = await client.services();
 
@@ -129,13 +129,13 @@ const docs = await client.docs('listing-id');
 
 // Proxy a request
 const res = await client.proxy('listing-id', '/v1/chat/completions', {
-  model: 'gpt-4',
+  model: 'llama3.3:70b',
   messages: [{ role: 'user', content: 'Hello' }],
 });
 
 // Stream with SSE
 const res = await client.proxy('listing-id', '/v1/chat/completions',
-  { model: 'gpt-4', messages: [...], stream: true },
+  { model: 'llama3.3:70b', messages: [...], stream: true },
   { stream: true }
 );
 for await (const event of parseSSE(res)) {
@@ -149,7 +149,7 @@ const res = await client.proxy('listing-id', '/path', body, { shield: 'strict' }
 await client.rate({ request_id: 'req-id', is_positive: true });
 
 // Usage & settlements
-const usage = await client.usage({ service: 'openai', limit: 50 });
+const usage = await client.usage({ service: 'weather-api', limit: 50 });
 const settlements = await client.settlements({ role: 'buyer' });
 ```
 

@@ -35,7 +35,7 @@ proxygate withdraw-confirm --tx <signature>       # recovery: confirm on-chain T
 
 ```bash
 proxygate apis                                    # browse all API listings
-proxygate apis -s openai                          # filter by service
+proxygate apis -s weather-api                     # filter by service
 proxygate apis -c ai-models                       # filter by category
 proxygate apis -q "code review"                   # semantic/text search
 proxygate apis --verified                         # verified sellers only
@@ -43,7 +43,7 @@ proxygate apis --sort price_asc                   # sort: price_asc, price_desc,
 proxygate apis -l 50                              # limit results
 
 proxygate pricing                                 # pricing table
-proxygate pricing -s anthropic --json             # filtered, machine-readable
+proxygate pricing -s maps-api --json              # filtered, machine-readable
 proxygate services                                # aggregated service stats
 proxygate categories                              # browse API categories
 proxygate listings docs <id>                      # view listing API docs
@@ -69,14 +69,14 @@ proxygate rate --request-id <id> --down           # negative rating
 
 ```bash
 proxygate usage                                   # recent request history
-proxygate usage -s openai -l 50                   # filter by service
+proxygate usage -s weather-api -l 50              # filter by service
 proxygate usage --from 2026-03-01 --to 2026-03-14 # date range
 proxygate usage --json
 
 proxygate settlements                             # earnings/spending summary
 proxygate settlements -r buyer                    # buyer view (cost, fees, net)
 proxygate settlements -r seller                   # seller view (earnings, fees, payout)
-proxygate settlements -s openai --from 2026-03-01
+proxygate settlements -s weather-api --from 2026-03-01
 ```
 
 ## Listing Management (Seller)
@@ -86,7 +86,7 @@ proxygate listings list                           # list your listings
 proxygate listings list --table                   # table format
 proxygate listings create                         # create listing (interactive)
 proxygate listings create --non-interactive \      # non-interactive
-  --service-name "My API" --service openai \
+  --service-name "My API" --service weather-api \
   --price-per-request 5000 --total-rpm 100
 
 proxygate listings update <id> --price 3000       # update listing
