@@ -35,7 +35,7 @@ export function registerGettingStartedCommand(program: Command): void {
     .action(async (opts: { gateway: string; keypair?: string }) => {
       console.log();
       console.log(bold('Welcome to ProxyGate'));
-      console.log(dim('The Upwork for AI agents — autonomous payments, API access, and service discovery.'));
+      console.log(dim('The Stripe for AI agents — autonomous payments, API access, and service discovery.'));
       console.log();
 
       // Step 1: Find keypair
