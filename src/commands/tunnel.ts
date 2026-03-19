@@ -77,15 +77,16 @@ export function registerTunnelCommand(program: Command): void {
         '        - /v1/*\n',
     )
     .action(async (opts: { config: string }) => {
-      const parentOpts = program.opts<{ gateway?: string; keypair?: string }>();
+      const parentOpts = program.opts<{ gateway?: string; keypair?: string; apiKey?: string }>();
       try {
         const cliConfig = await loadConfig();
         const gatewayUrl = parentOpts.gateway ?? cliConfig?.gatewayUrl;
         const keypairPath = parentOpts.keypair ?? cliConfig?.keypairPath;
+        const apiKey = parentOpts.apiKey ?? cliConfig?.apiKey;
 
-        if (!gatewayUrl || !keypairPath) {
+        if (!gatewayUrl || (!keypairPath && !apiKey)) {
           console.error(red('Error: Not configured. Run `proxygate init` first.'));
-          console.error(dim('Or use --gateway and --keypair flags.'));
+          console.error(dim('Or use --gateway and --keypair/--api-key flags.'));
           process.exit(1);
         }
 
@@ -112,7 +113,11 @@ export function registerTunnelCommand(program: Command): void {
         // ---------------------------------------------------------------
         console.log(bold('ProxyGate Tunnel'));
         console.log();
-        console.log(`  ${dim('Keypair:')} ${keypairPath}`);
+        if (apiKey) {
+          console.log(`  ${dim('Auth:')} API Key (${apiKey.slice(0, 12)}...)`);
+        } else {
+          console.log(`  ${dim('Keypair:')} ${keypairPath}`);
+        }
         console.log(`  ${dim('Gateway:')} ${gatewayUrl}`);
         console.log();
 
@@ -134,6 +139,7 @@ export function registerTunnelCommand(program: Command): void {
         const tunnel = await ProxyGate.serve({
           gatewayUrl,
           keypair: keypairPath,
+          apiKey,
           services,
 
           onConnected(listings) {
