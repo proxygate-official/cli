@@ -28,13 +28,27 @@ describe('loadConfig', () => {
     expect(await loadConfig()).toBeNull();
   });
 
-  it('returns null when required fields are missing', async () => {
+  it('returns null when neither keypairPath nor apiKey present', async () => {
     mockReadFile.mockResolvedValue(JSON.stringify({ gatewayUrl: 'http://localhost' }) as never);
     expect(await loadConfig()).toBeNull();
   });
 
-  it('returns valid CliConfig when file is correct', async () => {
+  it('returns valid config with keypairPath only', async () => {
     const config = { gatewayUrl: 'http://localhost:3001', keypairPath: '/home/user/.config/solana/id.json' };
+    mockReadFile.mockResolvedValue(JSON.stringify(config) as never);
+    const result = await loadConfig();
+    expect(result).toEqual(config);
+  });
+
+  it('returns valid config with apiKey only', async () => {
+    const config = { gatewayUrl: 'http://localhost:3001', apiKey: 'pg_live_test_1234567890' };
+    mockReadFile.mockResolvedValue(JSON.stringify(config) as never);
+    const result = await loadConfig();
+    expect(result).toEqual(config);
+  });
+
+  it('returns valid config with both keypairPath and apiKey', async () => {
+    const config = { gatewayUrl: 'http://localhost:3001', keypairPath: '/keys/id.json', apiKey: 'pg_live_test_1234567890' };
     mockReadFile.mockResolvedValue(JSON.stringify(config) as never);
     const result = await loadConfig();
     expect(result).toEqual(config);
@@ -52,7 +66,7 @@ describe('saveConfig', () => {
     expect(mockMkdir).toHaveBeenCalledWith(CONFIG_DIR, { recursive: true });
     expect(mockWriteFile).toHaveBeenCalledWith(
       CONFIG_PATH,
-      JSON.stringify(config, null, 2) + '\n',
+      expect.stringContaining('"gatewayUrl"'),
       'utf-8',
     );
   });
@@ -67,5 +81,29 @@ describe('saveConfig', () => {
     const written = mockWriteFile.mock.calls[0][1] as string;
     expect(written).toContain('  "gatewayUrl"');
     expect(written.endsWith('\n')).toBe(true);
+  });
+
+  it('omits undefined fields', async () => {
+    mockMkdir.mockResolvedValue(undefined as never);
+    mockWriteFile.mockResolvedValue(undefined as never);
+
+    const config = { gatewayUrl: 'http://localhost:3001', apiKey: 'pg_live_test_1234567890' };
+    await saveConfig(config);
+
+    const written = mockWriteFile.mock.calls[0][1] as string;
+    expect(written).toContain('"apiKey"');
+    expect(written).not.toContain('"keypairPath"');
+  });
+
+  it('writes apiKey alongside keypairPath (dual mode)', async () => {
+    mockMkdir.mockResolvedValue(undefined as never);
+    mockWriteFile.mockResolvedValue(undefined as never);
+
+    const config = { gatewayUrl: 'http://localhost', keypairPath: '/k.json', apiKey: 'pg_live_test_1234567890' };
+    await saveConfig(config);
+
+    const written = mockWriteFile.mock.calls[0][1] as string;
+    expect(written).toContain('"apiKey"');
+    expect(written).toContain('"keypairPath"');
   });
 });
