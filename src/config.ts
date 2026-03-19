@@ -55,10 +55,13 @@ export async function loadConfig(): Promise<CliConfig | null> {
  * Only writes defined fields (omits undefined values).
  */
 export async function saveConfig(config: CliConfig): Promise<void> {
-  await mkdir(CONFIG_DIR, { recursive: true });
+  await mkdir(CONFIG_DIR, { recursive: true, mode: 0o700 });
   // Filter out undefined values
   const clean: Record<string, string> = { gatewayUrl: config.gatewayUrl };
   if (config.keypairPath) clean.keypairPath = config.keypairPath;
   if (config.apiKey) clean.apiKey = config.apiKey;
-  await writeFile(CONFIG_PATH, JSON.stringify(clean, null, 2) + '\n', 'utf-8');
+  await writeFile(CONFIG_PATH, JSON.stringify(clean, null, 2) + '\n', {
+    encoding: 'utf-8',
+    mode: 0o600,
+  });
 }

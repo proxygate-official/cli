@@ -63,11 +63,11 @@ describe('saveConfig', () => {
     const config = { gatewayUrl: 'http://localhost:3001', keypairPath: '/keys/id.json' };
     await saveConfig(config);
 
-    expect(mockMkdir).toHaveBeenCalledWith(CONFIG_DIR, { recursive: true });
+    expect(mockMkdir).toHaveBeenCalledWith(CONFIG_DIR, { recursive: true, mode: 0o700 });
     expect(mockWriteFile).toHaveBeenCalledWith(
       CONFIG_PATH,
       expect.stringContaining('"gatewayUrl"'),
-      'utf-8',
+      { encoding: 'utf-8', mode: 0o600 },
     );
   });
 
