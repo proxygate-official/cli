@@ -42,7 +42,7 @@ export function registerProxyCommand(program: Command): void {
         path: string,
         opts: { data?: string; method?: string; stream?: boolean; shield?: string },
       ) => {
-        const parentOpts = program.opts<{ gateway?: string; keypair?: string }>();
+        const parentOpts = program.opts<{ gateway?: string; keypair?: string; apiKey?: string }>();
 
         try {
           const client = await getClient(parentOpts);
@@ -90,11 +90,25 @@ export function registerProxyCommand(program: Command): void {
               if (event.data === '[DONE]') break;
               process.stdout.write(event.data + '\n');
             }
+            printSpendLimitWarning(response);
             return;
           }
 
           // Execute request
           const response = await client.proxy(listingId, path, body, { method, shield });
+
+          // Handle spend limit exceeded (429)
+          if (response.status === 429) {
+            const text = await response.text();
+            console.error(red('Spend limit exceeded'));
+            try {
+              const body = JSON.parse(text) as Record<string, unknown>;
+              if (body.message) console.error(dim(body.message as string));
+              if (body.action) console.error(dim(body.action as string));
+            } catch { /* not JSON */ }
+            console.error(dim('Increase your limit: app.proxygate.ai/keys'));
+            process.exit(1);
+          }
 
           // Handle shield block (422)
           if (response.status === 422) {
@@ -125,6 +139,8 @@ export function registerProxyCommand(program: Command): void {
             console.log(text);
           }
 
+          printSpendLimitWarning(response);
+
           // Print status to stderr if not 200
           if (!response.ok) {
             console.error(dim(`Status: ${response.status}`));
@@ -139,6 +155,23 @@ export function registerProxyCommand(program: Command): void {
         }
       },
     );
+}
+
+function printSpendLimitWarning(response: Response): void {
+  const remaining = response.headers.get('x-spendlimit-remaining');
+  const limit = response.headers.get('x-spendlimit-limit');
+  if (!remaining || !limit) return;
+
+  const remainNum = parseInt(remaining, 10);
+  const limitNum = parseInt(limit, 10);
+  if (isNaN(remainNum) || isNaN(limitNum) || limitNum === 0) return;
+
+  const usedPct = Math.round(((limitNum - remainNum) / limitNum) * 100);
+  if (usedPct >= 80) {
+    const usedUsdc = ((limitNum - remainNum) / 1_000_000).toFixed(2);
+    const limitUsdc = (limitNum / 1_000_000).toFixed(2);
+    console.error(yellow(`Daily spend: $${usedUsdc}/$${limitUsdc} (${usedPct}% used)`));
+  }
 }
 
 function printShieldInfo(response: Response): void {

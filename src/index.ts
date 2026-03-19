@@ -28,6 +28,9 @@ import { registerDevCommand } from './commands/dev.js';
 import { registerSkillsCommand } from './commands/skills.js';
 import { registerMetadataCommand } from './commands/metadata.js';
 import { registerCommandsMetaCommand } from './commands/commands-meta.js';
+import { registerLoginCommand } from './commands/login.js';
+import { registerLogoutCommand } from './commands/logout.js';
+import { registerWhoamiCommand } from './commands/whoami.js';
 
 const program = new Command('proxygate');
 
@@ -41,11 +44,13 @@ program
   )
   .option('--gateway <url>', 'Override gateway URL (default: from config)')
   .option('--keypair <path>', 'Path to Solana keypair JSON file (default: from config)')
+  .option('--api-key <key>', 'Override API key (default: from config)')
   .option('--json', 'Machine-readable JSON output (for scripting)')
   .addHelpText(
     'after',
     '\nQuick start:\n' +
       '  $ proxygate getting-started        First time? Start here\n' +
+      '  $ proxygate login --key pg_live_... Authenticate with API key\n' +
       '  $ proxygate pricing                Browse available APIs\n' +
       '  $ proxygate balance                Check your USDC balance\n' +
       '  $ proxygate proxy <id> <path> -d \'{"model":"gpt-4",...}\'\n\n' +
@@ -83,5 +88,8 @@ registerDevCommand(program);
 registerSkillsCommand(program);
 registerMetadataCommand(program);
 registerCommandsMetaCommand(program);
+registerLoginCommand(program);
+registerLogoutCommand(program);
+registerWhoamiCommand(program);
 
 program.parse();
