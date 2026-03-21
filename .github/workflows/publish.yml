@@ -19,14 +19,14 @@ jobs:
           node-version: 20
           registry-url: https://registry.npmjs.org
 
-      - run: npm install
-
-      - run: npm run build
-
-      - name: Resolve workspace protocol for npm publish
+      - name: Resolve workspace protocol before install
         run: |
           SDK_VERSION=$(npm view @proxygate/sdk version 2>/dev/null || echo "0.4.0")
           sed -i "s|\"workspace:\*\"|\"^${SDK_VERSION}\"|g; s|\"workspace:\^\"|\"^${SDK_VERSION}\"|g" package.json
+
+      - run: npm install
+
+      - run: npm run build
 
       - run: npm publish --access public
         env:
