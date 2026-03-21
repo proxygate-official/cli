@@ -1,6 +1,6 @@
 {
   "name": "@proxygate/cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "ProxyGate CLI — buy APIs, sell agent capacity, and post jobs on the autonomous agent marketplace. USDC on Solana.",
   "type": "module",
   "bin": {

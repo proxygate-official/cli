@@ -8,301 +8,154 @@ Terminal interface for [ProxyGate](https://proxygate.ai) — the Stripe for AI A
 npm install -g @proxygate/cli
 ```
 
-The installer offers to install Claude Code skills for AI-assisted workflows. If you skip this step, install them later with `proxygate skills install`.
-
-## Update
-
-```bash
-npm update -g @proxygate/cli
-proxygate skills install          # update Claude Code skills
-```
-
-Or use the `/pg-update` skill in Claude Code — it detects your version, shows what's new, and updates automatically.
-
 ## Quick Start
 
 ```bash
-# 1. Interactive setup — start here
-proxygate getting-started
+# 1. Authenticate (interactive menu or pass key directly)
+proxygate login
+proxygate login --key pg_live_...
 
-# 2. Or manual setup with an existing Solana keypair
-proxygate init --keypair ~/.config/solana/id.json
+# 2. Search APIs
+proxygate search weather
+proxygate apis -q "postal lookup"
 
-# 3. Check your balance
+# 3. Call an API
+proxygate proxy agent-postal-lookup /nl/1012
+proxygate proxy weather-api /v1/forecast \
+  -d '{"latitude":52.37,"longitude":4.90,"hourly":"temperature_2m"}'
+
+# 4. Check balance and usage
 proxygate balance
-
-# 4. Browse available APIs and agents
-proxygate pricing
+proxygate usage
 ```
 
-After running `proxygate init`, config is saved to `~/.proxygate/config.json`.
+Config is saved to `~/.proxygate/config.json`.
 
 ## Commands
 
-### proxygate getting-started
-
-Interactive setup guide. Walks you through keypair creation, gateway connection, and first deposit.
+### Auth
 
 ```bash
-proxygate getting-started
+proxygate login                          # interactive menu (API key or wallet)
+proxygate login --key pg_live_...       # API key auth (for agents)
+proxygate login --keypair ~/id.json     # wallet keypair auth
+proxygate login --generate              # generate new wallet
+proxygate whoami                         # check auth mode + balance
+proxygate logout                         # remove API key (keep wallet)
+proxygate logout --all                   # remove all auth (with confirmation)
 ```
 
-### proxygate init
-
-Save gateway URL and keypair path to config.
+### API Discovery
 
 ```bash
-proxygate init                                          # interactive
-proxygate init --keypair ~/.config/solana/id.json       # specify keypair
-proxygate init --keypair ~/k.json --gateway https://gateway.proxygate.ai
+proxygate search weather                 # search by name/description
+proxygate apis -q "postal lookup"       # same as search
+proxygate apis -s weather-api           # filter by exact service slug
+proxygate apis -c location              # filter by category
+proxygate apis --verified --sort price_asc  # verified only, sorted
+proxygate services                       # aggregated service stats
+proxygate categories                     # browse categories
 ```
 
-### proxygate balance
+### Proxy Requests
 
-Check your USDC vault balance.
+Use a **service name**, slug, or listing UUID — the CLI resolves automatically:
 
 ```bash
-proxygate balance                                       # human-readable
-proxygate balance --json                                # JSON output
+proxygate proxy agent-postal-lookup /nl/1012
+proxygate proxy weather-api /v1/forecast \
+  -d '{"latitude":52.37,"longitude":4.90,"hourly":"temperature_2m"}'
+proxygate proxy weather-api /v1/forecast --stream -d '{...}'
+proxygate proxy weather-api /path --shield strict
 ```
 
-### proxygate pricing
+After each call, you'll see cost and request ID:
 
-Browse available APIs with pricing info.
+```
+cost: $0.0155 | request: 905b1a53
+```
+
+Shield modes: `monitor` (log threats), `strict` (block + refund), `off` (no scanning).
+
+### Wallet & Balance
 
 ```bash
-proxygate pricing                                       # all APIs
-proxygate pricing --service ollama                      # filter by service
-proxygate pricing --json                                # JSON output
+proxygate balance                        # total, available, pending, cooldown
+proxygate deposit -a 5000000            # deposit 5 USDC (1 USDC = 1,000,000)
+proxygate deposit -a 1000000 --dry-run  # preview without sending
+proxygate withdraw -a 2000000           # withdraw 2 USDC
+proxygate withdraw                       # withdraw all available
 ```
 
-### proxygate apis
-
-Paginated API catalog with trust scores and availability.
+### Usage & Settlements
 
 ```bash
-proxygate apis                                          # list all
-proxygate apis --category ai-ml                         # filter by category
-proxygate apis --sort price_asc                         # sort by price
-proxygate apis --json                                   # JSON output
+proxygate usage                          # recent request history
+proxygate usage -s weather-api -l 50    # filtered by service
+proxygate settlements -r buyer          # cost breakdown
+proxygate settlements -r seller         # earnings breakdown
 ```
 
-### proxygate services
-
-List available service types.
+### Rating
 
 ```bash
-proxygate services
-proxygate services --json
+proxygate rate --request-id <id> --up    # positive rating
+proxygate rate --request-id <id> --down  # negative rating
 ```
 
-### proxygate categories
+Request ID is shown after each proxy call.
 
-List API categories.
+### Listing Management (Sellers)
 
 ```bash
-proxygate categories
-proxygate categories --json
+proxygate listings list                  # your listings
+proxygate listings create                # create (interactive)
+proxygate listings update <id> --price 3000
+proxygate listings pause <id>
+proxygate listings unpause <id>
+proxygate listings delete <id>
+proxygate listings rotate-key <id>
+proxygate listings upload-docs <id> ./openapi.yaml
 ```
 
-### proxygate proxy
-
-Send a proxied request through ProxyGate. The gateway injects seller credentials server-side.
+### Tunnel & Development
 
 ```bash
-# POST request
-proxygate proxy <listing-id> /v1/chat/completions \
-  -d '{"model":"llama3.3:70b","messages":[{"role":"user","content":"Hello"}]}'
-
-# GET request
-proxygate proxy <listing-id> /v1/models -X GET
-
-# Stream SSE responses
-proxygate proxy <listing-id> /v1/chat/completions --stream \
-  -d '{"model":"llama3.3:70b","messages":[...],"stream":true}'
-
-# With shield scanning
-proxygate proxy <listing-id> /path -d '{}' --shield monitor
+proxygate tunnel -c proxygate.tunnel.yaml   # expose services
+proxygate dev -c my-services.yaml           # dev mode (logging + auto-reload)
+proxygate test                               # validate local endpoints
+proxygate create                             # scaffold new agent project
 ```
 
-Get listing IDs from `proxygate pricing --json`.
-
-### proxygate deposit
-
-Deposit USDC from your Solana wallet into the ProxyGate vault.
+### Jobs
 
 ```bash
-proxygate deposit -a 5000000                            # deposit 5 USDC
-proxygate deposit -a 1000000                            # deposit 1 USDC
-proxygate deposit -a 10000000                           # deposit 10 USDC
+proxygate jobs list                      # browse jobs
+proxygate jobs create                    # post a job (interactive)
+proxygate jobs claim <id>               # claim as solver
+proxygate jobs submit <id> --text "..." # submit work
 ```
-
-The vault auto-initializes on first deposit. Amounts are in base units (1 USDC = 1,000,000).
-
-### proxygate withdraw
-
-Withdraw USDC from the vault back to your Solana wallet.
-
-```bash
-proxygate withdraw                                      # withdraw all
-proxygate withdraw -a 2000000                           # withdraw 2 USDC
-```
-
-### proxygate withdraw-confirm
-
-Recovery command to confirm an on-chain withdrawal if the normal flow was interrupted.
-
-```bash
-proxygate withdraw-confirm -t <tx_signature>
-```
-
-### proxygate usage
-
-View your API request history.
-
-```bash
-proxygate usage                                         # recent requests
-proxygate usage --service ollama --limit 50             # filtered
-proxygate usage --from 2026-03-01                       # date range
-proxygate usage --json                                  # JSON output
-```
-
-### proxygate rate
-
-Rate a seller after a proxy request.
-
-```bash
-proxygate rate <listing-id> -s 5 -c "Fast and reliable"
-```
-
-### proxygate listings
-
-Manage seller listings — create, list, pause, unpause, delete, rotate keys, view docs.
-
-```bash
-proxygate listings list                                 # list your listings
-proxygate listings list --table                         # table format
-proxygate listings create                               # create listing (interactive)
-proxygate listings pause <id>                           # pause a listing
-proxygate listings unpause <id>                         # unpause a listing
-proxygate listings delete <id>                          # delete a listing
-proxygate listings rotate-key <id>                      # rotate API key
-proxygate listings docs <id>                            # view listing documentation
-```
-
-### proxygate tunnel
-
-Expose local services through the ProxyGate gateway. Sellers run agents on their own machine — the tunnel relays traffic securely. All traffic is scanned by Model Armor.
-
-```bash
-proxygate tunnel                                        # start tunnel (reads config)
-proxygate tunnel -c proxygate.tunnel.yaml               # with config file
-```
-
-Tunnel config (`proxygate.tunnel.yaml`):
-
-```yaml
-services:
-  - name: code-review
-    port: 3000
-    docs: ./openapi.yaml
-```
-
-### proxygate dev
-
-Development mode — tunnel + request logging + config file watching. Restarts automatically when config changes.
-
-```bash
-proxygate dev                                           # start dev mode
-proxygate dev -c my-services.yaml                       # with config file
-```
-
-### proxygate settlements
-
-View settlement and earnings history.
-
-```bash
-proxygate settlements                                   # summary
-proxygate settlements --role seller                     # seller earnings
-proxygate settlements --from 2026-03-01 --json          # filtered, JSON output
-```
-
-### proxygate jobs
-
-Browse, claim, and submit jobs on the task marketplace. Post a task with a reward — agents and humans pick it up, deliver work, and get paid automatically.
-
-```bash
-proxygate jobs list                                     # list available jobs
-proxygate jobs list --status open --table               # table format
-proxygate jobs claim <job-id>                           # claim a job
-proxygate jobs submit <job-id> -d '{"result":"..."}'    # submit result
-```
-
-### proxygate create
-
-Scaffold a new agent project from a template.
-
-```bash
-proxygate create                                        # interactive
-proxygate create my-agent --template http-api           # specify template
-proxygate create my-agent --template http-api --port 3000
-```
-
-### proxygate test
-
-Validate local service endpoints before going live.
-
-```bash
-proxygate test                                          # test all endpoints
-proxygate test -c my-services.yaml                      # with config file
-proxygate test --endpoint "POST /v1/analyze" --payload '{"code":"x=1"}'
-```
-
-### proxygate skills
-
-Install Claude Code skills for AI-assisted ProxyGate workflows.
-
-```bash
-proxygate skills install                                # install skills
-proxygate skills install --json                         # JSON output
-```
-
-Skills are installed to `~/.claude/skills/` and expose `/pg-setup`, `/pg-buy`, `/pg-sell`, `/pg-status`, and `/pg-update`.
 
 ## Global Options
 
 ```
--V, --version          Show version number
---gateway <url>        Override gateway URL (default: from config)
---keypair <path>       Path to Solana keypair JSON file (default: from config)
---json                 Machine-readable JSON output (for scripting)
+--gateway <url>        Override gateway URL
+--keypair <path>       Path to Solana keypair JSON file
+--api-key <key>        Override API key
+--json                 Machine-readable JSON output
+--no-color             Disable colored output
 -h, --help             Show help for any command
-```
-
-Every subcommand accepts `-h` for usage details:
-
-```bash
-proxygate proxy -h
-proxygate listings -h
-proxygate jobs -h
 ```
 
 ## Configuration
 
-Config is stored at `~/.proxygate/config.json`:
-
 ```json
 {
   "gatewayUrl": "https://gateway.proxygate.ai",
-  "keypairPath": "/home/user/.proxygate/keypair.json"
+  "keypairPath": "/home/user/.proxygate/keypair.json",
+  "apiKey": "pg_live_..."
 }
 ```
-
-## Prerequisites
-
-- Node.js 18+
-- Solana keypair (generate with `solana-keygen new` or `proxygate getting-started`)
-- USDC on Solana for deposits
 
 ## Links
 
