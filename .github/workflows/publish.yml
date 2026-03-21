@@ -1,0 +1,33 @@
+name: Publish to npm
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'package.json'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - run: npm install
+
+      - run: npm run build
+
+      - name: Resolve workspace protocol for npm publish
+        run: |
+          SDK_VERSION=$(npm view @proxygate/sdk version 2>/dev/null || echo "0.4.0")
+          sed -i "s|\"workspace:\*\"|\"^${SDK_VERSION}\"|g; s|\"workspace:\^\"|\"^${SDK_VERSION}\"|g" package.json
+
+      - run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
