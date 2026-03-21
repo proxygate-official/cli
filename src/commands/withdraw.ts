@@ -1,7 +1,10 @@
 import type { Command } from 'commander';
-import { ProxyGateError } from '@proxygate/sdk';
+import { createInterface } from 'node:readline';
 import { getClient } from '../helpers.js';
-import { bold, green, red, dim, formatUsdc } from '../format.js';
+import { bold, green, yellow, red, dim, formatUsdc } from '../format.js';
+import { handleError } from '../errors.js';
+
+const CONFIRM_THRESHOLD = 5_000_000; // 5 USDC
 
 /**
  * Register the `proxygate withdraw` command.
@@ -14,7 +17,9 @@ export function registerWithdrawCommand(program: Command): void {
     .command('withdraw')
     .description('Withdraw USDC from your vault back to your Solana wallet')
     .option('-a, --amount <lamports>', 'Amount in USDC base units (omit to withdraw all available)')
-    .option('--rpc <url>', 'Solana RPC URL (default: devnet)')
+    .option('--rpc <url>', 'Solana RPC URL')
+    .option('-y, --yes', 'Skip confirmation prompt')
+    .option('--dry-run', 'Show what would happen without withdrawing')
     .addHelpText(
       'after',
       '\nExamples:\n' +
@@ -24,7 +29,7 @@ export function registerWithdrawCommand(program: Command): void {
         'Withdrawals go through a cooldown period to finalize pending settlements.\n' +
         'The CLI handles polling automatically.',
     )
-    .action(async (opts: { amount?: string; rpc?: string }) => {
+    .action(async (opts: { amount?: string; rpc?: string; yes?: boolean; dryRun?: boolean }) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 
       try {
@@ -36,6 +41,31 @@ export function registerWithdrawCommand(program: Command): void {
           if (isNaN(amount) || amount <= 0) {
             console.error(red('Error: --amount must be a positive integer (USDC base units)'));
             process.exit(1);
+          }
+        }
+
+        if (opts.dryRun) {
+          const label = amount ? `${(amount / 1_000_000).toFixed(6)} USDC` : 'all available USDC';
+          console.log(bold('Dry run — no transaction sent'));
+          console.log();
+          console.log(`  ${dim('Amount:')}   ${label}`);
+          console.log(`  ${dim('Gateway:')}  ${client.gatewayUrl}`);
+          console.log(`  ${dim('Wallet:')}   ${client.walletAddress}`);
+          console.log(`  ${dim('Note:')}     Includes cooldown period before finalization`);
+          return;
+        }
+
+        // Confirm large or full withdrawals
+        const effectiveAmount = amount ?? 0;
+        if (!opts.yes && (effectiveAmount >= CONFIRM_THRESHOLD || !amount)) {
+          const label = amount ? `$${(amount / 1_000_000).toFixed(2)} USDC` : 'all available USDC';
+          console.log(yellow(`Withdrawing ${label}. This includes a cooldown period.`));
+          const rl = createInterface({ input: process.stdin, output: process.stderr });
+          const answer = await new Promise<string>((resolve) => rl.question('Confirm? (y/N) ', resolve));
+          rl.close();
+          if (!answer.toLowerCase().startsWith('y')) {
+            console.log(dim('Cancelled.'));
+            return;
           }
         }
 
@@ -65,25 +95,7 @@ export function registerWithdrawCommand(program: Command): void {
         console.log(`  ${green('Withdrawn:')}     ${formatUsdc(result.amount_withdrawn)}`);
 
       } catch (err) {
-        if (err instanceof ProxyGateError) {
-          console.error(red(`Error [${err.code}]: ${err.message}`));
-          if (err.action) console.error(dim(`Suggestion: ${err.action}`));
-          if (err.code === 'skim_flagged') {
-            console.error();
-            console.error(
-              dim(
-                'Your wallet has been flagged for vault skim protection.\n' +
-                  'All unsettled entries have been forfeited. Contact support.',
-              ),
-            );
-          }
-          process.exit(1);
-        }
-        if (err instanceof Error) {
-          console.error(red(`Error: ${err.message}`));
-          process.exit(1);
-        }
-        throw err;
+        handleError(err);
       }
     });
 }

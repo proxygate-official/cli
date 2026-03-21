@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
-import { ProxyGateError } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
-import { bold, red, dim, cyan, formatTable } from '../format.js';
+import { bold, dim, cyan, formatTable } from '../format.js';
+import { handleError } from '../errors.js';
 
 export function registerCategoriesCommand(program: Command): void {
   program
@@ -10,8 +10,9 @@ export function registerCategoriesCommand(program: Command): void {
     .addHelpText(
       'after',
       '\nExamples:\n' +
-        '  $ proxygate categories\n' +
-        '  $ proxygate categories --json',
+        '  $ proxygate categories                    # list all categories\n' +
+        '  $ proxygate categories --json             # machine-readable\n' +
+        '  $ proxygate apis --category weather       # browse APIs in a category',
     )
     .action(async () => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
@@ -42,12 +43,7 @@ export function registerCategoriesCommand(program: Command): void {
 
         console.log(formatTable(headers, rows));
       } catch (err) {
-        if (err instanceof ProxyGateError) {
-          console.error(red(`Error [${err.code}]: ${err.message}`));
-          if (err.action) console.error(dim(`Suggestion: ${err.action}`));
-          process.exit(1);
-        }
-        throw err;
+        handleError(err);
       }
     });
 }

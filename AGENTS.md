@@ -13,26 +13,34 @@ ProxyGate is a marketplace where sellers list unused API capacity and AI agents 
 
 ```bash
 npm install -g @proxygate/cli
-proxygate getting-started       # First-time setup
+proxygate login                 # Interactive setup (API key or wallet)
+proxygate login --key pg_live_... # Direct API key auth
 ```
 
-All commands support `--json` for structured machine-readable output.
+All commands support `--json` for structured machine-readable output and `--no-color` to disable ANSI.
 
 ---
 
 ## Commands
 
-### Setup
+### Setup & Auth
 
 ```bash
-proxygate getting-started                    # Interactive first-time setup
-proxygate setup --keypair ~/.solana/id.json  # Non-interactive setup
+proxygate login                              # Interactive menu (API key or wallet)
+proxygate login --key pg_live_...            # API key auth (for agents)
+proxygate login --keypair ~/.solana/id.json  # Wallet keypair auth
+proxygate login --generate                   # Generate new wallet
+proxygate whoami                             # Check auth mode + balance
+proxygate logout                             # Remove API key
+proxygate logout --all                       # Remove all auth
 ```
 
 ### Browse & Discover APIs
 
 ```bash
-proxygate pricing --json                     # List all available APIs with pricing
+proxygate apis -q "weather" --json           # Search APIs by name/description
+proxygate search geocoding --json            # Alias for apis -q
+proxygate apis -s weather-api --json              # Filter by exact service slug
 proxygate categories --json                  # List API categories
 ```
 
@@ -56,19 +64,25 @@ proxygate categories --json                  # List API categories
 
 ### Make API Requests (Buy)
 
-```bash
-# Proxy a GET request
-proxygate proxy <listing-id> "/path?param=value" --json
+Use **service name**, slug, or listing UUID — the CLI resolves automatically:
 
-# Proxy a POST request
-proxygate proxy <listing-id> "/path" -X POST -d '{"key":"value"}' --json
+```bash
+# Proxy by service name (easiest)
+proxygate proxy agent-postal-lookup /nl/1012
+
+# POST with body
+proxygate proxy weather-api /v1/forecast \
+  -d '{"latitude":52.37,"longitude":4.90,"hourly":"temperature_2m"}'
 
 # Stream a response (SSE)
-proxygate proxy <listing-id> "/v1/chat/completions" -X POST \
-  -d '{"model":"gpt-4","messages":[{"role":"user","content":"hello"}],"stream":true}'
+proxygate proxy weather-api /v1/forecast --stream \
+  -d '{"latitude":52.37,"longitude":4.90,"hourly":"temperature_2m"}'
 ```
 
-**Output:** Raw upstream API response body. Headers available via `--verbose`.
+**Output:** Raw upstream API response on stdout. Cost + request ID on stderr:
+```
+cost: $0.0155 | request: 905b1a53
+```
 
 **Exit codes:**
 | Code | Meaning |
@@ -185,29 +199,33 @@ proxygate usage --days 7 --json              # Last 7 days
 
 ## Auth Model
 
-ProxyGate uses Solana wallet keypairs for authentication. Every request is signed with ed25519.
+Two authentication modes:
 
-```
-1. Agent requests nonce:     GET /v1/nonce?wallet={pubkey}
-2. Agent signs nonce:        ed25519(nonce, keypair)
-3. Agent sends headers:      X-Wallet, X-Nonce, X-Signature
-4. Gateway verifies + proxies request
-```
+| Mode | Best for | How |
+|------|----------|-----|
+| **API key** | Agents, automated access | `Authorization: Bearer pg_live_...` |
+| **Wallet keypair** | On-chain operations | ed25519 nonce signature |
 
-The CLI handles this automatically. For SDK usage:
+The CLI handles auth automatically. For SDK usage:
 
 ```typescript
 import { ProxyGateClient } from '@proxygate/sdk';
 
+// API key auth (recommended for agents)
+const client = new ProxyGateClient({
+  gatewayUrl: 'https://gateway.proxygate.ai',
+  apiKey: 'pg_live_...',
+});
+
+// Or wallet keypair auth
 const client = await ProxyGateClient.create({
   gatewayUrl: 'https://gateway.proxygate.ai',
   keypairPath: '~/.proxygate/keypair.json',
 });
 
-// Proxy a request
-const response = await client.proxy('listing-id', '/path', {
-  method: 'GET',
-  json: true,
+// Proxy by service name
+const response = await client.proxy('weather-api', '/v1/forecast', {
+  latitude: 52.37, longitude: 4.90, hourly: 'temperature_2m',
 });
 ```
 
@@ -234,8 +252,9 @@ All errors follow this schema when using `--json`:
 | `insufficient_credits` | 402 | Not enough USDC | `proxygate deposit <amount>` |
 | `rate_limit_exceeded` | 429 | Too many requests | Wait for `Retry-After` header |
 | `service_unavailable` | 503 | Upstream API down | Retry with backoff |
-| `listing_not_found` | 404 | Invalid listing ID | Check `proxygate pricing --json` |
-| `wallet_auth_failed` | 401 | Bad signature | Check keypair path |
+| `listing_not_found` | 404 | No listing found | `proxygate search <name>` |
+| `wallet_auth_failed` | 401 | Bad signature | `proxygate login` |
+| `spend_limit_exceeded` | 429 | Daily/per-tx limit hit | Increase at app.proxygate.ai/keys |
 | `request_blocked` | 422 | Shield blocked request | Request flagged as malicious |
 
 ---
@@ -243,8 +262,8 @@ All errors follow this schema when using `--json`:
 ## Config
 
 ```
-~/.proxygate/config.json    # Gateway URL + keypair path
-~/.proxygate/keypair.json   # Solana keypair (ed25519)
+~/.proxygate/config.json    # Gateway URL + auth credentials (apiKey and/or keypairPath)
+~/.proxygate/keypair.json   # Solana keypair (ed25519, optional)
 ```
 
 ---

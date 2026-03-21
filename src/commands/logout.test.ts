@@ -8,6 +8,7 @@ vi.mock('../config.js', () => ({
 
 vi.mock('../format.js', () => ({
   green: (s: string) => s,
+  yellow: (s: string) => s,
   dim: (s: string) => s,
 }));
 

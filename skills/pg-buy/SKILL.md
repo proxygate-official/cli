@@ -38,41 +38,45 @@ proxygate apis --verified                         # verified sellers only
 proxygate apis --sort price_asc                   # sort: price_asc, price_desc, popular, newest
 proxygate apis -l 50                              # limit results
 
-# Aggregated views
-proxygate pricing                                 # pricing table (service, type, price, sellers, RPM)
-proxygate pricing -s maps-api --json              # machine-readable
+# Search
+proxygate search weather                          # alias for apis -q
 proxygate services                                # service stats (cheapest, avg latency, rating)
 proxygate categories                              # browse categories
 
 # Listing details & docs
-proxygate listings docs <listing-id>              # view API documentation
+proxygate listings docs <id>                     # view API documentation
 ```
-
-Note the `listing-id` from output — needed for proxy requests.
 
 ### 4. Proxy a request
 
-```bash
-# POST request (default when -d is given)
-proxygate proxy <listing-id> /v1/chat/completions \
-  -d '{"model":"llama3.3:70b","messages":[{"role":"user","content":"Hello"}]}'
+Use a **service name**, slug, or listing UUID — the CLI resolves it automatically:
 
-# GET request
-proxygate proxy <listing-id> /v1/models -X GET
+```bash
+# By service name (easiest)
+proxygate proxy weather-api /v1/forecast \
+  -d '{"latitude":52.37,"longitude":4.90,"hourly":"temperature_2m"}'
+
+# Simple GET
+proxygate proxy agent-postal-lookup /nl/1012
 
 # Stream SSE responses
-proxygate proxy <listing-id> /v1/chat/completions --stream \
-  -d '{"model":"llama3.3:70b","messages":[{"role":"user","content":"Hello"}],"stream":true}'
+proxygate proxy weather-api /v1/forecast --stream \
+  -d '{"latitude":52.37,"longitude":4.90,"hourly":"temperature_2m"}'
 
-# With shield scanning (content moderation)
-proxygate proxy <listing-id> /path --shield monitor    # log threats
-proxygate proxy <listing-id> /path --shield strict     # block threats
-proxygate proxy <listing-id> /path --shield off        # disable
+# Shield scanning (content moderation)
+proxygate proxy weather-api /path --shield monitor    # log threats (default)
+proxygate proxy weather-api /path --shield strict     # block threats (credits refunded)
+proxygate proxy weather-api /path --shield off        # disable (no surcharge)
+```
+
+After each call, you'll see cost and request ID:
+```
+cost: $0.0155 | request: 905b1a53
 ```
 
 ### 5. Rate a seller
 
-After a proxy request, rate the seller using the request ID from the response receipt:
+Use the request ID shown after each proxy call:
 
 ```bash
 proxygate rate --request-id <id> --up      # positive rating
@@ -124,26 +128,24 @@ const apis = await client.apis({ service: 'weather-api', verified: true });
 const categories = await client.categories();
 const services = await client.services();
 
-// View listing docs
-const docs = await client.docs('listing-id');
-
-// Proxy a request
-const res = await client.proxy('listing-id', '/v1/chat/completions', {
-  model: 'llama3.3:70b',
-  messages: [{ role: 'user', content: 'Hello' }],
+// Proxy a request (by service name, slug, or UUID)
+const res = await client.proxy('weather-api', '/v1/forecast', {
+  latitude: 52.37, longitude: 4.90, hourly: 'temperature_2m',
 });
 
+// Resolve service to listing
+const listing = await client.resolveByService('weather-api');
+
 // Stream with SSE
-const res = await client.proxy('listing-id', '/v1/chat/completions',
-  { model: 'llama3.3:70b', messages: [...], stream: true },
-  { stream: true }
+const streamRes = await client.proxy('weather-api', '/v1/forecast',
+  { latitude: 52.37, longitude: 4.90, hourly: 'temperature_2m' },
 );
 for await (const event of parseSSE(res)) {
   process.stdout.write(event.data);
 }
 
 // Shield scanning
-const res = await client.proxy('listing-id', '/path', body, { shield: 'strict' });
+const res = await client.proxy('weather-api', '/path', body, { shield: 'strict' });
 
 // Rate a seller
 await client.rate({ request_id: 'req-id', is_positive: true });
@@ -156,7 +158,7 @@ const settlements = await client.settlements({ role: 'buyer' });
 ## Success criteria
 
 - [ ] Balance checked and sufficient for request
-- [ ] Listing ID identified from apis/pricing output
+- [ ] Service found via `proxygate search` or `proxygate apis`
 - [ ] Proxy request returns upstream API response
 - [ ] Usage reflects the completed request
 

@@ -1,8 +1,8 @@
 import type { Command } from 'commander';
 import type { CreateJobOptions, InteractionType } from '@proxygate/sdk';
-import { ProxyGateError } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
 import { bold, dim, green, yellow, cyan, red, formatTable, formatUsdc, formatWallet } from '../format.js';
+import { handleError } from '../errors.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -11,20 +11,6 @@ import { bold, dim, green, yellow, cyan, red, formatTable, formatUsdc, formatWal
 /** Truncate a string to N chars, adding "..." if truncated. */
 function truncate(str: string, n: number): string {
   return str.length > n ? str.slice(0, n - 3) + '...' : str;
-}
-
-/** Standard error handler matching existing CLI pattern. */
-function handleError(err: unknown): never {
-  if (err instanceof ProxyGateError) {
-    console.error(red(`Error [${err.code}]: ${err.message}`));
-    if (err.action) console.error(dim(`Suggestion: ${err.action}`));
-    process.exit(1);
-  }
-  if (err instanceof Error) {
-    console.error(red(`Error: ${err.message}`));
-    process.exit(1);
-  }
-  throw err;
 }
 
 /** Lazy-load @inquirer/prompts to avoid import overhead for non-interactive use. */

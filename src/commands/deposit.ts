@@ -1,7 +1,10 @@
 import type { Command } from 'commander';
-import { ProxyGateError } from '@proxygate/sdk';
+import { createInterface } from 'node:readline';
 import { getClient } from '../helpers.js';
-import { bold, green, red, dim, formatUsdc } from '../format.js';
+import { bold, green, yellow, red, dim, formatUsdc } from '../format.js';
+import { handleError } from '../errors.js';
+
+const CONFIRM_THRESHOLD = 5_000_000; // 5 USDC
 
 /**
  * Register the `proxygate deposit` command.
@@ -18,6 +21,8 @@ export function registerDepositCommand(program: Command): void {
       'Amount in USDC base units (1 USDC = 1,000,000 lamports)',
     )
     .option('--rpc <url>', 'Solana RPC URL (default: mainnet)')
+    .option('-y, --yes', 'Skip confirmation prompt')
+    .option('--dry-run', 'Show what would happen without sending the transaction')
     .addHelpText(
       'after',
       '\nExamples:\n' +
@@ -33,7 +38,7 @@ export function registerDepositCommand(program: Command): void {
         '  Create one if needed: spl-token create-account EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v\n\n' +
         'The vault auto-initializes on your first deposit.',
     )
-    .action(async (opts: { amount: string; rpc?: string }) => {
+    .action(async (opts: { amount: string; rpc?: string; yes?: boolean; dryRun?: boolean }) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 
       try {
@@ -43,6 +48,29 @@ export function registerDepositCommand(program: Command): void {
         if (isNaN(amount) || amount <= 0) {
           console.error(red('Error: --amount must be a positive integer (USDC base units)'));
           process.exit(1);
+        }
+
+        // Confirm large deposits
+        if (!opts.yes && amount >= CONFIRM_THRESHOLD) {
+          const usdc = (amount / 1_000_000).toFixed(2);
+          console.log(yellow(`Depositing $${usdc} USDC. This sends an on-chain transaction.`));
+          const rl = createInterface({ input: process.stdin, output: process.stderr });
+          const answer = await new Promise<string>((resolve) => rl.question('Confirm? (y/N) ', resolve));
+          rl.close();
+          if (!answer.toLowerCase().startsWith('y')) {
+            console.log(dim('Cancelled.'));
+            return;
+          }
+        }
+
+        if (opts.dryRun) {
+          const usdc = (amount / 1_000_000).toFixed(6);
+          console.log(bold('Dry run — no transaction sent'));
+          console.log();
+          console.log(`  ${dim('Amount:')}   ${usdc} USDC (${amount} base units)`);
+          console.log(`  ${dim('Gateway:')}  ${client.gatewayUrl}`);
+          console.log(`  ${dim('Wallet:')}   ${client.walletAddress}`);
+          return;
         }
 
         const result = await client.vault.deposit({
@@ -61,31 +89,7 @@ export function registerDepositCommand(program: Command): void {
         console.log(`  ${green('Deposited:')}     ${formatUsdc(result.deposited)}`);
         console.log(`  ${green('New Balance:')}   ${formatUsdc(result.balance)} (vault)`);
       } catch (err) {
-        if (err instanceof ProxyGateError) {
-          console.error(red(`Error [${err.code}]: ${err.message}`));
-          if (err.action) console.error(dim(`Suggestion: ${err.action}`));
-          if (err.code === 'vault_not_found') {
-            console.error();
-            console.error(dim('Troubleshooting:'));
-            console.error(dim('  1. The on-chain transaction may not be confirmed yet — wait a few seconds and retry'));
-            console.error(dim('  2. Ensure you have sufficient USDC in your wallet'));
-            console.error(dim('  3. The vault auto-initializes on first deposit — no separate setup needed'));
-          }
-          if (err.code === 'deposit_not_found') {
-            console.error();
-            console.error(dim('Troubleshooting:'));
-            console.error(dim('  1. The transaction may still be confirming — wait and retry'));
-            console.error(dim('  2. This deposit may have already been confirmed (duplicate)'));
-            console.error(dim('  3. Check the transaction on Solana Explorer'));
-          }
-          process.exit(1);
-        }
-        if (err instanceof Error) {
-          console.error(red(`Error: ${err.message}`));
-          console.error(dim('Ensure you have sufficient USDC in your wallet for the deposit.'));
-          process.exit(1);
-        }
-        throw err;
+        handleError(err);
       }
     });
 }

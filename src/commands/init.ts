@@ -5,7 +5,7 @@ import { homedir } from 'node:os';
 import { randomBytes } from 'node:crypto';
 import nacl from 'tweetnacl';
 import { ProxyGateClient } from '@proxygate/sdk';
-import { saveConfig, CONFIG_DIR, CONFIG_PATH } from '../config.js';
+import { loadConfig, saveConfig, CONFIG_DIR, CONFIG_PATH } from '../config.js';
 import { bold, green, yellow, red, dim, formatCurrency } from '../format.js';
 import { parseKeypair } from '../keypair.js';
 
@@ -19,8 +19,8 @@ const DEFAULT_KEYPAIR_PATH = `${CONFIG_DIR}/keypair.json`;
  */
 export function registerInitCommand(program: Command): void {
   program
-    .command('init')
-    .description('Initialize ProxyGate: set up wallet and save config')
+    .command('init', { hidden: true })
+    .description('Initialize ProxyGate (use `proxygate login` instead)')
     .option('--gateway <url>', 'Gateway URL', 'https://gateway.proxygate.ai')
     .option('--keypair <path>', 'Path to existing keypair file (any format)')
     .option('--generate', 'Generate a new keypair')
@@ -38,73 +38,79 @@ export function registerInitCommand(program: Command): void {
         '  $ proxygate init --keypair ~/id.json       # import Solana CLI keypair\n',
     )
     .action(async (opts: { gateway: string; keypair?: string; generate?: boolean }) => {
-      console.log(bold('ProxyGate Init'));
-      console.log();
-
-      if (opts.keypair && opts.generate) {
-        console.error(red('Cannot use both --keypair and --generate'));
-        process.exit(1);
-      }
-
-      let keypairPath: string;
-
-      if (opts.generate) {
-        keypairPath = await generateKeypair();
-      } else if (opts.keypair) {
-        keypairPath = await importKeypair(resolvePath(opts.keypair));
-      } else {
-        // Auto-detect existing keypair
-        const candidates = [DEFAULT_KEYPAIR_PATH, resolvePath('~/.config/solana/id.json')];
-        let found: string | null = null;
-        for (const c of candidates) {
-          try { await access(c); found = c; break; } catch { /* not found */ }
-        }
-
-        if (found) {
-          keypairPath = found;
-          console.log(dim(`Using existing keypair: ${keypairPath}`));
-        } else {
-          console.log('No keypair found. Generating a new one...');
-          console.log();
-          keypairPath = await generateKeypair();
-        }
-      }
-
-      // Create client from keypair
-      let client: ProxyGateClient;
-      try {
-        client = await ProxyGateClient.create({ gatewayUrl: opts.gateway, keypairPath });
-      } catch (err) {
-        console.error(red(`Failed to load keypair: ${err instanceof Error ? err.message : String(err)}`));
-        process.exit(1);
-      }
-
-      console.log(`${green('Wallet:')} ${client.walletAddress}`);
-      console.log(`${dim('Gateway:')} ${opts.gateway}`);
-      console.log();
-
-      // Test gateway + balance
-      try {
-        const balance = await client.balance();
-        console.log(`${green('Balance:')} ${formatCurrency(balance.balance)}`);
-      } catch {
-        console.log(yellow('Could not connect to gateway. Config will still be saved.'));
-        console.log();
-        console.log(dim('To receive USDC payouts (jobs, seller earnings), your wallet needs'));
-        console.log(dim('a USDC token account. Create one at app.proxygate.ai or it will'));
-        console.log(dim('be set up automatically with your first deposit.'));
-      }
-
-      // Save config
-      console.log();
-      await saveConfig({ gatewayUrl: opts.gateway, keypairPath });
-      console.log(`${green('Config saved to')} ${CONFIG_PATH}`);
-      console.log();
-      console.log(bold('Next steps:'));
-      console.log(dim('  proxygate deposit -a 1000000    # deposit 1 USDC'));
-      console.log(dim('  proxygate balance               # check balance'));
-      console.log(dim('  proxygate apis                  # browse available APIs'));
+      await execInitFlow(opts);
     });
+}
+
+/** Shared init flow — used by both `init` and `login --keypair/--generate`. */
+export async function execInitFlow(opts: { gateway: string; keypair?: string; generate?: boolean }): Promise<void> {
+  console.log(bold('ProxyGate Wallet Setup'));
+  console.log();
+
+  if (opts.keypair && opts.generate) {
+    console.error(red('Cannot use both --keypair and --generate'));
+    process.exit(1);
+  }
+
+  let keypairPath: string;
+
+  if (opts.generate) {
+    keypairPath = await generateKeypair();
+  } else if (opts.keypair) {
+    keypairPath = await importKeypair(resolvePath(opts.keypair));
+  } else {
+    // Auto-detect existing keypair
+    const candidates = [DEFAULT_KEYPAIR_PATH, resolvePath('~/.config/solana/id.json')];
+    let found: string | null = null;
+    for (const c of candidates) {
+      try { await access(c); found = c; break; } catch { /* not found */ }
+    }
+
+    if (found) {
+      keypairPath = found;
+      console.log(dim(`Using existing keypair: ${keypairPath}`));
+    } else {
+      console.log('No keypair found. Generating a new one...');
+      console.log();
+      keypairPath = await generateKeypair();
+    }
+  }
+
+  // Create client from keypair
+  let client: ProxyGateClient;
+  try {
+    client = await ProxyGateClient.create({ gatewayUrl: opts.gateway, keypairPath });
+  } catch (err) {
+    console.error(red(`Failed to load keypair: ${err instanceof Error ? err.message : String(err)}`));
+    process.exit(1);
+  }
+
+  console.log(`${green('Wallet:')} ${client.walletAddress}`);
+  console.log(`${dim('Gateway:')} ${opts.gateway}`);
+  console.log();
+
+  // Test gateway + balance
+  try {
+    const balance = await client.balance();
+    console.log(`${green('Balance:')} ${formatCurrency(balance.balance)}`);
+  } catch {
+    console.log(yellow('Could not connect to gateway. Config will still be saved.'));
+    console.log();
+    console.log(dim('To receive USDC payouts (jobs, seller earnings), your wallet needs'));
+    console.log(dim('a USDC token account. Create one at app.proxygate.ai or it will'));
+    console.log(dim('be set up automatically with your first deposit.'));
+  }
+
+  // Save config (preserve existing API key)
+  const existing = await loadConfig();
+  console.log();
+  await saveConfig({ gatewayUrl: opts.gateway, keypairPath, apiKey: existing?.apiKey });
+  console.log(`${green('Config saved to')} ${CONFIG_PATH}`);
+  console.log();
+  console.log(bold('Next steps:'));
+  console.log(dim('  proxygate deposit -a 1000000    # deposit 1 USDC'));
+  console.log(dim('  proxygate balance               # check balance'));
+  console.log(dim('  proxygate apis                  # browse available APIs'));
 }
 
 function resolvePath(path: string): string {

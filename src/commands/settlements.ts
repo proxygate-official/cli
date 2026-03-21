@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import { ProxyGateError } from '@proxygate/sdk';
+import { handleError } from '../errors.js';
 import type { SettlementDaily, SettlementSummary } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
 import { bold, green, yellow, red, dim, formatTable } from '../format.js';
@@ -91,12 +91,7 @@ export function registerSettlementsCommand(program: Command): void {
           }
         }
       } catch (err) {
-        if (err instanceof ProxyGateError) {
-          console.error(red(`Error [${err.code}]: ${err.message}`));
-          if (err.action) console.error(dim(`Suggestion: ${err.action}`));
-          process.exit(1);
-        }
-        throw err;
+        handleError(err);
       }
     });
 }

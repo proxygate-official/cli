@@ -1,15 +1,14 @@
 import type { Command } from 'commander';
-import { ProxyGateError } from '@proxygate/sdk';
 import type { PricingServiceEntry } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
 import {
   bold,
-  red,
   dim,
   cyan,
   formatTable,
   formatCurrency,
 } from '../format.js';
+import { handleError } from '../errors.js';
 
 /**
  * Format a service entry's price for display.
@@ -46,6 +45,7 @@ export function registerPricingCommand(program: Command): void {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 
       try {
+        console.error(dim('Note: `pricing` is deprecated. Use `proxygate apis` instead.'));
         const client = await getClient(parentOpts);
         const result = await client.pricing({ service: opts.service });
 
@@ -72,12 +72,7 @@ export function registerPricingCommand(program: Command): void {
         console.log();
         console.log(dim(`Last updated: ${result.last_updated}`));
       } catch (err) {
-        if (err instanceof ProxyGateError) {
-          console.error(red(`Error [${err.code}]: ${err.message}`));
-          if (err.action) console.error(dim(`Suggestion: ${err.action}`));
-          process.exit(1);
-        }
-        throw err;
+        handleError(err);
       }
     });
 }

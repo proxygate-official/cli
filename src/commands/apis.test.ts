@@ -116,6 +116,6 @@ describe('apis command', () => {
     await run();
 
     const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
-    expect(output).toContain('More results available');
+    expect(output).toContain('More available');
   });
 });

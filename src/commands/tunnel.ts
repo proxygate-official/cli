@@ -133,16 +133,22 @@ export function registerTunnelCommand(program: Command): void {
         // ---------------------------------------------------------------
         // Connect using SDK ProxyGate.serve()
         // ---------------------------------------------------------------
-        console.log(dim('Connecting to gateway...'));
-        console.log();
+        const connectStart = Date.now();
+        const connectTimer = setInterval(() => {
+          const elapsed = ((Date.now() - connectStart) / 1000).toFixed(0);
+          process.stderr.write(`\x1b[2K\r${dim(`Connecting to gateway... (${elapsed}s)`)}`);
+        }, 1000);
+        process.stderr.write(dim('Connecting to gateway...'));
 
         const tunnel = await ProxyGate.serve({
           gatewayUrl,
-          keypair: keypairPath,
+          keypair: keypairPath ?? undefined,
           apiKey,
           services,
 
           onConnected(listings) {
+            clearInterval(connectTimer);
+            process.stderr.write('\x1b[2K\r');
             console.log(green('Connected! Your services are live:'));
             console.log();
             for (const listing of listings) {

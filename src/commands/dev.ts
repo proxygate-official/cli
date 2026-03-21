@@ -92,8 +92,12 @@ export function registerDevCommand(program: Command): void {
         const requestStarts = new Map<string, number>();
 
         // Connect tunnel
-        console.log(dim('Connecting to gateway...'));
-        console.log();
+        const connectStart = Date.now();
+        const connectTimer = setInterval(() => {
+          const elapsed = ((Date.now() - connectStart) / 1000).toFixed(0);
+          process.stderr.write(`\x1b[2K\r${dim(`Connecting to gateway... (${elapsed}s)`)}`);
+        }, 1000);
+        process.stderr.write(dim('Connecting to gateway...'));
 
         let tunnel: TunnelClient = await ProxyGate.serve({
           gatewayUrl,
@@ -101,6 +105,8 @@ export function registerDevCommand(program: Command): void {
           services,
 
           onConnected(listings) {
+            clearInterval(connectTimer);
+            process.stderr.write('\x1b[2K\r');
             console.log(green('Connected!'));
             for (const listing of listings) {
               console.log(`  ${bold(listing.service)} ${dim(listing.endpoint)}`);

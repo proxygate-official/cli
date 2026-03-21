@@ -2,30 +2,30 @@
 // ANSI color helpers (no external dependency)
 // ---------------------------------------------------------------------------
 
-/** Wrap text in ANSI bold. */
-export function bold(text: string): string {
-  return `\x1b[1m${text}\x1b[0m`;
+/** Whether color output is disabled (--no-color flag or NO_COLOR env). */
+let _noColor = !!process.env['NO_COLOR'];
+
+/** Disable color output programmatically (called from index.ts --no-color). */
+export function setNoColor(value: boolean): void { _noColor = value; }
+
+function wrap(code: string, text: string): string {
+  return _noColor ? text : `\x1b[${code}m${text}\x1b[0m`;
 }
+
+/** Wrap text in ANSI bold. */
+export function bold(text: string): string { return wrap('1', text); }
 
 /** Wrap text in ANSI dim. */
-export function dim(text: string): string {
-  return `\x1b[2m${text}\x1b[0m`;
-}
+export function dim(text: string): string { return wrap('2', text); }
 
 /** Wrap text in ANSI green. */
-export function green(text: string): string {
-  return `\x1b[32m${text}\x1b[0m`;
-}
+export function green(text: string): string { return wrap('32', text); }
 
 /** Wrap text in ANSI red. */
-export function red(text: string): string {
-  return `\x1b[31m${text}\x1b[0m`;
-}
+export function red(text: string): string { return wrap('31', text); }
 
 /** Wrap text in ANSI cyan. */
-export function cyan(text: string): string {
-  return `\x1b[36m${text}\x1b[0m`;
-}
+export function cyan(text: string): string { return wrap('36', text); }
 
 /** Wrap text in ANSI yellow. */
 export function yellow(text: string): string {

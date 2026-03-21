@@ -58,7 +58,7 @@ const profile = await client.sellerProfile('wallet-address');
 |---------|-------|
 | Balance 0 | Deposit: `proxygate deposit -a <amount>` — see `pg-buy` |
 | Proxy returns 503 | Listing paused or seller tunnel down |
-| "Unauthorized" | Run `proxygate init` to reconfigure — see `pg-setup` |
+| "Unauthorized" | Run `proxygate login` to reconfigure — see `pg-setup` |
 | Tunnel disconnects | Check `proxygate dev` logs, verify local port is open |
 | Gateway unreachable | Verify URL: `https://gateway.proxygate.ai` |
 

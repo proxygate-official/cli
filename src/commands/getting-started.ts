@@ -18,8 +18,8 @@ const DEFAULT_GATEWAY = 'https://gateway.proxygate.ai';
  */
 export function registerGettingStartedCommand(program: Command): void {
   program
-    .command('getting-started')
-    .description('Interactive setup guide — start here if you are new')
+    .command('getting-started', { hidden: true })
+    .description('Interactive setup guide (use `proxygate login` instead)')
     .option('--gateway <url>', 'Gateway URL', DEFAULT_GATEWAY)
     .option('--keypair <path>', 'Path to Solana keypair JSON file')
     .addHelpText(

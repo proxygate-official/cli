@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import { ProxyGateError } from '@proxygate/sdk';
+import { handleError } from '../errors.js';
 import { getClient } from '../helpers.js';
 import {
   bold,
@@ -90,15 +90,10 @@ export function registerUsageCommand(program: Command): void {
 
           if (result.has_more) {
             console.log();
-            console.log(dim('More entries available. Use --limit to fetch more.'));
+            console.log(dim(`Showing ${result.usage.length} entries. More available — use -l <n> to increase or --json for full data.`));
           }
         } catch (err) {
-          if (err instanceof ProxyGateError) {
-            console.error(red(`Error [${err.code}]: ${err.message}`));
-            if (err.action) console.error(dim(`Suggestion: ${err.action}`));
-            process.exit(1);
-          }
-          throw err;
+          handleError(err);
         }
       },
     );

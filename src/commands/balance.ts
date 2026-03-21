@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
-import { ProxyGateError } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
-import { bold, green, yellow, red, dim, formatUsdc } from '../format.js';
+import { bold, green, yellow, dim, formatUsdc } from '../format.js';
+import { handleError } from '../errors.js';
 
 /**
  * Register the `proxygate balance` command.
@@ -52,20 +52,16 @@ export function registerBalanceCommand(program: Command): void {
             if (settlements.ata_status === 'missing') {
               console.log(`  ${yellow('Pending Earnings:')}   $${settlements.pending_payout_usdc} (awaiting USDC token account)`);
               console.log(dim(`  Run: spl-token create-account EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`));
-            } else if (settlements.pending_payout_usdc > 0) {
+            } else {
               console.log(`  ${dim('Pending Earnings:')}   $${settlements.pending_payout_usdc}`);
             }
           }
         } catch {
-          // Seller earnings check is optional — ignore failures
+          console.log();
+          console.log(`  ${dim('Seller Earnings:')}    ${dim('could not fetch (check proxygate settlements -r seller)')}`);
         }
       } catch (err) {
-        if (err instanceof ProxyGateError) {
-          console.error(red(`Error [${err.code}]: ${err.message}`));
-          if (err.action) console.error(dim(`Suggestion: ${err.action}`));
-          process.exit(1);
-        }
-        throw err;
+        handleError(err);
       }
     });
 }

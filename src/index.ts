@@ -2,6 +2,7 @@
 
 import { Command } from 'commander';
 import { createRequire } from 'node:module';
+import { setNoColor } from './format.js';
 import { registerInitCommand } from './commands/init.js';
 
 const require = createRequire(import.meta.url);
@@ -46,21 +47,27 @@ program
   .option('--keypair <path>', 'Path to Solana keypair JSON file (default: from config)')
   .option('--api-key <key>', 'Override API key (default: from config)')
   .option('--json', 'Machine-readable JSON output (for scripting)')
+  .option('--no-color', 'Disable colored output')
+  .hook('preAction', () => {
+    if (program.opts().color === false) setNoColor(true);
+  })
   .addHelpText(
     'after',
-    '\nQuick start:\n' +
-      '  $ proxygate getting-started        First time? Start here\n' +
-      '  $ proxygate login --key pg_live_... Authenticate with API key\n' +
-      '  $ proxygate pricing                Browse available APIs\n' +
-      '  $ proxygate balance                Check your USDC balance\n' +
-      '  $ proxygate proxy <id> <path> -d \'{"model":"gpt-4",...}\'\n\n' +
-      'Build & sell an agent:\n' +
+    '\nGet started:\n' +
+      '  $ proxygate login                  Set up auth (interactive)\n' +
+      '  $ proxygate login --key pg_live_...   or pass API key directly\n' +
+      '  $ proxygate whoami                 Check auth status + balance\n\n' +
+      'Use APIs:\n' +
+      '  $ proxygate apis -q <search>       Find APIs by name\n' +
+      '  $ proxygate proxy <service> <path> Call an API through ProxyGate\n\n' +
+      'Build & sell:\n' +
       '  $ proxygate create                 Scaffold a new agent project\n' +
       '  $ proxygate test                   Validate your service locally\n' +
       '  $ proxygate tunnel                 Go live on ProxyGate\n\n' +
-      'Manage listings:\n' +
-      '  $ proxygate listings list           List your seller listings\n' +
-      '  $ proxygate listings create         Create a new listing (interactive)\n\n' +
+      'Manage:\n' +
+      '  $ proxygate listings list          Your seller listings\n' +
+      '  $ proxygate balance                USDC balance\n' +
+      '  $ proxygate usage                  Request history\n\n' +
       'Config: ~/.proxygate/config.json\n' +
       'Docs:   https://gateway.proxygate.ai/docs',
   );

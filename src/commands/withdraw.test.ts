@@ -59,7 +59,7 @@ describe('withdraw command', () => {
 
   it('outputs formatted complete result with TX signature and amount', async () => {
     mockWithdraw.mockResolvedValue(WITHDRAW_COMPLETE_RESULT);
-    await runWithdraw();
+    await runWithdraw('--yes');
 
     const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
     expect(output).toContain('Vault Withdrawal');
@@ -70,7 +70,7 @@ describe('withdraw command', () => {
 
   it('outputs raw JSON with --json flag', async () => {
     mockWithdraw.mockResolvedValue(WITHDRAW_COMPLETE_RESULT);
-    await runWithdraw('--json');
+    await runWithdraw('--json', '--yes');
 
     expect(logSpy).toHaveBeenCalledTimes(1);
     const parsed: unknown = JSON.parse(logSpy.mock.calls[0][0] as string);
@@ -86,7 +86,7 @@ describe('withdraw command', () => {
 
   it('calls withdraw without amount when omitted (withdraw all)', async () => {
     mockWithdraw.mockResolvedValue(WITHDRAW_COMPLETE_RESULT);
-    await runWithdraw();
+    await runWithdraw('--yes');
 
     expect(mockWithdraw).toHaveBeenCalledWith(expect.objectContaining({}));
   });

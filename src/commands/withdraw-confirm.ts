@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
-import { ProxyGateError } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
-import { bold, green, red, dim, formatUsdc } from '../format.js';
+import { bold, green, dim, formatUsdc } from '../format.js';
+import { handleError } from '../errors.js';
 
 /**
  * Register the `proxygate withdraw-confirm` command.
@@ -41,16 +41,7 @@ export function registerWithdrawConfirmCommand(program: Command): void {
         console.log(`  ${green('Balance:')}    ${formatUsdc(result.balance)}`);
         console.log(`  ${green('TX:')}         ${result.tx_signature}`);
       } catch (err) {
-        if (err instanceof ProxyGateError) {
-          console.error(red(`Error [${err.code}]: ${err.message}`));
-          if (err.action) console.error(dim(`Suggestion: ${err.action}`));
-          process.exit(1);
-        }
-        if (err instanceof Error) {
-          console.error(red(`Error: ${err.message}`));
-          process.exit(1);
-        }
-        throw err;
+        handleError(err);
       }
     });
 }

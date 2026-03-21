@@ -1,8 +1,9 @@
 import type { Command } from 'commander';
 import type { ShieldMode } from '@proxygate/sdk';
-import { ProxyGateError, parseSSE, parseShieldInfo, SHIELD_SURCHARGE_DISPLAY } from '@proxygate/sdk';
+import { parseSSE, parseShieldInfo, SHIELD_SURCHARGE_DISPLAY } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
 import { red, dim, yellow, cyan } from '../format.js';
+import { handleError } from '../errors.js';
 
 /**
  * Register the `proxygate proxy` command.
@@ -19,7 +20,7 @@ export function registerProxyCommand(program: Command): void {
   program
     .command('proxy')
     .description('Send a proxied request to an upstream API through a seller listing')
-    .argument('<listing-id>', 'Listing UUID (get from `proxygate pricing --json`)')
+    .argument('<listing>', 'Service name, slug, or listing UUID')
     .argument('<path>', 'Upstream API path (e.g., /v1/chat/completions)')
     .option('-d, --data <json>', 'Request body as JSON string')
     .option('-X, --method <method>', 'HTTP method (default: POST if -d given, GET otherwise)')
@@ -28,13 +29,18 @@ export function registerProxyCommand(program: Command): void {
     .addHelpText(
       'after',
       '\nExamples:\n' +
-        '  $ proxygate proxy abc-123 /v1/chat/completions \\\n' +
-        "    -d '{\"model\":\"gpt-4\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]}'\n\n" +
-        '  $ proxygate proxy abc-123 /v1/models -X GET\n\n' +
-        '  $ proxygate proxy abc-123 /v1/chat/completions --stream \\\n' +
-        "    -d '{\"model\":\"gpt-4\",\"messages\":[...],\"stream\":true}'\n\n" +
-        'The listing ID determines which seller and service to use.\n' +
-        'Get listing IDs with: proxygate pricing --json',
+        '  $ proxygate proxy agent-postal-lookup /nl/1012\n\n' +
+        '  $ proxygate proxy weather-api /v1/forecast \\\n' +
+        "    -d '{\"latitude\":52.37,\"longitude\":4.90,\"hourly\":\"temperature_2m\"}'\n\n" +
+        '  $ proxygate proxy abc12345-6789-abcd-ef01-234567890abc /v1/data -X GET\n\n' +
+        '  $ proxygate proxy weather-api /v1/forecast --stream \\\n' +
+        "    -d '{\"latitude\":52.37,\"longitude\":4.90}'\n\n" +
+        'Accepts a service name, slug, or listing UUID.\n' +
+        'Browse available APIs: proxygate apis -q <search>\n\n' +
+        'Shield modes:\n' +
+        '  monitor  — scan response for harmful content, log but allow (default)\n' +
+        '  strict   — block response if flagged (credits refunded)\n' +
+        '  off      — skip scanning (no surcharge)',
     )
     .action(
       async (
@@ -90,7 +96,7 @@ export function registerProxyCommand(program: Command): void {
               if (event.data === '[DONE]') break;
               process.stdout.write(event.data + '\n');
             }
-            printSpendLimitWarning(response);
+            printRequestMeta(response);
             return;
           }
 
@@ -139,38 +145,60 @@ export function registerProxyCommand(program: Command): void {
             console.log(text);
           }
 
-          printSpendLimitWarning(response);
+          // Print request metadata to stderr
+          printRequestMeta(response);
 
           // Print status to stderr if not 200
           if (!response.ok) {
             console.error(dim(`Status: ${response.status}`));
           }
         } catch (err) {
-          if (err instanceof ProxyGateError) {
-            console.error(red(`Error [${err.code}]: ${err.message}`));
-            if (err.action) console.error(dim(`Suggestion: ${err.action}`));
-            process.exit(1);
-          }
-          throw err;
+          handleError(err);
         }
       },
     );
 }
 
-function printSpendLimitWarning(response: Response): void {
+/** Print cost, request ID, and spend limit info from response headers. */
+function printRequestMeta(response: Response): void {
+  const parts: string[] = [];
+
+  // Cost from receipt header
+  const receiptB64 = response.headers.get('x-proxygate-receipt');
+  if (receiptB64) {
+    try {
+      const receipt = JSON.parse(Buffer.from(receiptB64, 'base64').toString()) as {
+        request_id?: string; amount?: number; seller?: string;
+      };
+      if (receipt.amount != null) {
+        parts.push(`cost: $${(receipt.amount / 1_000_000).toFixed(4)}`);
+      }
+      if (receipt.request_id) {
+        parts.push(`request: ${receipt.request_id.slice(0, 8)}`);
+      }
+    } catch { /* malformed receipt */ }
+  }
+
+  // Spend limit
   const remaining = response.headers.get('x-spendlimit-remaining');
   const limit = response.headers.get('x-spendlimit-limit');
-  if (!remaining || !limit) return;
+  if (remaining && limit) {
+    const remainNum = parseInt(remaining, 10);
+    const limitNum = parseInt(limit, 10);
+    if (!isNaN(remainNum) && !isNaN(limitNum) && limitNum > 0) {
+      const usedPct = Math.round(((limitNum - remainNum) / limitNum) * 100);
+      const remainUsdc = (remainNum / 1_000_000).toFixed(2);
+      const limitUsdc = (limitNum / 1_000_000).toFixed(2);
+      if (usedPct >= 80) {
+        parts.push(yellow(`limit: $${remainUsdc}/$${limitUsdc} remaining`));
+      } else {
+        parts.push(`limit: $${remainUsdc}/$${limitUsdc}`);
+      }
+    }
+  }
 
-  const remainNum = parseInt(remaining, 10);
-  const limitNum = parseInt(limit, 10);
-  if (isNaN(remainNum) || isNaN(limitNum) || limitNum === 0) return;
-
-  const usedPct = Math.round(((limitNum - remainNum) / limitNum) * 100);
-  if (usedPct >= 80) {
-    const usedUsdc = ((limitNum - remainNum) / 1_000_000).toFixed(2);
-    const limitUsdc = (limitNum / 1_000_000).toFixed(2);
-    console.error(yellow(`Daily spend: $${usedUsdc}/$${limitUsdc} (${usedPct}% used)`));
+  if (parts.length > 0) {
+    console.error(dim(parts.join(' | ')));
   }
 }
 

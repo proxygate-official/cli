@@ -81,7 +81,7 @@ describe('deposit command', () => {
 
   it('passes correct amount to client.vault.deposit()', async () => {
     mockDeposit.mockResolvedValue(DEPOSIT_RESULT);
-    await runDeposit('--amount', '5000000');
+    await runDeposit('--amount', '5000000', '--yes');
 
     expect(mockDeposit).toHaveBeenCalledWith({ amount: 5_000_000 });
   });

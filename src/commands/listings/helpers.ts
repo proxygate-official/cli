@@ -1,25 +1,12 @@
 import type { CreateListingOptions, ListingAuthPattern } from '@proxygate/sdk';
-import { ProxyGateError } from '@proxygate/sdk';
-import { red, dim } from '../../format.js';
+import { handleError } from '../../errors.js';
 
 /** Truncate a string to N chars, adding "..." if truncated. */
 export function truncate(str: string, n: number): string {
   return str.length > n ? str.slice(0, n - 3) + '...' : str;
 }
 
-/** Standard error handler matching existing CLI pattern. */
-export function handleError(err: unknown): never {
-  if (err instanceof ProxyGateError) {
-    console.error(red(`Error [${err.code}]: ${err.message}`));
-    if (err.action) console.error(dim(`Suggestion: ${err.action}`));
-    process.exit(1);
-  }
-  if (err instanceof Error) {
-    console.error(red(`Error: ${err.message}`));
-    process.exit(1);
-  }
-  throw err;
-}
+export { handleError };
 
 /** Lazy-load @inquirer/prompts to avoid import overhead for non-interactive use. */
 export async function loadPrompts(): Promise<typeof import('@inquirer/prompts')> {

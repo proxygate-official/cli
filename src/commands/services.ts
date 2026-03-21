@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
-import { ProxyGateError } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
-import { bold, green, red, dim, cyan, formatTable, formatWallet } from '../format.js';
+import { bold, dim, cyan, formatTable } from '../format.js';
+import { handleError } from '../errors.js';
 
 export function registerServicesCommand(program: Command): void {
   program
@@ -9,9 +9,11 @@ export function registerServicesCommand(program: Command): void {
     .description('View aggregated service stats (no auth required)')
     .addHelpText(
       'after',
-      '\nExamples:\n' +
-        '  $ proxygate services\n' +
-        '  $ proxygate services --json',
+      '\nShows cheapest price, avg latency, seller count, and total RPM per service.\n\n' +
+        'Examples:\n' +
+        '  $ proxygate services                      # all services overview\n' +
+        '  $ proxygate services --json               # machine-readable\n' +
+        '  $ proxygate apis -s weather-api           # browse individual listings for a service',
     )
     .action(async () => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
@@ -45,12 +47,7 @@ export function registerServicesCommand(program: Command): void {
 
         console.log(formatTable(headers, rows));
       } catch (err) {
-        if (err instanceof ProxyGateError) {
-          console.error(red(`Error [${err.code}]: ${err.message}`));
-          if (err.action) console.error(dim(`Suggestion: ${err.action}`));
-          process.exit(1);
-        }
-        throw err;
+        handleError(err);
       }
     });
 }

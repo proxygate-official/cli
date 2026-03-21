@@ -272,14 +272,14 @@ async function runInteractiveCreate(): Promise<CreateListingOptions | null> {
         ],
       });
   const credentials = (authPattern === 'none') ? {} : await promptCredentials(authPattern);
+  const shieldEnabled = isNoCredType ? false : await confirm({ message: `Enable Shield request scanning? Scans responses for harmful content (${SHIELD_SURCHARGE_DISPLAY}/req from your payout)`, default: false });
 
   const totalRpm = parseInt(await input({ message: 'Total RPM capacity:', default: '60' }), 10);
   const reservedRpm = parseInt(await input({ message: 'Reserved RPM (for your own use):', default: '0' }), 10);
-  const pricePerRequest = parseInt(await input({ message: 'Price per request (micro-cents):', default: '1000' }), 10);
+  const pricePerRequest = parseInt(await input({ message: 'Price per request (micro-cents, 1000 = $0.01):', default: '1000' }), 10);
   const categorySlugs = (await input({ message: 'Category slugs (comma-separated, e.g. "llm,ai"):' }))
     .split(',').map((s) => s.trim()).filter(Boolean);
   const description = (await input({ message: 'Description (optional, press Enter to skip):' })) || undefined;
-  const shieldEnabled = isNoCredType ? false : await confirm({ message: `Enable Shield request scanning? (${SHIELD_SURCHARGE_DISPLAY}/req deducted from your payout)`, default: false });
 
   console.log();
   console.log(bold('Review:'));

@@ -12,6 +12,7 @@ vi.mock('@proxygate/sdk', () => ({
 
 const mockSaveConfig = vi.fn();
 vi.mock('../config.js', () => ({
+  loadConfig: vi.fn().mockResolvedValue(null),
   saveConfig: (...args: unknown[]) => mockSaveConfig(...args),
   CONFIG_DIR: '/home/test/.proxygate',
   CONFIG_PATH: '/home/test/.proxygate/config.json',

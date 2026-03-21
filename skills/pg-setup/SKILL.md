@@ -1,15 +1,22 @@
 ---
 name: pg-setup
-description: Use when setting up ProxyGate for the first time, installing the CLI, configuring a Solana wallet keypair, or connecting to the gateway. Make sure to use this skill whenever someone mentions "get started with proxygate", "install proxygate", "setup wallet", "configure proxygate", "connect to gateway", or wants to start using ProxyGate APIs, even if they don't explicitly say "setup".
+description: Use when setting up ProxyGate for the first time, installing the CLI, configuring auth (API key or wallet), or connecting to the gateway. Make sure to use this skill whenever someone mentions "get started with proxygate", "install proxygate", "setup wallet", "configure proxygate", "connect to gateway", "login", or wants to start using ProxyGate APIs, even if they don't explicitly say "setup".
 ---
 
 # ProxyGate Setup
 
-First-time setup for ProxyGate — install CLI, configure wallet, connect to gateway.
+First-time setup for ProxyGate — install CLI, authenticate, start using APIs.
 
-## Why this matters
+## Two ways to authenticate
 
-ProxyGate is an API marketplace where AI agents buy and sell API capacity using USDC on Solana. Before doing anything — buying APIs, selling capacity, or posting jobs — you need a configured CLI with a Solana keypair.
+| Method | Best for | Command |
+|--------|----------|---------|
+| **API key** | AI agents, automated access, quick start | `proxygate login --key pg_live_...` |
+| **Wallet keypair** | On-chain operations (deposit, withdraw) | `proxygate login --keypair ~/id.json` |
+
+Most users should start with an **API key** — it's the fastest path to making API calls. Get one at [app.proxygate.ai/keys](https://app.proxygate.ai/keys).
+
+You can add both later (dual mode: API key for proxy, keypair for vault ops).
 
 ## Process
 
@@ -17,11 +24,11 @@ ProxyGate is an API marketplace where AI agents buy and sell API capacity using 
 
 ```bash
 proxygate --version 2>/dev/null || echo "NOT_INSTALLED"
-cat ~/.proxygate/config.json 2>/dev/null || echo "NOT_CONFIGURED"
+proxygate whoami 2>/dev/null || echo "NOT_CONFIGURED"
 ```
 
 - Installed and configured → skip to verify
-- Installed but not configured → skip to configure
+- Installed but not configured → skip to authenticate
 - Not installed → start from install
 
 ### 2. Install the CLI
@@ -32,73 +39,71 @@ npm install -g @proxygate/cli
 pnpm add -g @proxygate/cli
 ```
 
-### 3. Find or create a keypair
+### 3. Authenticate
 
-Check common locations:
+**Option A: API key (recommended for agents)**
 ```bash
-ls ~/.config/solana/id.json 2>/dev/null
-ls ~/.proxygate/keypair.json 2>/dev/null
+proxygate login --key pg_live_abc123...
+```
+Get a key at [app.proxygate.ai/keys](https://app.proxygate.ai/keys). No Solana wallet needed.
+
+**Option B: Wallet keypair (for on-chain operations)**
+```bash
+proxygate login --keypair ~/.proxygate/keypair.json
+# or generate a new one:
+proxygate login --generate
 ```
 
-If no keypair exists:
+**Option C: Interactive menu**
 ```bash
-solana-keygen new --outfile ~/.proxygate/keypair.json --no-bip39-passphrase
+proxygate login
+# Shows a menu:
+#   1. API key     — For AI agents and automated access
+#   2. Wallet      — Connect a Solana keypair for on-chain operations
 ```
-
-If `solana-keygen` isn't installed, `proxygate getting-started` can generate one.
 
 Supported keypair formats: JSON array (64 numbers), seed array (32 numbers), Base58 private key (Phantom export), Base64, Hex.
 
-### 4. Configure
-
-Interactive setup (recommended):
-```bash
-proxygate getting-started
-```
-
-Or manual:
-```bash
-proxygate init --keypair ~/.proxygate/keypair.json --gateway https://gateway.proxygate.ai
-```
-
-Config saved to `~/.proxygate/config.json` with keys `gatewayUrl` and `keypairPath`.
-
-### 5. Verify
+### 4. Verify
 
 ```bash
-proxygate balance
-proxygate pricing
+proxygate whoami                    # check auth mode + balance
+proxygate apis -q weather           # browse available APIs
+proxygate proxy agent-us-weather /   # make your first API call
 ```
 
-- Balance 0 → deposit USDC with `/pg-buy`
-- Gateway unreachable → check `--gateway` URL
-- Keypair error → check path in `~/.proxygate/config.json`
-
-### 6. Install Claude Code skills (optional)
+### 5. Install Claude Code skills (optional)
 
 ```bash
 proxygate skills install
 ```
 
-Installs all ProxyGate skills to `~/.claude/skills/` and registers a SessionStart hook for update checking.
+## Auth management
+
+```bash
+proxygate whoami                    # check current auth mode
+proxygate login --key pg_live_...   # add/change API key
+proxygate login --keypair ~/id.json # add/change wallet
+proxygate logout                    # remove API key (keep wallet)
+proxygate logout --all              # remove all auth (with confirmation)
+```
 
 ## Troubleshooting
 
 | Problem | Fix |
 |---------|-----|
 | `command not found: proxygate` | `npm install -g @proxygate/cli` |
-| `ENOENT keypair` | Check path in `~/.proxygate/config.json` |
+| `Authentication failed` | Check your API key at app.proxygate.ai/keys |
+| `Not configured` | Run `proxygate login` |
 | `Gateway unreachable` | Verify URL: `https://gateway.proxygate.ai` |
 | Balance shows 0 | Deposit USDC — use `/pg-buy` |
-| `solana-keygen: command not found` | Use `proxygate getting-started` instead |
 
 ## Success criteria
 
 - [ ] CLI installed (`proxygate --version` returns a version)
-- [ ] Keypair file exists and is readable
-- [ ] `~/.proxygate/config.json` has `gatewayUrl` and `keypairPath`
-- [ ] `proxygate balance` returns a response (even if 0)
-- [ ] `proxygate pricing` shows available APIs
+- [ ] `proxygate whoami` shows auth mode and balance
+- [ ] `proxygate apis` shows available APIs
+- [ ] `proxygate proxy <service> <path>` returns a response
 
 ## Related skills
 
