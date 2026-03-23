@@ -55,7 +55,7 @@ export function registerLogoutCommand(program: Command): void {
         console.log(green('All auth credentials removed from config.'));
         console.log(yellow('Run `proxygate login` to reconfigure.'));
         if (config?.apiKey) {
-          console.log(dim('Note: API key is NOT revoked server-side. Revoke at app.proxygate.ai/keys'));
+          console.log(dim('Note: API key is NOT revoked server-side. Revoke at app.proxygate.ai/wallets'));
         }
         if (config?.keypairPath) {
           console.log(dim(`Note: Keypair file not deleted (${config.keypairPath}). Remove manually if needed.`));
@@ -85,7 +85,7 @@ export function registerLogoutCommand(program: Command): void {
       } else {
         console.log(yellow('Warning: No auth method remaining. Run `proxygate login` to reconfigure.'));
       }
-      console.log(dim('Note: The key is NOT revoked server-side. Revoke it at app.proxygate.ai/keys'));
+      console.log(dim('Note: The key is NOT revoked server-side. Revoke it at app.proxygate.ai/wallets'));
       console.log(dim(`Config: ${CONFIG_PATH}`));
     });
 }

@@ -11,7 +11,7 @@ const ERROR_HINTS: Record<string, string> = {
   skim_flagged: 'Your wallet has been flagged for vault skim protection. Contact support.',
   auth_required: 'Log in first: proxygate login --key pg_live_...',
   rate_limited: 'Too many requests. Wait and retry.',
-  spend_limit_exceeded: 'Increase your spend limit at app.proxygate.ai/keys',
+  spend_limit_exceeded: 'Increase your spend limit at app.proxygate.ai/wallets',
   invalid_config: 'Run proxygate init or proxygate login to configure.',
   invalid_api_key: 'Check your API key: proxygate login --key pg_live_...',
 };

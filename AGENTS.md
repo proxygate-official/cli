@@ -254,7 +254,7 @@ All errors follow this schema when using `--json`:
 | `service_unavailable` | 503 | Upstream API down | Retry with backoff |
 | `listing_not_found` | 404 | No listing found | `proxygate search <name>` |
 | `wallet_auth_failed` | 401 | Bad signature | `proxygate login` |
-| `spend_limit_exceeded` | 429 | Daily/per-tx limit hit | Increase at app.proxygate.ai/keys |
+| `spend_limit_exceeded` | 429 | Daily/per-tx limit hit | Increase at app.proxygate.ai/wallets |
 | `request_blocked` | 422 | Shield blocked request | Request flagged as malicious |
 
 ---

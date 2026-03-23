@@ -53,6 +53,26 @@ describe('loadConfig', () => {
     const result = await loadConfig();
     expect(result).toEqual(config);
   });
+
+  it('returns config with delegation token fields', async () => {
+    const config = {
+      gatewayUrl: 'http://localhost:3001',
+      delegationToken: 'pg_del_test123',
+      wallet: 'test-wallet-abc',
+      delegationExpiresAt: '2099-01-01T00:00:00Z',
+    };
+    mockReadFile.mockResolvedValue(JSON.stringify(config) as never);
+    const result = await loadConfig();
+    expect(result).toEqual(config);
+  });
+
+  it('accepts delegation token as valid auth (no keypair/apiKey)', async () => {
+    const config = { gatewayUrl: 'http://localhost:3001', delegationToken: 'pg_del_only' };
+    mockReadFile.mockResolvedValue(JSON.stringify(config) as never);
+    const result = await loadConfig();
+    expect(result).not.toBeNull();
+    expect(result!.delegationToken).toBe('pg_del_only');
+  });
 });
 
 describe('saveConfig', () => {
@@ -105,5 +125,39 @@ describe('saveConfig', () => {
     const written = mockWriteFile.mock.calls[0][1] as string;
     expect(written).toContain('"apiKey"');
     expect(written).toContain('"keypairPath"');
+  });
+
+  it('persists delegation token, wallet, and delegationExpiresAt', async () => {
+    mockMkdir.mockResolvedValue(undefined as never);
+    mockWriteFile.mockResolvedValue(undefined as never);
+
+    const config = {
+      gatewayUrl: 'http://localhost:3001',
+      delegationToken: 'pg_del_persist',
+      wallet: 'wallet-xyz',
+      delegationExpiresAt: '2099-06-15T12:00:00Z',
+    };
+    await saveConfig(config);
+
+    const written = mockWriteFile.mock.calls[0][1] as string;
+    expect(written).toContain('"delegationToken"');
+    expect(written).toContain('pg_del_persist');
+    expect(written).toContain('"wallet"');
+    expect(written).toContain('wallet-xyz');
+    expect(written).toContain('"delegationExpiresAt"');
+    expect(written).toContain('2099-06-15T12:00:00Z');
+  });
+
+  it('omits undefined delegation fields', async () => {
+    mockMkdir.mockResolvedValue(undefined as never);
+    mockWriteFile.mockResolvedValue(undefined as never);
+
+    const config = { gatewayUrl: 'http://localhost:3001', apiKey: 'pg_live_test_abc' };
+    await saveConfig(config);
+
+    const written = mockWriteFile.mock.calls[0][1] as string;
+    expect(written).not.toContain('"delegationToken"');
+    expect(written).not.toContain('"wallet"');
+    expect(written).not.toContain('"delegationExpiresAt"');
   });
 });

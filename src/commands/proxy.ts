@@ -112,7 +112,7 @@ export function registerProxyCommand(program: Command): void {
               if (body.message) console.error(dim(body.message as string));
               if (body.action) console.error(dim(body.action as string));
             } catch { /* not JSON */ }
-            console.error(dim('Increase your limit: app.proxygate.ai/keys'));
+            console.error(dim('Increase your limit: app.proxygate.ai/wallets'));
             process.exit(1);
           }
 

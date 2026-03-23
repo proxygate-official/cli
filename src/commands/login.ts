@@ -138,7 +138,11 @@ async function loginWithBrowser(gatewayUrl: string, mode: 'wallet' | 'apikey', e
   const { openBrowser } = await import('../lib/browser.js');
 
   const { port, state, waitForCallback, close } = await startCallbackServer();
-  const url = `https://app.proxygate.ai/cli-auth?mode=${mode}&port=${port}&state=${state}`;
+  // Use local web app when gateway is localhost, otherwise production
+  const appUrl = gatewayUrl.includes('localhost') || gatewayUrl.includes('127.0.0.1')
+    ? 'http://localhost:3000'
+    : 'https://app.proxygate.ai';
+  const url = `${appUrl}/cli-auth?mode=${mode}&port=${port}&state=${state}`;
 
   console.log(dim('Opening browser...'));
   const opened = openBrowser(url);

@@ -14,7 +14,7 @@ First-time setup for ProxyGate — install CLI, authenticate, start using APIs.
 | **API key** | AI agents, automated access, quick start | `proxygate login --key pg_live_...` |
 | **Wallet keypair** | On-chain operations (deposit, withdraw) | `proxygate login --keypair ~/id.json` |
 
-Most users should start with an **API key** — it's the fastest path to making API calls. Get one at [app.proxygate.ai/keys](https://app.proxygate.ai/keys).
+Most users should start with an **API key** — it's the fastest path to making API calls. Get one at [app.proxygate.ai/wallets](https://app.proxygate.ai/wallets).
 
 You can add both later (dual mode: API key for proxy, keypair for vault ops).
 
@@ -45,7 +45,7 @@ pnpm add -g @proxygate/cli
 ```bash
 proxygate login --key pg_live_abc123...
 ```
-Get a key at [app.proxygate.ai/keys](https://app.proxygate.ai/keys). No Solana wallet needed.
+Get a key at [app.proxygate.ai/wallets](https://app.proxygate.ai/wallets). No Solana wallet needed.
 
 **Option B: Wallet keypair (for on-chain operations)**
 ```bash
@@ -93,7 +93,7 @@ proxygate logout --all              # remove all auth (with confirmation)
 | Problem | Fix |
 |---------|-----|
 | `command not found: proxygate` | `npm install -g @proxygate/cli` |
-| `Authentication failed` | Check your API key at app.proxygate.ai/keys |
+| `Authentication failed` | Check your API key at app.proxygate.ai/wallets |
 | `Not configured` | Run `proxygate login` |
 | `Gateway unreachable` | Verify URL: `https://gateway.proxygate.ai` |
 | Balance shows 0 | Deposit USDC — use `/pg-buy` |
