@@ -86,7 +86,7 @@ export function registerLoginCommand(program: Command): void {
         const sub = await ask('Choose (a/b/c): ');
 
         if (sub === 'a') {
-          await loginWithBrowser(gatewayUrl, 'wallet');
+          await loginWithWalletConnect(gatewayUrl);
         } else if (sub === 'c') {
           const { execInitFlow } = await import('./init.js');
           await execInitFlow({ gateway: gatewayUrl, generate: true });
@@ -131,6 +131,37 @@ async function loginWithApiKey(key: string, gatewayUrl: string, existingKeypairP
     apiKey: key,
   });
   console.log(green(`Config saved to ${CONFIG_PATH}`));
+}
+
+async function loginWithWalletConnect(gatewayUrl: string): Promise<void> {
+  console.log(dim('Initializing WalletConnect...'));
+  console.log(dim('Scan the QR code with your mobile wallet (Phantom, Solflare)'));
+
+  try {
+    const { loginWithWalletConnectQR } = await import('../lib/walletconnect.js');
+    const result = await loginWithWalletConnectQR(gatewayUrl);
+
+    console.log(green(`Authenticated as ${result.wallet.slice(0, 6)}...${result.wallet.slice(-4)}`));
+    console.log(dim(`Expires: ${result.expiresAt}`));
+
+    await saveConfig({
+      gatewayUrl,
+      delegationToken: result.delegationToken,
+      wallet: result.wallet,
+      delegationExpiresAt: result.expiresAt,
+    });
+    console.log(green(`Config saved to ${CONFIG_PATH}`));
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('Timeout')) {
+      console.error(red('Timed out waiting for wallet connection.'));
+    } else {
+      console.error(red(`WalletConnect failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
+    }
+    // Fallback to browser
+    console.log();
+    console.log(dim('Falling back to browser flow...'));
+    await loginWithBrowser(gatewayUrl, 'wallet');
+  }
 }
 
 async function loginWithBrowser(gatewayUrl: string, mode: 'wallet' | 'apikey', existingKeypairPath?: string): Promise<void> {
