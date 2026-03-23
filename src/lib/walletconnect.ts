@@ -27,7 +27,7 @@ export async function loginWithWalletConnectQR(
   const timeoutMs = opts?.timeoutMs ?? 300_000; // 5 minutes
 
   // Lazy imports — heavy dependencies
-  const { default: QRCode } = await import('qrcode-terminal');
+  const QRCode = await import('qrcode');
   const { SignClient: SC } = await import('@walletconnect/sign-client');
 
   // 1. Init WalletConnect SignClient
@@ -56,9 +56,10 @@ export async function loginWithWalletConnectQR(
     throw new Error('Failed to generate WalletConnect URI');
   }
 
-  // 3. Display QR in terminal (small mode)
+  // 3. Display compact QR in terminal
   console.log();
-  QRCode.generate(uri, { small: true });
+  const qrString = await QRCode.toString(uri, { type: 'utf8', errorCorrectionLevel: 'L', margin: 1 });
+  console.log(qrString);
   console.log();
 
   // 4. Wait for session approval with timeout
