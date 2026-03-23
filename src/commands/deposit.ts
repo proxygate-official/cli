@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import { createInterface } from 'node:readline';
 import { getClient } from '../helpers.js';
+import { loadConfig } from '../config.js';
 import { bold, green, yellow, red, dim, formatUsdc } from '../format.js';
 import { handleError } from '../errors.js';
 
@@ -42,13 +43,38 @@ export function registerDepositCommand(program: Command): void {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 
       try {
-        const client = await getClient(parentOpts);
-
         const amount = parseInt(opts.amount, 10);
         if (isNaN(amount) || amount <= 0) {
           console.error(red('Error: --amount must be a positive integer (USDC base units)'));
           process.exit(1);
         }
+
+        // Delegation token without keypair — open browser for TX approval
+        const config = await loadConfig();
+        if (config?.delegationToken && !config.keypairPath) {
+          const { startCallbackServer } = await import('../lib/localhost-server.js');
+          const { openBrowser } = await import('../lib/browser.js');
+
+          const { port, state, waitForCallback, close } = await startCallbackServer();
+          const url = `https://app.proxygate.ai/cli-tx?type=deposit&amount=${amount}&wallet=${config.wallet ?? ''}&port=${port}&state=${state}`;
+
+          console.log(dim('Opening browser to approve transaction...'));
+          openBrowser(url);
+          console.log(dim('Waiting for approval... (Ctrl+C to cancel)'));
+
+          try {
+            await waitForCallback();
+            console.log(green(`Deposit confirmed: ${formatUsdc(amount)} USDC`));
+          } catch {
+            console.error(red('Transaction approval timed out or failed.'));
+            process.exit(1);
+          } finally {
+            close();
+          }
+          return;
+        }
+
+        const client = await getClient(parentOpts);
 
         // Confirm large deposits
         if (!opts.yes && amount >= CONFIRM_THRESHOLD) {

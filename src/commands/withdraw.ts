@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import { createInterface } from 'node:readline';
 import { getClient } from '../helpers.js';
+import { loadConfig } from '../config.js';
 import { bold, green, yellow, red, dim, formatUsdc } from '../format.js';
 import { handleError } from '../errors.js';
 
@@ -33,6 +34,42 @@ export function registerWithdrawCommand(program: Command): void {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 
       try {
+        // Delegation token without keypair — open browser for TX approval
+        const config = await loadConfig();
+        if (config?.delegationToken && !config.keypairPath) {
+          const { startCallbackServer } = await import('../lib/localhost-server.js');
+          const { openBrowser } = await import('../lib/browser.js');
+
+          let withdrawAmount: number | undefined;
+          if (opts.amount) {
+            withdrawAmount = parseInt(opts.amount, 10);
+            if (isNaN(withdrawAmount) || withdrawAmount <= 0) {
+              console.error(red('Error: --amount must be a positive integer (USDC base units)'));
+              process.exit(1);
+            }
+          }
+
+          const { port, state, waitForCallback, close } = await startCallbackServer();
+          const amountParam = withdrawAmount ? `&amount=${withdrawAmount}` : '';
+          const url = `https://app.proxygate.ai/cli-tx?type=withdraw${amountParam}&wallet=${config.wallet ?? ''}&port=${port}&state=${state}`;
+
+          console.log(dim('Opening browser to approve transaction...'));
+          openBrowser(url);
+          console.log(dim('Waiting for approval... (Ctrl+C to cancel)'));
+
+          try {
+            await waitForCallback();
+            const label = withdrawAmount ? formatUsdc(withdrawAmount) : 'all available USDC';
+            console.log(green(`Withdrawal confirmed: ${label}`));
+          } catch {
+            console.error(red('Transaction approval timed out or failed.'));
+            process.exit(1);
+          } finally {
+            close();
+          }
+          return;
+        }
+
         const client = await getClient(parentOpts);
 
         let amount: number | undefined;

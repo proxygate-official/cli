@@ -4,13 +4,15 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { loadConfig } from './config.js';
+import { checkDelegationExpiry } from './lib/auth-check.js';
 import { red, dim } from './format.js';
 
 /**
  * Resolve a ProxyGateClient from CLI flags or saved config.
  *
- * Supports three auth modes:
+ * Supports four auth modes:
  * - API key only (no keypair needed)
+ * - Delegation token (browser-based login)
  * - Keypair only (existing behavior)
  * - Dual mode (API key + keypair for hybrid auth)
  *
@@ -25,11 +27,22 @@ export async function getClient(opts: {
   const gatewayUrl = opts.gateway ?? config?.gatewayUrl;
   const keypairPath = opts.keypair ?? config?.keypairPath;
   const apiKey = opts.apiKey ?? config?.apiKey;
+  const delegationToken = config?.delegationToken;
 
   if (!gatewayUrl) {
     console.error(red('Error: No gateway URL. Run `proxygate init` or `proxygate login` first.'));
     console.error(dim('Or use --gateway flag.'));
     process.exit(1);
+  }
+
+  // Check delegation token expiry before using it
+  if (config) {
+    checkDelegationExpiry(config);
+  }
+
+  // Delegation token (browser-based login, no keypair)
+  if (delegationToken && !keypairPath && !apiKey) {
+    return new ProxyGateClient({ gatewayUrl, delegationToken });
   }
 
   // API key only (no keypair)
