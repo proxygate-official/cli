@@ -134,33 +134,77 @@ async function loginWithApiKey(key: string, gatewayUrl: string, existingKeypairP
 }
 
 async function loginWithWalletConnect(gatewayUrl: string): Promise<void> {
-  console.log(dim('Initializing WalletConnect...'));
-  console.log(dim('Scan the QR code with your mobile wallet (Phantom, Solflare)'));
+  const { startCallbackServer } = await import('../lib/localhost-server.js');
+  const { openBrowser } = await import('../lib/browser.js');
+
+  // Start localhost server for browser callback (runs in parallel with QR)
+  const { port, state, waitForCallback, close } = await startCallbackServer();
+  const appUrl = gatewayUrl.includes('localhost') || gatewayUrl.includes('127.0.0.1')
+    ? 'http://localhost:3000'
+    : 'https://app.proxygate.ai';
+  const browserUrl = `${appUrl}/cli-auth?mode=wallet&port=${port}&state=${state}`;
+
+  console.log(dim('Scan the QR code with your mobile wallet, or use the browser link below.'));
+  console.log();
+
+  // Race: WalletConnect QR vs browser callback — first one wins
+  let wcPromise: Promise<{ wallet: string; delegationToken: string; expiresAt: string }> | undefined;
 
   try {
     const { loginWithWalletConnectQR } = await import('../lib/walletconnect.js');
-    const result = await loginWithWalletConnectQR(gatewayUrl);
 
-    console.log(green(`Authenticated as ${result.wallet.slice(0, 6)}...${result.wallet.slice(-4)}`));
-    console.log(dim(`Expires: ${result.expiresAt}`));
+    // Show QR + start WC session
+    wcPromise = loginWithWalletConnectQR(gatewayUrl);
+  } catch {
+    // WalletConnect init failed — skip QR, browser only
+  }
+
+  // Also open browser + show URL
+  console.log(dim(`Or open: ${browserUrl}`));
+  console.log();
+  openBrowser(browserUrl);
+
+  try {
+    // Race between WalletConnect QR and browser callback
+    const result = await Promise.race([
+      // WalletConnect direct (QR scan)
+      ...(wcPromise ? [wcPromise.then(r => ({
+        wallet: r.wallet,
+        delegation_token: r.delegationToken,
+        expires_at: r.expiresAt,
+        source: 'qr' as const,
+      }))] : []),
+      // Browser callback
+      waitForCallback().then(r => ({
+        wallet: r.wallet,
+        delegation_token: r.delegation_token,
+        expires_at: r.expires_at,
+        source: 'browser' as const,
+      })),
+    ]);
+
+    const wallet = result.wallet ?? '';
+    if (result.delegation_token) {
+      console.log(green(`Authenticated as ${wallet.slice(0, 6)}...${wallet.slice(-4)}`));
+      if (result.expires_at) console.log(dim(`Expires: ${result.expires_at}`));
+    }
 
     await saveConfig({
       gatewayUrl,
-      delegationToken: result.delegationToken,
+      delegationToken: result.delegation_token,
       wallet: result.wallet,
-      delegationExpiresAt: result.expiresAt,
+      delegationExpiresAt: result.expires_at,
     });
     console.log(green(`Config saved to ${CONFIG_PATH}`));
   } catch (err) {
     if (err instanceof Error && err.message.includes('Timeout')) {
       console.error(red('Timed out waiting for wallet connection.'));
     } else {
-      console.error(red(`WalletConnect failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
+      console.error(red(`Login failed: ${err instanceof Error ? err.message : 'Unknown error'}`));
     }
-    // Fallback to browser
-    console.log();
-    console.log(dim('Falling back to browser flow...'));
-    await loginWithBrowser(gatewayUrl, 'wallet');
+    process.exit(1);
+  } finally {
+    close();
   }
 }
 

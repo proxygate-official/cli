@@ -22,7 +22,7 @@ export interface WalletConnectResult {
 
 export async function loginWithWalletConnectQR(
   gatewayUrl: string,
-  opts?: { timeoutMs?: number },
+  opts?: { timeoutMs?: number; projectId?: string },
 ): Promise<WalletConnectResult> {
   const timeoutMs = opts?.timeoutMs ?? 300_000; // 5 minutes
 
@@ -32,7 +32,7 @@ export async function loginWithWalletConnectQR(
 
   // 1. Init WalletConnect SignClient
   const client: InstanceType<typeof SC> = await SC.init({
-    projectId: 'da38e1a89c09f1a8bbb1d17dd152dca8', // ProxyGate WalletConnect project
+    projectId: opts?.projectId ?? process.env.WALLETCONNECT_PROJECT_ID ?? 'd141aaea95acc0c02c2e1400e02248a8',
     metadata: {
       name: 'ProxyGate CLI',
       description: 'Authenticate ProxyGate CLI with your wallet',
@@ -41,9 +41,9 @@ export async function loginWithWalletConnectQR(
     },
   });
 
-  // 2. Create session proposal
+  // 2. Create session proposal (use optionalNamespaces to avoid deprecation warning)
   const { uri, approval } = await client.connect({
-    requiredNamespaces: {
+    optionalNamespaces: {
       solana: {
         methods: ['solana_signMessage'],
         chains: ['solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'], // mainnet
@@ -56,11 +56,9 @@ export async function loginWithWalletConnectQR(
     throw new Error('Failed to generate WalletConnect URI');
   }
 
-  // 3. Display QR in terminal
+  // 3. Display QR in terminal (small mode)
   console.log();
-  QRCode.generate(uri, { small: true }, (qr: string) => {
-    console.log(qr);
-  });
+  QRCode.generate(uri, { small: true });
   console.log();
 
   // 4. Wait for session approval with timeout
