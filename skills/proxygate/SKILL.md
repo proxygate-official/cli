@@ -13,7 +13,7 @@ Based on the user's intent, invoke the appropriate sub-skill using the `Skill` t
 
 | User wants to... | Invoke skill |
 |---|---|
-| Set up ProxyGate, install CLI, configure wallet, connect gateway | `pg-setup` |
+| Set up ProxyGate, install CLI, configure auth, connect gateway, login | `pg-setup` |
 | Check balance, usage, earnings, listings, settlement history, status overview | `pg-status` |
 | Browse APIs, deposit USDC, make proxy requests, stream responses, rate sellers, withdraw | `pg-buy` |
 | Create listings, manage listings, rotate keys, upload docs, start tunnels, sell capacity, view earnings | `pg-sell` |
@@ -30,9 +30,11 @@ Based on the user's intent, invoke the appropriate sub-skill using the `Skill` t
 
 ```bash
 proxygate --help          # all commands
+proxygate login           # authenticate (API key or wallet)
+proxygate whoami          # check auth mode + balance
 proxygate balance         # check balance
 proxygate apis            # browse APIs
-proxygate proxy <id> /path -d '...'  # make a request
+proxygate proxy <service> /path -d '...'  # make a request
 proxygate listings list   # your listings
 proxygate jobs list       # bounty board
 proxygate tunnel          # expose local service
@@ -41,7 +43,7 @@ proxygate tunnel          # expose local service
 ## Key facts
 
 - Payments: USDC on Solana (1 USDC = 1,000,000 lamports)
-- Auth: ed25519 wallet signatures (automatic via CLI/SDK)
-- Config: `~/.proxygate/config.json` (gateway URL + keypair path)
+- Auth: API key, wallet keypair, or WalletConnect (delegation token)
+- Config: `~/.proxygate/config.json`
 - Gateway: `https://gateway.proxygate.ai`
 - Docs: `https://gateway.proxygate.ai/docs`

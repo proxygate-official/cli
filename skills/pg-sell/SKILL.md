@@ -1,11 +1,19 @@
 ---
 name: pg-sell
 description: Use when selling API capacity on ProxyGate — creating listings, managing listings (update/pause/delete), rotating keys, uploading docs, starting tunnels, managing headers, viewing earnings, or exposing local services. Make sure to use this skill whenever someone mentions "list API", "sell capacity", "create listing", "start tunnel", "expose service", "earnings", "go live", "monetize API", "rotate key", "pause listing", or wants to make their API available on ProxyGate.
+metadata: {"openclaw":{"requires":{"bins":["proxygate"]},"homepage":"https://proxygate.ai"}}
 ---
 
 # ProxyGate — Sell API Capacity
 
 Seller workflow: create listings, manage them, expose services via tunnel, track earnings.
+
+## Prerequisites
+
+Selling requires authentication. Any auth mode works for creating/managing listings, but **a wallet keypair is recommended** for sellers to receive settlement payouts directly.
+
+- **API key or delegation token**: Can create/manage listings and start tunnels. Earnings accumulate in your ProxyGate balance.
+- **Wallet keypair**: Full access — earnings settle directly to your Solana wallet.
 
 ## Process
 

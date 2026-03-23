@@ -1,11 +1,21 @@
 ---
 name: pg-buy
 description: Use when buying API access through ProxyGate — depositing USDC, browsing available APIs, making proxy requests, streaming responses, or rating sellers. Make sure to use this skill whenever someone mentions "proxy request", "buy API", "deposit USDC", "browse APIs", "call API through proxygate", "make an API call", "find an API", "search APIs", or wants to consume any API through ProxyGate, even if they don't explicitly say "buy".
+metadata: {"openclaw":{"requires":{"bins":["proxygate"]},"homepage":"https://proxygate.ai"}}
 ---
 
 # ProxyGate — Buy API Access
 
-Buyer workflow: deposit USDC, discover APIs, proxy requests, stream responses, rate sellers.
+Buyer workflow: discover APIs, deposit USDC, proxy requests, stream responses, rate sellers.
+
+## Prerequisites
+
+You need at least one auth method configured (`proxygate whoami` to check). See `pg-setup` for installation.
+
+- **API key or delegation token**: Can browse APIs and make proxy calls. Deposit/withdraw through the web dashboard at [app.proxygate.ai](https://app.proxygate.ai).
+- **Wallet keypair**: Full access — deposit and withdraw USDC directly from CLI.
+
+**Don't have USDC yet?** Onramping (buy USDC with fiat) and bridging (move USDC from other chains) are coming soon. For now, acquire USDC on Solana through an exchange or DEX, then deposit through the dashboard or CLI.
 
 ## Process
 
@@ -19,12 +29,16 @@ Shows: total balance, pending settlement, available, cooldown status. If 0 or in
 
 ### 2. Deposit USDC
 
+**Via CLI (requires wallet keypair):**
 ```bash
 proxygate deposit -a 5000000      # 5 USDC (amounts in lamports: 1 USDC = 1,000,000)
 proxygate deposit -a 1000000      # 1 USDC
 ```
 
-Vault auto-initializes on first deposit. User needs USDC in their Solana wallet. Use `--rpc <url>` for custom RPC.
+**Via web dashboard (any auth mode):**
+Visit [app.proxygate.ai](https://app.proxygate.ai) → Connect wallet → Deposit.
+
+Vault auto-initializes on first deposit. Use `--rpc <url>` for custom RPC.
 
 ### 3. Discover APIs
 
@@ -95,7 +109,7 @@ proxygate settlements -r buyer                    # cost breakdown
 proxygate settlements -s weather-api --from 2026-03-01 # filtered
 ```
 
-### 7. Withdraw (optional)
+### 7. Withdraw (requires wallet keypair)
 
 Convert credits back to USDC:
 
@@ -109,6 +123,8 @@ Recovery (if CLI crashes mid-withdrawal):
 proxygate withdraw-confirm --tx <tx_signature>
 ```
 
+Not available with API key or delegation token auth — use the web dashboard instead.
+
 ## SDK (Programmatic)
 
 For agent-to-agent use without CLI:
@@ -116,6 +132,12 @@ For agent-to-agent use without CLI:
 ```typescript
 import { ProxyGateClient, parseSSE } from '@proxygate/sdk';
 
+// API key auth (simplest)
+const client = await ProxyGateClient.create({
+  apiKey: 'pg_live_abc123...',
+});
+
+// Or wallet keypair auth (full access)
 const client = await ProxyGateClient.create({
   keypairPath: '~/.proxygate/keypair.json',
 });
@@ -133,19 +155,16 @@ const res = await client.proxy('weather-api', '/v1/forecast', {
   latitude: 52.37, longitude: 4.90, hourly: 'temperature_2m',
 });
 
-// Resolve service to listing
-const listing = await client.resolveByService('weather-api');
-
 // Stream with SSE
 const streamRes = await client.proxy('weather-api', '/v1/forecast',
   { latitude: 52.37, longitude: 4.90, hourly: 'temperature_2m' },
 );
-for await (const event of parseSSE(res)) {
+for await (const event of parseSSE(streamRes)) {
   process.stdout.write(event.data);
 }
 
 // Shield scanning
-const res = await client.proxy('weather-api', '/path', body, { shield: 'strict' });
+const shielded = await client.proxy('weather-api', '/path', body, { shield: 'strict' });
 
 // Rate a seller
 await client.rate({ request_id: 'req-id', is_positive: true });

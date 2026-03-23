@@ -1,6 +1,7 @@
 ---
 name: pg-update
 description: Use when updating ProxyGate CLI or SDK to the latest version. Also triggers proactively when an update notification is shown. Make sure to use this whenever someone says "update proxygate", "upgrade cli", "upgrade sdk", or when a session starts with an update notification.
+metadata: {"openclaw":{"requires":{"anyBins":["npm","pnpm"],"bins":["proxygate"]},"homepage":"https://proxygate.ai"}}
 ---
 
 # ProxyGate Update
