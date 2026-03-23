@@ -71,7 +71,16 @@ export function registerLoginCommand(program: Command): void {
         const sub = await ask('Choose (a/b): ');
 
         if (sub === 'b') {
-          await loginWithBrowser(gatewayUrl, 'apikey');
+          const { openBrowser } = await import('../lib/browser.js');
+          const appUrl = gatewayUrl.includes('localhost') || gatewayUrl.includes('127.0.0.1')
+            ? 'http://localhost:3000'
+            : 'https://app.proxygate.ai';
+          openBrowser(`${appUrl}/wallets?tab=keys`);
+          console.log(dim(`Opening ${appUrl}/wallets?tab=keys`));
+          console.log();
+          const key = await ask('Paste your API key: ');
+          if (!key) { console.error(red('No key provided.')); process.exit(1); }
+          await loginWithApiKey(key, gatewayUrl, config?.keypairPath);
         } else {
           const key = await ask('API key: ');
           if (!key) { console.error(red('No key provided.')); process.exit(1); }
@@ -144,44 +153,19 @@ async function loginWithWalletConnect(gatewayUrl: string): Promise<void> {
     : 'https://app.proxygate.ai';
   const browserUrl = `${appUrl}/cli-auth?mode=wallet&port=${port}&state=${state}`;
 
-  console.log(dim('Scan the QR code with your mobile wallet, or use the browser link below.'));
-  console.log();
-
-  // Race: WalletConnect QR vs browser callback — first one wins
-  let wcPromise: Promise<{ wallet: string; delegationToken: string; expiresAt: string }> | undefined;
-
-  try {
-    const { loginWithWalletConnectQR } = await import('../lib/walletconnect.js');
-
-    // Show QR + start WC session
-    wcPromise = loginWithWalletConnectQR(gatewayUrl);
-  } catch {
-    // WalletConnect init failed — skip QR, browser only
-  }
-
-  // Also open browser + show URL
-  console.log(dim(`Or open: ${browserUrl}`));
+  console.log(dim('Opening browser to connect wallet...'));
+  console.log(dim(`Link: ${browserUrl}`));
   console.log();
   openBrowser(browserUrl);
+  console.log(dim('Waiting for wallet connection... (Ctrl+C to cancel)'));
 
   try {
-    // Race between WalletConnect QR and browser callback
-    const result = await Promise.race([
-      // WalletConnect direct (QR scan)
-      ...(wcPromise ? [wcPromise.then(r => ({
-        wallet: r.wallet,
-        delegation_token: r.delegationToken,
-        expires_at: r.expiresAt,
-        source: 'qr' as const,
-      }))] : []),
-      // Browser callback
-      waitForCallback().then(r => ({
-        wallet: r.wallet,
-        delegation_token: r.delegation_token,
-        expires_at: r.expires_at,
-        source: 'browser' as const,
-      })),
-    ]);
+    const cb = await waitForCallback();
+    const result = {
+      wallet: cb.wallet,
+      delegation_token: cb.delegation_token,
+      expires_at: cb.expires_at,
+    };
 
     const wallet = result.wallet ?? '';
     if (result.delegation_token) {

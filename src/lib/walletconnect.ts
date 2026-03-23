@@ -56,11 +56,16 @@ export async function loginWithWalletConnectQR(
     throw new Error('Failed to generate WalletConnect URI');
   }
 
-  // 3. Display compact QR in terminal
-  console.log();
-  const qrString = await QRCode.toString(uri, { type: 'utf8', errorCorrectionLevel: 'L', margin: 1 });
-  console.log(qrString);
-  console.log();
+  // 3. Display QR in terminal (if URI fits)
+  try {
+    console.log();
+    const qrString = await QRCode.toString(uri, { type: 'utf8', errorCorrectionLevel: 'L', margin: 1 });
+    console.log(qrString);
+  } catch {
+    // URI too long for terminal QR — skip, user can use browser link
+    console.log('  (QR too large for terminal — use the browser link instead)');
+    console.log();
+  }
 
   // 4. Wait for session approval with timeout
   const session = await Promise.race([
