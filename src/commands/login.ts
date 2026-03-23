@@ -154,7 +154,6 @@ async function loginWithBrowser(gatewayUrl: string, mode: 'wallet' | 'apikey', e
 
   try {
     const result = await waitForCallback();
-    console.log(dim('Callback received: ' + JSON.stringify(result)));
     if (result.delegation_token) {
       const wallet = result.wallet ?? '';
       console.log(green(`Authenticated as ${wallet.slice(0, 6)}...${wallet.slice(-4)}`));
