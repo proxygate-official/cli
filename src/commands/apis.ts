@@ -56,7 +56,7 @@ export function registerApisCommand(program: Command): void {
 
         const headers = ['ID', 'Service', 'Type', 'Seller', 'Price', 'RPM', 'Uptime', 'Trust', 'Verified'];
         const rows = result.data.map((l) => [
-          l.listing_id.slice(0, 8),
+          l.listing_id,
           `${bold(cyan(l.service_name))} ${dim(`(${l.service})`)}`,
           l.listing_type ?? 'api',
           formatWallet(l.seller_wallet),
