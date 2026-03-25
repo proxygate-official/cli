@@ -75,11 +75,16 @@ export function registerChallengeCommand(program: Command): void {
         }
 
         if (res.error) {
-          console.error(`\n  ${bold('Application failed:')} ${res.error}`);
-          console.error();
-          console.error('  Pre-requirements:');
-          console.error(`    1. Verified email  ${dim('→ proxygate.ai/challenge/apply')}`);
-          console.error(`    2. Verified tweet  ${dim('→ proxygate.ai/referral')}`);
+          const messages: Record<string, string> = {
+            challenge_not_found_or_closed: 'This challenge is no longer accepting applications.',
+            wallet_required: 'Connect a wallet first. Run: proxygate login',
+            email_not_verified: 'Verify your email at proxygate.ai/challenge/apply first.',
+            x_handle_required: 'Add your X handle during onboarding at proxygate.ai/challenge/apply first.',
+            tweet_required: 'Post and verify a tweet mentioning @proxygateai first.',
+            already_applied: 'You\'ve already applied to this challenge.',
+          };
+          const msg = messages[res.error] ?? res.error;
+          console.error(`\n  ${bold('Application failed:')} ${msg}`);
           process.exit(1);
         }
 
