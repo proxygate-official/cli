@@ -3,6 +3,22 @@ import { getClient } from '../helpers.js';
 import { bold, green, yellow, dim } from '../format.js';
 import { handleError } from '../errors.js';
 
+interface ApplyResponse {
+  application_id?: string;
+  status?: string;
+  error?: string;
+}
+
+interface StatusResponse {
+  challenge?: { status?: string; max_participants?: number };
+  spots_filled?: number;
+  my_application?: {
+    status: string;
+    pitch: string;
+    funded_tx?: string;
+  } | null;
+}
+
 /**
  * Register the `proxygate challenge` command group.
  *
@@ -43,11 +59,14 @@ export function registerChallengeCommand(program: Command): void {
         }
 
         const client = await getClient(parentOpts);
+        const { authenticatedRequest } = client._vaultDelegate();
 
-        const res = await client.request('POST', '/v1/challenge/apply', {
-          challenge_slug: opts.challenge,
-          pitch: opts.pitch,
-          participation_path: opts.path,
+        const res = await authenticatedRequest<ApplyResponse>('POST', '/v1/challenge/apply', {
+          body: {
+            challenge_slug: opts.challenge,
+            pitch: opts.pitch,
+            participation_path: opts.path,
+          },
         });
 
         if (parentOpts.json) {
@@ -69,7 +88,7 @@ export function registerChallengeCommand(program: Command): void {
         } else {
           console.log(`\n  ${green('Application submitted!')} We'll review within 24 hours.`);
         }
-        console.log(`  Application ID: ${dim(res.application_id)}`);
+        console.log(`  Application ID: ${dim(res.application_id ?? '')}`);
       } catch (err) {
         handleError(err);
       }
@@ -84,8 +103,11 @@ export function registerChallengeCommand(program: Command): void {
 
       try {
         const client = await getClient(parentOpts);
+        const { authenticatedRequest } = client._vaultDelegate();
 
-        const res = await client.request('GET', `/v1/challenge/status?slug=${opts.challenge}`);
+        const res = await authenticatedRequest<StatusResponse>('GET', '/v1/challenge/status', {
+          query: { slug: opts.challenge },
+        });
 
         if (parentOpts.json) {
           console.log(JSON.stringify(res, null, 2));
