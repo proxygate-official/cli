@@ -8,6 +8,7 @@ import { registerRotateKeySubcommand } from './rotate-key.js';
 import { registerDocsSubcommand } from './docs.js';
 import { registerUploadDocsSubcommand } from './upload-docs.js';
 import { registerHeadersSubcommand } from './headers.js';
+import { registerTestSubcommand } from './test.js';
 
 /**
  * Register the `proxygate listings` command group.
@@ -33,7 +34,8 @@ export function registerListingsCommand(program: Command): void {
         '  rotate-key <id>              Rotate API key or OAuth2 credentials\n' +
         '  docs <id>                    View API documentation for a listing\n' +
         '  upload-docs <id> <file>      Upload OpenAPI or markdown docs for a listing\n' +
-        '  headers <id>                 Manage upstream headers\n\n' +
+        '  headers <id>                 Manage upstream headers\n' +
+        '  test <id>                    Test endpoints for an existing listing\n\n' +
         'Examples:\n' +
         '  $ proxygate listings list                  JSON output (default)\n' +
         '  $ proxygate listings list --table          Table format\n' +
@@ -51,4 +53,5 @@ export function registerListingsCommand(program: Command): void {
   registerDocsSubcommand(listings, program);
   registerUploadDocsSubcommand(listings, program);
   registerHeadersSubcommand(listings, program);
+  registerTestSubcommand(listings, program);
 }
