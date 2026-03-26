@@ -1,9 +1,66 @@
 import type { CreateListingOptions, ListingAuthPattern } from '@proxygate/sdk';
 import { handleError } from '../../errors.js';
+import { bold, red, green, dim } from '../../format.js';
 
 /** Truncate a string to N chars, adding "..." if truncated. */
 export function truncate(str: string, n: number): string {
   return str.length > n ? str.slice(0, n - 3) + '...' : str;
+}
+
+/**
+ * Print method-aware test results to the console.
+ *
+ * - GET success (validation_type: 'full'): "OK" with green status
+ * - Non-GET success (validation_type: 'auth_only'): "AUTH OK" with dim status
+ * - Failures: "FAIL" with red status; 403 shows WAF/CDN hint
+ */
+export interface TestResultsDisplay {
+  test_results?: Array<{
+    success: boolean;
+    status?: number;
+    status_text?: string;
+    latency_ms: number;
+    error?: string;
+    endpoint: { method: string; path: string };
+    validation_type: 'full' | 'auth_only';
+  }>;
+  test_passed?: boolean;
+}
+
+export function printTestResults(result: TestResultsDisplay): void {
+  const test_results = result.test_results;
+  const test_passed = result.test_passed;
+  if (!test_results || !Array.isArray(test_results) || test_results.length === 0) return;
+
+  console.log();
+  console.log(bold('Endpoint Tests:'));
+
+  for (const tr of test_results) {
+    const label = `${tr.endpoint.method} ${tr.endpoint.path}`;
+
+    if (tr.error) {
+      console.log(`  ${red('FAIL')}  ${bold(label)}`);
+      console.log(`         ${dim(tr.error)}`);
+      continue;
+    }
+
+    if (tr.success && tr.validation_type === 'auth_only') {
+      console.log(`  ${green('AUTH OK')}  ${bold(label)}  ${dim('(' + (tr.status ?? '?') + ')')}  ${dim(tr.latency_ms + 'ms')}`);
+    } else if (tr.success && tr.validation_type === 'full') {
+      console.log(`  ${green('OK')}  ${bold(label)}  ${green(String(tr.status ?? '?'))}  ${dim(tr.latency_ms + 'ms')}`);
+    } else {
+      console.log(`  ${red('FAIL')}  ${bold(label)}  ${red(String(tr.status ?? '?'))}  ${dim(tr.latency_ms + 'ms')}`);
+      if (tr.status === 403) {
+        console.log(`         ${dim('Tip: If your API uses a WAF/CDN, try --skip-test')}`);
+      }
+    }
+  }
+
+  if (test_passed === false) {
+    console.log();
+    console.log(red('Some endpoint tests failed. Listing is inactive.'));
+    console.log(dim('Fix and retry with: proxygate listings test <id>'));
+  }
 }
 
 export { handleError };

@@ -5,7 +5,7 @@ import type { CreateListingOptions, ListingAuthPattern } from '@proxygate/sdk';
 import { SHIELD_SURCHARGE_DISPLAY } from '@proxygate/sdk';
 import { getClient } from '../../helpers.js';
 import { bold, red, dim, green } from '../../format.js';
-import { truncate, handleError, loadPrompts, promptCredentials } from './helpers.js';
+import { truncate, handleError, loadPrompts, promptCredentials, printTestResults } from './helpers.js';
 
 interface CreateCliOpts {
   nonInteractive?: boolean;
@@ -40,6 +40,7 @@ interface CreateCliOpts {
   relayUrl?: string;
   relayMethod?: string;
   platform?: string;
+  skipTest?: boolean;
 }
 
 type ListingTypeValue = 'proxy' | 'skill' | 'product' | 'dataset' | 'service' | 'connector';
@@ -127,6 +128,7 @@ Examples:
     .option('--relay-url <url>', 'Connector relay URL (required for --type connector)')
     .option('--relay-method <method>', 'Service HTTP method: GET, POST, PUT (default: POST)')
     .option('--platform <name>', 'Connector platform: slack, notion, discord, github, custom')
+    .option('--skip-test', 'Skip endpoint validation (listing activates immediately)')
     .action(async (opts: CreateCliOpts) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
       try {
@@ -136,7 +138,17 @@ Examples:
           : await runInteractiveCreate();
         if (!createOpts) return;
         const result = await client.listings.create(createOpts);
-        console.log(JSON.stringify(result, null, 2));
+
+        // Display test results if present (not when --skip-test was used)
+        if (result.test_results && !opts.skipTest) {
+          console.log(JSON.stringify({ id: result.id, service: result.service, is_active: result.is_active, key_masked: result.key_masked, sync_status: result.sync_status }, null, 2));
+          printTestResults(result);
+          if (result.test_passed === false) {
+            process.exit(1);
+          }
+        } else {
+          console.log(JSON.stringify(result, null, 2));
+        }
 
         // Upload docs if --docs flag provided
         if (opts.docs) {
@@ -208,6 +220,7 @@ async function buildNonInteractiveOpts(o: CreateCliOpts): Promise<CreateListingO
     ...(o.endpoints ? { endpoints: JSON.parse(await readFile(o.endpoints, 'utf-8')) } : {}),
     ...(o.validationEndpoint ? { validation_endpoint: o.validationEndpoint } : {}),
     ...(o.shield === 'on' ? { shield_enabled: true } : {}),
+    ...(o.skipTest ? { skip_test: true } : {}),
   };
 }
 
