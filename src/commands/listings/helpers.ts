@@ -21,6 +21,7 @@ export interface TestResultsDisplay {
     status_text?: string;
     latency_ms: number;
     error?: string;
+    hint?: string | null;
     endpoint: { method: string; path: string };
     validation_type: 'full' | 'auth_only';
   }>;
@@ -41,6 +42,9 @@ export function printTestResults(result: TestResultsDisplay): void {
     if (tr.error) {
       console.log(`  ${red('FAIL')}  ${bold(label)}`);
       console.log(`         ${dim(tr.error)}`);
+      if (tr.hint) {
+        console.log(`         ${dim(tr.hint)}`);
+      }
       continue;
     }
 
@@ -50,8 +54,8 @@ export function printTestResults(result: TestResultsDisplay): void {
       console.log(`  ${green('OK')}  ${bold(label)}  ${green(String(tr.status ?? '?'))}  ${dim(tr.latency_ms + 'ms')}`);
     } else {
       console.log(`  ${red('FAIL')}  ${bold(label)}  ${red(String(tr.status ?? '?'))}  ${dim(tr.latency_ms + 'ms')}`);
-      if (tr.status === 403) {
-        console.log(`         ${dim('Tip: If your API uses a WAF/CDN, try --skip-test')}`);
+      if (tr.hint) {
+        console.log(`         ${dim(tr.hint)}`);
       }
     }
   }
