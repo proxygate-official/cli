@@ -171,7 +171,7 @@ describe('listings create', () => {
   it('shows WAF/CDN hint for 403 failures', async () => {
     mockListingsCreate.mockResolvedValue({
       id: 'test-id', service: 'my-api', is_active: false, key_masked: 'sk-...abc', sync_status: 'pending',
-      test_results: [makeTestResult({ success: false, status: 403, endpoint: { method: 'GET', path: '/v1/models' }, validation_type: 'full' })],
+      test_results: [makeTestResult({ success: false, status: 403, endpoint: { method: 'GET', path: '/v1/models' }, validation_type: 'full', hint: 'Access denied — key may lack permissions, or a WAF/CDN is blocking non-browser requests.' })],
       test_passed: false,
     });
 
@@ -181,6 +181,6 @@ describe('listings create', () => {
 
     const output = logSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
     expect(output).toContain('WAF');
-    expect(output).toContain('--skip-test');
+    expect(output).toContain('retry');
   });
 });
