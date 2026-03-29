@@ -48,6 +48,9 @@ proxygate apis -c ai-models                      # filter by category
 proxygate apis --verified                        # verified sellers only
 proxygate apis --sort price_asc                  # sort: price_asc, price_desc, popular, newest
 proxygate apis -l 50                             # limit results
+proxygate apis --compact                         # minimal output (id, name, price)
+proxygate apis --compact --json -l 5             # tiny JSON for AI agents
+proxygate apis --cursor <id> -l 10               # next page of results
 
 proxygate services                               # aggregated service stats
 proxygate categories                             # browse API categories

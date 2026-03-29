@@ -51,6 +51,9 @@ proxygate apis -q "code review"                   # semantic search
 proxygate apis --verified                         # verified sellers only
 proxygate apis --sort price_asc                   # sort: price_asc, price_desc, popular, newest
 proxygate apis -l 50                              # limit results
+proxygate apis --compact                          # minimal output (id, name, price) — for agents
+proxygate apis --compact --json -l 5              # tiny JSON for AI context
+proxygate apis --cursor <id> -l 10                # paginate through results
 
 # Search
 proxygate search weather                          # alias for apis -q
