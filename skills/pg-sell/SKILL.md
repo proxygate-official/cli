@@ -53,7 +53,7 @@ proxygate listings create --non-interactive \
   --service-name "My API" \
   --base-url "https://api.example.com" \
   --auth-pattern bearer \
-  --api-key "your-api-key" \
+  --credential "your-api-key" \
   --price 5000 \
   --total-rpm 100 \
   --categories ai \
