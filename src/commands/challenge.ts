@@ -3,12 +3,6 @@ import { getClient } from '../helpers.js';
 import { bold, green, yellow, dim } from '../format.js';
 import { handleError } from '../errors.js';
 
-interface ApplyResponse {
-  application_id?: string;
-  status?: string;
-  error?: string;
-}
-
 interface StatusResponse {
   challenge?: { status?: string; max_participants?: number };
   spots_filled?: number;
@@ -19,11 +13,13 @@ interface StatusResponse {
   } | null;
 }
 
+const APPLY_URL = 'https://proxygate.ai/challenge/apply';
+
 /**
  * Register the `proxygate challenge` command group.
  *
  * Subcommands:
- *   apply   — Apply for the $1 Agent Challenge
+ *   apply   — Opens browser to apply (requires tweet verification)
  *   status  — Check your challenge application status
  */
 export function registerChallengeCommand(program: Command): void {
@@ -33,70 +29,14 @@ export function registerChallengeCommand(program: Command): void {
 
   challenge
     .command('apply')
-    .description('Apply for the $1 Agent Challenge')
-    .requiredOption('--pitch <text>', 'What will you build? (10-500 chars)')
-    .option('--path <type>', 'Participation path: template, custom, existing_service', 'template')
-    .option('--challenge <slug>', 'Challenge slug', 'one-dollar-001')
-    .addHelpText(
-      'after',
-      '\nExamples:\n' +
-        '  $ proxygate challenge apply --pitch "Translation agent with 50 languages"\n' +
-        '  $ proxygate challenge apply --pitch "Weather API" --path existing_service\n' +
-        '  $ proxygate challenge apply --pitch "Custom ML pipeline" --path custom',
-    )
-    .action(async (opts) => {
-      const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
+    .description('Apply for the $1 Agent Challenge (opens browser)')
+    .action(async () => {
+      console.log(`\n  Opening ${bold(APPLY_URL)} in your browser...\n`);
+      console.log(`  ${dim('The application requires email verification, wallet connection,')}`);
+      console.log(`  ${dim('and a tweet mentioning @proxygateai — all handled in the web UI.')}\n`);
 
-      try {
-        if (!['template', 'custom', 'existing_service'].includes(opts.path)) {
-          console.error('Invalid --path. Must be: template, custom, or existing_service');
-          process.exit(1);
-        }
-
-        if (opts.pitch.length < 10 || opts.pitch.length > 500) {
-          console.error('--pitch must be 10-500 characters');
-          process.exit(1);
-        }
-
-        const client = await getClient(parentOpts);
-        const { authenticatedRequest } = client._vaultDelegate();
-
-        const res = await authenticatedRequest<ApplyResponse>('POST', '/v1/challenge/apply', {
-          body: {
-            challenge_slug: opts.challenge,
-            pitch: opts.pitch,
-            participation_path: opts.path,
-          },
-        });
-
-        if (parentOpts.json) {
-          console.log(JSON.stringify(res, null, 2));
-          return;
-        }
-
-        if (res.error) {
-          const messages: Record<string, string> = {
-            challenge_not_found_or_closed: 'This challenge is no longer accepting applications.',
-            wallet_required: 'Connect a wallet first. Run: proxygate login',
-            email_not_verified: 'Verify your email at proxygate.ai/challenge/apply first.',
-            x_handle_required: 'Add your X handle during onboarding at proxygate.ai/challenge/apply first.',
-            tweet_required: 'Post and verify a tweet mentioning @proxygateai first.',
-            already_applied: 'You\'ve already applied to this challenge.',
-          };
-          const msg = messages[res.error] ?? res.error;
-          console.error(`\n  ${bold('Application failed:')} ${msg}`);
-          process.exit(1);
-        }
-
-        if (res.status === 'waitlisted') {
-          console.log(`\n  ${yellow('Waitlisted!')} We'll notify you if a spot opens.`);
-        } else {
-          console.log(`\n  ${green('Application submitted!')} We'll review within 24 hours.`);
-        }
-        console.log(`  Application ID: ${dim(res.application_id ?? '')}`);
-      } catch (err) {
-        handleError(err);
-      }
+      const { openBrowser } = await import('../lib/browser.js');
+      openBrowser(APPLY_URL);
     });
 
   challenge
@@ -133,7 +73,7 @@ export function registerChallengeCommand(program: Command): void {
           }
         } else {
           console.log();
-          console.log(`  ${dim('Not applied yet.')} Run: proxygate challenge apply --pitch "..."`)
+          console.log(`  ${dim('Not applied yet.')} Run: ${bold('proxygate challenge apply')}`);
         }
         console.log();
       } catch (err) {
