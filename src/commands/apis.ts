@@ -14,7 +14,9 @@ export function registerApisCommand(program: Command): void {
     .option('-c, --category <slug>', 'Filter by category slug')
     .option('--sort <order>', 'Sort: price_asc, price_desc, popular, newest')
     .option('-l, --limit <n>', 'Max results', '20')
+    .option('--cursor <id>', 'Pagination cursor (listing ID from previous page)')
     .option('--verified', 'Show only verified sellers')
+    .option('--compact', 'Minimal output: id, name, price only (good for agents)')
     .option('-t, --type <type>', 'Filter by listing type (skill, product, dataset, service, connector)')
     .addHelpText(
       'after',
@@ -23,9 +25,11 @@ export function registerApisCommand(program: Command): void {
         '  $ proxygate apis -q geocoding          # Fuzzy search\n' +
         '  $ proxygate apis --service openai --sort price_asc\n' +
         '  $ proxygate apis --verified --json     # Verified only, JSON output\n' +
+        '  $ proxygate apis -q weather --compact  # Minimal output for agents\n' +
+        '  $ proxygate apis --cursor <id> -l 10   # Next page\n' +
         '  $ proxygate search weather             # Alias for apis -q',
     )
-    .action(async (search: string | undefined, opts: { service?: string; category?: string; sort?: string; query?: string; limit: string; verified?: boolean; type?: string }) => {
+    .action(async (search: string | undefined, opts: { service?: string; category?: string; sort?: string; query?: string; limit: string; cursor?: string; verified?: boolean; compact?: boolean; type?: string }) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
       const queryText = opts.query ?? search;
 
@@ -37,9 +41,26 @@ export function registerApisCommand(program: Command): void {
           sort: opts.sort as 'price_asc' | 'price_desc' | 'popular' | 'newest' | undefined,
           q: queryText,
           limit: parseInt(opts.limit, 10),
+          cursor: opts.cursor,
           verified: opts.verified || undefined,
           type: opts.type as import('@proxygate/sdk').ListingType | undefined,
         });
+
+        if (parentOpts.json && opts.compact) {
+          const compact = {
+            data: result.data.map((l) => ({
+              id: l.listing_id,
+              name: l.service_name,
+              service: l.service,
+              type: l.listing_type ?? 'proxy',
+              price: l.price_per_request_usdc != null ? `$${l.price_per_request_usdc}/req` : 'per-token',
+            })),
+            has_more: result.has_more,
+            cursor: result.cursor,
+          };
+          console.log(JSON.stringify(compact, null, 2));
+          return;
+        }
 
         if (parentOpts.json) {
           console.log(JSON.stringify(result, null, 2));
@@ -54,24 +75,33 @@ export function registerApisCommand(program: Command): void {
         console.log(bold(`API Listings (${result.data.length})`));
         console.log();
 
-        const headers = ['ID', 'Service', 'Type', 'Seller', 'Price', 'RPM', 'Uptime', 'Trust', 'Verified'];
-        const rows = result.data.map((l) => [
-          l.listing_id,
-          `${bold(cyan(l.service_name))} ${dim(`(${l.service})`)}`,
-          l.listing_type ?? 'api',
-          formatWallet(l.seller_wallet),
-          l.price_per_request_usdc != null ? `$${l.price_per_request_usdc}/req` : 'per-token',
-          String(l.available_rpm),
-          `${l.uptime_percent.toFixed(1)}%`,
-          l.trust_score.toFixed(2),
-          l.is_verified ? bold(cyan('yes')) : dim('no'),
-        ]);
-
-        console.log(formatTable(headers, rows));
+        if (opts.compact) {
+          const headers = ['ID', 'Service', 'Price'];
+          const rows = result.data.map((l) => [
+            l.listing_id,
+            l.service_name,
+            l.price_per_request_usdc != null ? `$${l.price_per_request_usdc}/req` : 'per-token',
+          ]);
+          console.log(formatTable(headers, rows));
+        } else {
+          const headers = ['ID', 'Service', 'Type', 'Seller', 'Price', 'RPM', 'Uptime', 'Trust', 'Verified'];
+          const rows = result.data.map((l) => [
+            l.listing_id,
+            `${bold(cyan(l.service_name))} ${dim(`(${l.service})`)}`,
+            l.listing_type ?? 'api',
+            formatWallet(l.seller_wallet),
+            l.price_per_request_usdc != null ? `$${l.price_per_request_usdc}/req` : 'per-token',
+            String(l.available_rpm),
+            `${l.uptime_percent.toFixed(1)}%`,
+            l.trust_score.toFixed(2),
+            l.is_verified ? bold(cyan('yes')) : dim('no'),
+          ]);
+          console.log(formatTable(headers, rows));
+        }
 
         if (result.has_more) {
           console.log();
-          console.log(dim(`Showing ${result.data.length} results. More available — use -l <n> to increase or --json for cursor pagination.`));
+          console.log(dim(`More available — next page: --cursor ${result.cursor}`));
         }
       } catch (err) {
         handleError(err);
