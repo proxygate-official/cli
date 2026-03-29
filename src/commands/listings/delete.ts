@@ -14,6 +14,10 @@ export function registerDeleteSubcommand(listings: Command, program: Command): v
 
       try {
         if (!opts.yes) {
+          if (!process.stdin.isTTY) {
+            console.error('Use --yes (-y) to confirm deletion in non-interactive mode.');
+            process.exit(1);
+          }
           const { confirm } = await loadPrompts();
           const confirmed = await confirm({
             message: 'Are you sure? This will delete the API key from Secret Manager.',

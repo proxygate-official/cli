@@ -12,7 +12,7 @@ interface CreateCliOpts {
   serviceName?: string;
   baseUrl?: string;
   authPattern?: string;
-  apiKey?: string;
+  credential?: string;
   headerName?: string;
   queryParam?: string;
   basicUser?: string;
@@ -61,7 +61,7 @@ Examples:
   # API proxy with bearer auth
   $ proxygate listings create --non-interactive \\
       --service-name "My API" --base-url "https://api.example.com" \\
-      --auth-pattern bearer --api-key "sk-..." \\
+      --auth-pattern bearer --credential "sk-..." \\
       --categories "ai" --price 10000
 
   # Public API (no auth key needed)
@@ -100,7 +100,7 @@ Examples:
     .option('--service-name <name>', 'Service name')
     .option('--base-url <url>', 'Service base URL (https://...)')
     .option('--auth-pattern <pattern>', 'Auth pattern: none (public), bearer, header, query, basic, oauth2_cc')
-    .option('--api-key <key>', 'API key (for bearer/header/query/basic)')
+    .option('--credential <key>', 'Seller API key / credential (for bearer/header/query/basic)')
     .option('--header-name <name>', 'Custom header name (for header auth pattern)')
     .option('--query-param <name>', 'Query parameter name (for query auth pattern)')
     .option('--basic-user <user>', 'Basic auth username')
@@ -199,14 +199,14 @@ async function buildNonInteractiveOpts(o: CreateCliOpts): Promise<CreateListingO
 
   return {
     service_name: o.serviceName, service_base_url: o.baseUrl,
-    auth_pattern: (o.authPattern as ListingAuthPattern) ?? (o.apiKey ? 'bearer' : 'none'),
+    auth_pattern: (o.authPattern as ListingAuthPattern) ?? (o.credential ? 'bearer' : 'none'),
     total_rpm: parseInt(o.totalRpm, 10), reserved_rpm: parseInt(o.reservedRpm, 10),
     price_per_request: parseInt(o.price, 10),
     category_slugs: o.categories.split(',').map((s) => s.trim()),
     ...(listingType !== 'proxy' ? { listing_type: listingType } : {}),
     ...(typeMetadata ? { type_metadata: typeMetadata } : {}),
     ...(o.description ? { description: o.description } : {}),
-    ...(o.apiKey ? { api_key: o.apiKey } : {}),
+    ...(o.credential ? { api_key: o.credential } : {}),
     ...(o.headerName ? { header_name: o.headerName } : {}),
     ...(o.queryParam ? { query_param: o.queryParam } : {}),
     ...(o.basicUser ? { basic_user: o.basicUser } : {}),

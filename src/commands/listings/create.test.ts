@@ -83,7 +83,7 @@ describe('listings create', () => {
       ],
       test_passed: true,
     });
-    await run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--api-key', 'sk-test', '--categories', 'ai');
+    await run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--credential', 'sk-test', '--categories', 'ai');
 
     const output = logSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
     expect(output).toContain('Endpoint Tests');
@@ -105,7 +105,7 @@ describe('listings create', () => {
     });
 
     await expect(
-      run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--api-key', 'sk-test', '--categories', 'ai'),
+      run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--credential', 'sk-test', '--categories', 'ai'),
     ).rejects.toThrow('process.exit');
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
@@ -118,7 +118,7 @@ describe('listings create', () => {
       key_masked: 'sk-...abc',
       sync_status: 'synced',
     });
-    await run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--api-key', 'sk-test', '--categories', 'ai', '--skip-test');
+    await run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--credential', 'sk-test', '--categories', 'ai', '--skip-test');
 
     expect(mockListingsCreate).toHaveBeenCalledWith(expect.objectContaining({ skip_test: true }));
     const output = logSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
@@ -131,7 +131,7 @@ describe('listings create', () => {
       test_results: [makeTestResult({ success: true, status: 200, endpoint: { method: 'GET', path: '/v1/models' }, validation_type: 'full' })],
       test_passed: true,
     });
-    await run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--api-key', 'sk-test', '--categories', 'ai');
+    await run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--credential', 'sk-test', '--categories', 'ai');
 
     const output = logSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
     expect(output).toContain('OK');
@@ -145,7 +145,7 @@ describe('listings create', () => {
       test_results: [makeTestResult({ success: true, status: 400, endpoint: { method: 'POST', path: '/v1/chat' }, validation_type: 'auth_only' })],
       test_passed: true,
     });
-    await run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--api-key', 'sk-test', '--categories', 'ai');
+    await run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--credential', 'sk-test', '--categories', 'ai');
 
     const output = logSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
     expect(output).toContain('AUTH OK');
@@ -160,7 +160,7 @@ describe('listings create', () => {
     });
 
     await expect(
-      run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--api-key', 'sk-test', '--categories', 'ai'),
+      run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--credential', 'sk-test', '--categories', 'ai'),
     ).rejects.toThrow('process.exit');
 
     const output = logSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
@@ -176,7 +176,7 @@ describe('listings create', () => {
     });
 
     await expect(
-      run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--api-key', 'sk-test', '--categories', 'ai'),
+      run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--credential', 'sk-test', '--categories', 'ai'),
     ).rejects.toThrow('process.exit');
 
     const output = logSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');

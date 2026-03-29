@@ -9,7 +9,7 @@ export function registerRotateKeySubcommand(listings: Command, program: Command)
     .command('rotate-key <id>')
     .description('Rotate API key or OAuth2 credentials for a listing')
     .option('--non-interactive', 'Use CLI flags instead of interactive prompts')
-    .option('--api-key <key>', 'New API key')
+    .option('--credential <key>', 'New API key / credential')
     .option('--oauth2-flow-type <type>', 'OAuth2 flow: standard, google_jwt')
     .option('--oauth2-client-id <id>', 'OAuth2 client ID')
     .option('--oauth2-client-secret <secret>', 'OAuth2 client secret')
@@ -17,7 +17,7 @@ export function registerRotateKeySubcommand(listings: Command, program: Command)
     .option('--validation-endpoint <path>', 'Validation endpoint path')
     .action(async (id: string, opts: {
       nonInteractive?: boolean;
-      apiKey?: string;
+      credential?: string;
       oauth2FlowType?: string;
       oauth2ClientId?: string;
       oauth2ClientSecret?: string;
@@ -32,7 +32,7 @@ export function registerRotateKeySubcommand(listings: Command, program: Command)
 
         if (opts.nonInteractive) {
           rotateOpts = {
-            ...(opts.apiKey ? { api_key: opts.apiKey } : {}),
+            ...(opts.credential ? { api_key: opts.credential } : {}),
             ...(opts.oauth2FlowType ? { oauth2_flow_type: opts.oauth2FlowType as 'standard' | 'google_jwt' } : {}),
             ...(opts.oauth2ClientId ? { oauth2_client_id: opts.oauth2ClientId } : {}),
             ...(opts.oauth2ClientSecret ? { oauth2_client_secret: opts.oauth2ClientSecret } : {}),
