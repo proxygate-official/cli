@@ -103,16 +103,27 @@ export function registerProxyCommand(program: Command): void {
           // Execute request
           const response = await client.proxy(listingId, path, body, { method, shield });
 
-          // Handle spend limit exceeded (429)
+          // Handle 429 — could be spend limit, gateway rate limit, or upstream rate limit
           if (response.status === 429) {
             const text = await response.text();
-            console.error(red('Spend limit exceeded'));
-            try {
-              const body = JSON.parse(text) as Record<string, unknown>;
-              if (body.message) console.error(dim(body.message as string));
-              if (body.action) console.error(dim(body.action as string));
-            } catch { /* not JSON */ }
-            console.error(dim('Increase your limit: app.proxygate.ai/wallets'));
+            let body: Record<string, unknown> | null = null;
+            try { body = JSON.parse(text) as Record<string, unknown>; } catch { /* not JSON */ }
+            const errorCode = body?.error as string ?? body?.code as string ?? '';
+            const isSpendLimit = errorCode.includes('spend_limit') || errorCode === 'daily_spend_limit_exceeded' || errorCode === 'per_tx_spend_limit_exceeded';
+            const isGatewayRateLimit = errorCode === 'rate_limited';
+            if (isSpendLimit) {
+              console.error(red('Spend limit exceeded'));
+              if (body?.message) console.error(dim(body.message as string));
+              console.error(dim('Increase your limit: app.proxygate.ai/wallets'));
+            } else if (isGatewayRateLimit) {
+              console.error(red('Rate limited by gateway'));
+              if (body?.message) console.error(dim(body.message as string));
+            } else {
+              console.error(red('Rate limited by upstream API'));
+              if (body?.message) console.error(dim(body.message as string));
+              else if (text) console.error(dim(text.slice(0, 200)));
+              console.error(dim('The API provider is rate limiting requests. Try again later.'));
+            }
             process.exit(1);
           }
 
