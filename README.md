@@ -90,9 +90,12 @@ proxygate proxy weather-api /v1/forecast -d '{"lat":52.37}'
 proxygate proxy agent-postal-lookup /nl/1012
 proxygate proxy weather-api /v1/forecast --stream -d '{...}'
 proxygate proxy weather-api /path --shield strict
+proxygate proxy weather-api /path --seller cheapest
 ```
 
 Shield modes: `monitor` (log threats), `strict` (block + refund), `off`.
+
+Seller strategies: `popular` (default), `cheapest`, `best-rated`, `fastest`. When multiple sellers offer the same API, this controls which one is selected.
 
 ### Balance & payments
 

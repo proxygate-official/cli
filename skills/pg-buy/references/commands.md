@@ -46,7 +46,7 @@ proxygate search geocoding                       # alias for apis -q
 proxygate apis -s weather-api                         # filter by exact service slug
 proxygate apis -c ai-models                      # filter by category
 proxygate apis --verified                        # verified sellers only
-proxygate apis --sort price_asc                  # sort: price_asc, price_desc, popular, newest
+proxygate apis --sort price_asc                  # sort: price_asc, price_desc, popular, newest, fastest, best_rated
 proxygate apis -l 50                             # limit results
 proxygate apis --compact                         # minimal output (id, name, price)
 proxygate apis --compact --json -l 5             # tiny JSON for AI agents
@@ -66,6 +66,7 @@ proxygate proxy agent-postal-lookup /nl/1012     # GET by default
 proxygate proxy <service> <path> -X GET          # explicit GET
 proxygate proxy <service> <path> --stream        # stream SSE responses
 proxygate proxy <service> <path> --shield strict # shield: monitor, strict, off
+proxygate proxy <service> <path> --seller cheapest # seller: cheapest, best-rated, fastest, popular
 ```
 
 Output shows cost and request ID after each call:

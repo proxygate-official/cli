@@ -49,7 +49,7 @@ proxygate apis -s weather-api                     # filter by service
 proxygate apis -c ai-models                       # filter by category
 proxygate apis -q "code review"                   # semantic search
 proxygate apis --verified                         # verified sellers only
-proxygate apis --sort price_asc                   # sort: price_asc, price_desc, popular, newest
+proxygate apis --sort price_asc                   # sort: price_asc, price_desc, popular, newest, fastest, best_rated
 proxygate apis -l 50                              # limit results
 proxygate apis --compact                          # minimal output (id, name, price) — for agents
 proxygate apis --compact --json -l 5              # tiny JSON for AI context
@@ -79,6 +79,12 @@ proxygate proxy agent-postal-lookup /nl/1012
 # Stream SSE responses
 proxygate proxy weather-api /v1/forecast --stream \
   -d '{"latitude":52.37,"longitude":4.90,"hourly":"temperature_2m"}'
+
+# Seller strategy (when multiple sellers offer the same API)
+proxygate proxy weather-api /v1/forecast --seller cheapest     # lowest price
+proxygate proxy weather-api /v1/forecast --seller best-rated   # highest trust score
+proxygate proxy weather-api /v1/forecast --seller fastest      # lowest latency
+proxygate proxy weather-api /v1/forecast --seller popular      # highest capacity (default)
 
 # Shield scanning (content moderation)
 proxygate proxy weather-api /path --shield monitor    # log threats (default)
@@ -165,6 +171,11 @@ const streamRes = await client.proxy('weather-api', '/v1/forecast',
 for await (const event of parseSSE(streamRes)) {
   process.stdout.write(event.data);
 }
+
+// Seller strategy
+const cheap = await client.proxy('weather-api', '/path', body, { seller: 'cheapest' });
+const fast = await client.proxy('weather-api', '/path', body, { seller: 'fastest' });
+const trusted = await client.proxy('weather-api', '/path', body, { seller: 'best-rated' });
 
 // Shield scanning
 const shielded = await client.proxy('weather-api', '/path', body, { shield: 'strict' });
