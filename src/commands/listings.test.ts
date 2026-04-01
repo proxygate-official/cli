@@ -22,6 +22,7 @@ vi.mock('@proxygate/sdk', () => ({
         get: (...args: unknown[]) => mockListingsGet(...args),
       },
       docs: (...args: unknown[]) => mockDocs(...args),
+      apis: vi.fn().mockResolvedValue({ data: [], has_more: false, cursor: null }),
     }),
   },
   SHIELD_SURCHARGE_DISPLAY: '$0.005',

@@ -38,10 +38,9 @@ export function registerRateCommand(program: Command): void {
           return;
         }
 
-        console.log(bold('Rating Submitted'));
-        console.log();
-        console.log(`  ${green('Status:')}  ${result.status}`);
-        console.log(`  ${dim('Message:')} ${result.message}`);
+        const emoji = opts.up ? green('👍') : red('👎');
+        const verb = result.is_update ? 'Updated' : 'Submitted';
+        console.log(`${emoji} Rating ${verb.toLowerCase()} — ${opts.up ? 'positive' : 'negative'}`);
       } catch (err) {
         handleError(err);
       }

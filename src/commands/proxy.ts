@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import type { ShieldMode } from '@proxygate/sdk';
+import type { ShieldMode, SellerStrategy } from '@proxygate/sdk';
 import { parseSSE, parseShieldInfo, SHIELD_SURCHARGE_DISPLAY } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
 import { red, dim, yellow, cyan } from '../format.js';
@@ -26,6 +26,7 @@ export function registerProxyCommand(program: Command): void {
     .option('-X, --method <method>', 'HTTP method (default: POST if -d given, GET otherwise)')
     .option('--stream', 'Stream SSE response chunks to stdout')
     .option('--shield <mode>', `Shield scanning: off (default), monitor, or strict (+${SHIELD_SURCHARGE_DISPLAY}/req)`)
+    .option('--seller <strategy>', 'Seller selection: popular (default), cheapest, best-rated, fastest')
     .addHelpText(
       'after',
       '\nExamples:\n' +
@@ -40,13 +41,18 @@ export function registerProxyCommand(program: Command): void {
         'Shield modes:\n' +
         '  off      — no scanning, no surcharge (default)\n' +
         '  monitor  — scan response for harmful content, log but allow (+$0.005/req)\n' +
-        '  strict   — block response if flagged, credits refunded (+$0.005/req)',
+        '  strict   — block response if flagged, credits refunded (+$0.005/req)\n\n' +
+        'Seller strategies:\n' +
+        '  popular    — highest capacity (default)\n' +
+        '  cheapest   — lowest price per request\n' +
+        '  best-rated — highest trust score\n' +
+        '  fastest    — lowest average latency',
     )
     .action(
       async (
         listingId: string,
         path: string,
-        opts: { data?: string; method?: string; stream?: boolean; shield?: string },
+        opts: { data?: string; method?: string; stream?: boolean; shield?: string; seller?: string },
       ) => {
         const parentOpts = program.opts<{ gateway?: string; keypair?: string; apiKey?: string }>();
 
@@ -73,6 +79,14 @@ export function registerProxyCommand(program: Command): void {
           }
           const shield = shieldInput as ShieldMode;
 
+          // Validate seller strategy
+          const validSellerStrategies = ['popular', 'cheapest', 'best-rated', 'fastest'];
+          if (opts.seller && !validSellerStrategies.includes(opts.seller)) {
+            console.error(red(`Error: Invalid seller strategy '${opts.seller}'. Use: popular, cheapest, best-rated, or fastest`));
+            process.exit(1);
+          }
+          const seller = opts.seller as SellerStrategy | undefined;
+
           // Determine HTTP method
           const method = (opts.method ?? (body ? 'POST' : 'GET')).toUpperCase();
           const shieldLabel = shield ? ` [shield:${shield}]` : '';
@@ -82,7 +96,7 @@ export function registerProxyCommand(program: Command): void {
           if (opts.stream) {
             console.error(dim(`Streaming ${listingId}${path}...`));
 
-            const response = await client.proxy(listingId, path, body, { method, shield });
+            const response = await client.proxy(listingId, path, body, { method, shield, seller });
             if (!response.body) {
               console.error(red('Error: No response body for streaming'));
               process.exit(1);
@@ -99,7 +113,7 @@ export function registerProxyCommand(program: Command): void {
           }
 
           // Execute request
-          const response = await client.proxy(listingId, path, body, { method, shield });
+          const response = await client.proxy(listingId, path, body, { method, shield, seller });
 
           // Handle 429 — could be spend limit, gateway rate limit, or upstream rate limit
           if (response.status === 429) {
@@ -183,7 +197,7 @@ function printRequestMeta(response: Response): void {
         parts.push(`cost: $${(receipt.amount / 1_000_000).toFixed(4)}`);
       }
       if (receipt.request_id) {
-        parts.push(`request: ${receipt.request_id.slice(0, 8)}`);
+        parts.push(`request: ${receipt.request_id}`);
       }
     } catch { /* malformed receipt */ }
   }
@@ -208,6 +222,16 @@ function printRequestMeta(response: Response): void {
 
   if (parts.length > 0) {
     console.error(dim(parts.join(' | ')));
+  }
+
+  // Show rating hint for successful requests
+  if (response.ok && receiptB64) {
+    try {
+      const receipt = JSON.parse(Buffer.from(receiptB64, 'base64').toString()) as { request_id?: string };
+      if (receipt.request_id) {
+        console.error(dim(`rate: proxygate rate --request-id ${receipt.request_id} --up/--down`));
+      }
+    } catch { /* ignore */ }
   }
 }
 

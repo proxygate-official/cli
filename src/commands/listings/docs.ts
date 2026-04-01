@@ -69,6 +69,27 @@ export function registerDocsSubcommand(listings: Command, program: Command): voi
             formatEndpointPrice(ep, endpointPrices, defaultPrice),
           ]);
           console.log(formatTable(headers, rows));
+
+          // Show body overrides if any endpoint has them
+          const endpoints = listing?.endpoints as Array<{ path?: string; body_overrides?: Record<string, unknown>; query_overrides?: Record<string, string> }> | undefined;
+          if (endpoints?.some((ep) => ep.body_overrides && Object.keys(ep.body_overrides).length > 0)) {
+            console.log();
+            console.log(bold('Body Overrides (fields forced by seller — buyer cannot change):'));
+            for (const ep of endpoints) {
+              if (ep.body_overrides && Object.keys(ep.body_overrides).length > 0) {
+                console.log(`  ${ep.path ?? '?'}: ${dim(JSON.stringify(ep.body_overrides))}`);
+              }
+            }
+          }
+          if (endpoints?.some((ep) => ep.query_overrides && Object.keys(ep.query_overrides).length > 0)) {
+            console.log();
+            console.log(bold('Query Param Overrides (forced by seller — buyer cannot change):'));
+            for (const ep of endpoints) {
+              if (ep.query_overrides && Object.keys(ep.query_overrides).length > 0) {
+                console.log(`  ${ep.path ?? '?'}: ${dim(JSON.stringify(ep.query_overrides))}`);
+              }
+            }
+          }
         } else {
           console.log(docs.content);
         }

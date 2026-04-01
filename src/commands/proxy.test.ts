@@ -68,7 +68,7 @@ describe('proxy command', () => {
 
     expect(mockProxy).toHaveBeenCalledWith('abc-123', '/v1/models', undefined, {
       method: 'GET',
-      shield: undefined,
+      shield: 'off',
     });
   });
 
@@ -85,7 +85,7 @@ describe('proxy command', () => {
 
     expect(mockProxy).toHaveBeenCalledWith('abc-123', '/v1/chat/completions', body, {
       method: 'POST',
-      shield: undefined,
+      shield: 'off',
     });
   });
 
@@ -103,7 +103,7 @@ describe('proxy command', () => {
       'abc-123',
       '/v1/resource',
       { key: 'val' },
-      { method: 'PUT', shield: undefined },
+      { method: 'PUT', shield: 'off' },
     );
   });
 
@@ -135,6 +135,32 @@ describe('proxy command', () => {
     await runProxy('abc-123', '/v1/chat/completions');
 
     expect(logSpy).toHaveBeenCalledWith(JSON.stringify(payload, null, 2));
+  });
+
+  it('defaults shield to off when not specified', async () => {
+    mockProxy.mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    );
+
+    await runProxy('abc-123', '/v1/models');
+
+    expect(mockProxy).toHaveBeenCalledWith('abc-123', '/v1/models', undefined, {
+      method: 'GET',
+      shield: 'off',
+    });
+  });
+
+  it('passes explicit shield mode to proxy call', async () => {
+    mockProxy.mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    );
+
+    await runProxy('abc-123', '/v1/models', '--shield', 'strict');
+
+    expect(mockProxy).toHaveBeenCalledWith('abc-123', '/v1/models', undefined, {
+      method: 'GET',
+      shield: 'strict',
+    });
   });
 
   it('outputs plain text for non-JSON responses', async () => {
@@ -328,5 +354,171 @@ describe('proxy command', () => {
       .join('\n');
     expect(errOutput).toContain('No response body');
     mockExit.mockRestore();
+  });
+
+  // --- Multi-seller per service slug ---
+
+  describe('multi-seller per slug', () => {
+    it('passes service slug to SDK proxy (SDK handles resolution)', async () => {
+      mockProxy.mockResolvedValue(
+        new Response(JSON.stringify({ result: 'ok' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      await runProxy('openai', '/v1/chat/completions');
+
+      // CLI passes the slug as-is — SDK resolves to listing UUID
+      expect(mockProxy).toHaveBeenCalledWith('openai', '/v1/chat/completions', undefined, {
+        method: 'GET',
+        shield: 'off',
+      });
+    });
+
+    it('passes explicit UUID to SDK proxy (bypasses resolution)', async () => {
+      mockProxy.mockResolvedValue(
+        new Response(JSON.stringify({ result: 'ok' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      const uuid = '11111111-1111-1111-1111-111111111111';
+      await runProxy(uuid, '/v1/chat/completions');
+
+      expect(mockProxy).toHaveBeenCalledWith(uuid, '/v1/chat/completions', undefined, {
+        method: 'GET',
+        shield: 'off',
+      });
+    });
+
+    it('handles listing_not_found when no sellers exist for slug', async () => {
+      const { ProxyGateError } = await import('@proxygate/sdk');
+      mockProxy.mockRejectedValue(new ProxyGateError(
+        {
+          error: 'listing_not_found',
+          message: 'No listing found for "nonexistent-api"',
+          action: 'Search available APIs: proxygate apis -q nonexistent-api',
+        },
+        404,
+      ));
+
+      const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+        throw new Error('process.exit');
+      });
+
+      await expect(runProxy('nonexistent-api', '/v1/test')).rejects.toThrow('process.exit');
+
+      const errOutput = errorSpy.mock.calls
+        .map((c: unknown[]) => c[0])
+        .join('\n');
+      expect(errOutput).toContain('listing_not_found');
+      expect(errOutput).toContain('nonexistent-api');
+      mockExit.mockRestore();
+    });
+
+    it('passes anthropic slug to SDK proxy', async () => {
+      mockProxy.mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      await runProxy('anthropic', '/v1/messages');
+
+      expect(mockProxy).toHaveBeenCalledWith('anthropic', '/v1/messages', undefined, {
+        method: 'GET',
+        shield: 'off',
+      });
+    });
+  });
+
+  // --- Seller strategy ---
+
+  describe('seller strategy', () => {
+    it('passes --seller cheapest to SDK proxy options', async () => {
+      mockProxy.mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      await runProxy('openai', '/v1/chat/completions', '--seller', 'cheapest');
+
+      expect(mockProxy).toHaveBeenCalledWith('openai', '/v1/chat/completions', undefined, {
+        method: 'GET',
+        shield: 'off',
+        seller: 'cheapest',
+      });
+    });
+
+    it('passes --seller best-rated to SDK proxy options', async () => {
+      mockProxy.mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      await runProxy('openai', '/v1/chat/completions', '--seller', 'best-rated');
+
+      expect(mockProxy).toHaveBeenCalledWith('openai', '/v1/chat/completions', undefined, {
+        method: 'GET',
+        shield: 'off',
+        seller: 'best-rated',
+      });
+    });
+
+    it('passes --seller fastest to SDK proxy options', async () => {
+      mockProxy.mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      await runProxy('openai', '/v1/chat/completions', '--seller', 'fastest');
+
+      expect(mockProxy).toHaveBeenCalledWith('openai', '/v1/chat/completions', undefined, {
+        method: 'GET',
+        shield: 'off',
+        seller: 'fastest',
+      });
+    });
+
+    it('rejects invalid seller strategy', async () => {
+      const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+        throw new Error('process.exit');
+      });
+
+      await expect(runProxy('openai', '/v1/chat', '--seller', 'random')).rejects.toThrow(
+        'process.exit',
+      );
+
+      const errOutput = errorSpy.mock.calls
+        .map((c: unknown[]) => c[0])
+        .join('\n');
+      expect(errOutput).toContain('Invalid seller strategy');
+      mockExit.mockRestore();
+    });
+
+    it('omits seller from options when not specified', async () => {
+      mockProxy.mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      await runProxy('openai', '/v1/chat/completions');
+
+      expect(mockProxy).toHaveBeenCalledWith('openai', '/v1/chat/completions', undefined, {
+        method: 'GET',
+        shield: 'off',
+      });
+    });
   });
 });

@@ -50,18 +50,18 @@ describe('rate command', () => {
   };
 
   it('submits a positive rating with --up', async () => {
-    mockRate.mockResolvedValue({ status: 'ok', message: 'Rating submitted' });
+    mockRate.mockResolvedValue({ success: true, is_update: false });
     await run('--request-id', 'req-abc-123', '--up');
 
     expect(mockRate).toHaveBeenCalledWith({ request_id: 'req-abc-123', is_positive: true });
 
     const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
-    expect(output).toContain('Rating Submitted');
-    expect(output).toContain('ok');
+    expect(output).toContain('submitted');
+    expect(output).toContain('positive');
   });
 
   it('submits a negative rating with --down', async () => {
-    mockRate.mockResolvedValue({ status: 'ok', message: 'Rating submitted' });
+    mockRate.mockResolvedValue({ success: true, is_update: false });
     await run('--request-id', 'req-abc-123', '--down');
 
     expect(mockRate).toHaveBeenCalledWith({ request_id: 'req-abc-123', is_positive: false });

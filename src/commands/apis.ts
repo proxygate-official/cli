@@ -122,6 +122,23 @@ export function registerApisCommand(program: Command): void {
                   return [ep.method ?? '', ep.path ?? '', ep.description ?? '', price];
                 });
                 console.log(formatTable(epHeaders, epRows));
+
+                // Show body overrides
+                const eps = l.endpoints as Array<{ path?: string; body_overrides?: Record<string, unknown>; query_overrides?: Record<string, string> }>;
+                const epsWithBodyOverrides = eps.filter((ep) => ep.body_overrides && Object.keys(ep.body_overrides).length > 0);
+                const epsWithQueryOverrides = eps.filter((ep) => ep.query_overrides && Object.keys(ep.query_overrides).length > 0);
+                if (epsWithBodyOverrides.length > 0) {
+                  console.log(dim('  Body overrides (fields forced by seller — you cannot change these):'));
+                  for (const ep of epsWithBodyOverrides) {
+                    console.log(dim(`    ${ep.path}: ${JSON.stringify(ep.body_overrides)}`));
+                  }
+                }
+                if (epsWithQueryOverrides.length > 0) {
+                  console.log(dim('  Query param overrides (forced by seller):'));
+                  for (const ep of epsWithQueryOverrides) {
+                    console.log(dim(`    ${ep.path}: ${JSON.stringify(ep.query_overrides)}`));
+                  }
+                }
               }
             }
           }
