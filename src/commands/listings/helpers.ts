@@ -22,6 +22,8 @@ export interface TestResultsDisplay {
     latency_ms: number;
     error?: string;
     hint?: string | null;
+    body?: string;
+    truncated?: boolean;
     endpoint: { method: string; path: string };
     validation_type: 'full' | 'auth_only';
   }>;
@@ -45,6 +47,9 @@ export function printTestResults(result: TestResultsDisplay): void {
       if (tr.hint) {
         console.log(`         ${dim(tr.hint)}`);
       }
+      if (tr.body) {
+        console.log(`         ${dim('Response: ' + tr.body.slice(0, 200))}${tr.body.length > 200 || tr.truncated ? dim('...') : ''}`);
+      }
       continue;
     }
 
@@ -56,6 +61,9 @@ export function printTestResults(result: TestResultsDisplay): void {
       console.log(`  ${red('FAIL')}  ${bold(label)}  ${red(String(tr.status ?? '?'))}  ${dim(tr.latency_ms + 'ms')}`);
       if (tr.hint) {
         console.log(`         ${dim(tr.hint)}`);
+      }
+      if (tr.body) {
+        console.log(`         ${dim('Response: ' + tr.body.slice(0, 200))}${tr.body.length > 200 || tr.truncated ? dim('...') : ''}`);
       }
     }
   }
