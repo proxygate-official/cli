@@ -97,6 +97,34 @@ export function registerApisCommand(program: Command): void {
             l.is_verified ? bold(cyan('yes')) : dim('no'),
           ]);
           console.log(formatTable(headers, rows));
+
+          // Show endpoints when viewing a single listing or small result set
+          if (result.data.length <= 3) {
+            for (const l of result.data) {
+              if (l.endpoints && l.endpoints.length > 0) {
+                console.log();
+                console.log(bold(`Endpoints for ${l.service_name}:`));
+                const defaultPrice = l.price_per_request_usdc != null ? `$${l.price_per_request_usdc}/req` : 'per-token';
+                const epPrices = (l.endpoint_prices ?? []) as Array<{ path: string; pricing_unit: string; price_per_request?: number; price_per_input_token?: number; price_per_output_token?: number }>;
+                const epHeaders = ['Method', 'Path', 'Description', 'Price'];
+                const epRows = (l.endpoints as Array<{ method?: string; path?: string; description?: string }>).map((ep) => {
+                  const match = epPrices.find((p) => p.path === ep.path);
+                  let price = defaultPrice;
+                  if (match) {
+                    if (match.pricing_unit === 'per_token') {
+                      const inp = match.price_per_input_token ? (match.price_per_input_token / 1_000_000).toFixed(6) : '0';
+                      const out = match.price_per_output_token ? (match.price_per_output_token / 1_000_000).toFixed(6) : '0';
+                      price = `$${inp}/$${out}/tok`;
+                    } else if (match.price_per_request) {
+                      price = `$${(match.price_per_request / 1_000_000).toFixed(4)}/req`;
+                    }
+                  }
+                  return [ep.method ?? '', ep.path ?? '', ep.description ?? '', price];
+                });
+                console.log(formatTable(epHeaders, epRows));
+              }
+            }
+          }
         }
 
         if (result.has_more) {

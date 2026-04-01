@@ -25,7 +25,7 @@ export function registerProxyCommand(program: Command): void {
     .option('-d, --data <json>', 'Request body as JSON string')
     .option('-X, --method <method>', 'HTTP method (default: POST if -d given, GET otherwise)')
     .option('--stream', 'Stream SSE response chunks to stdout')
-    .option('--shield <mode>', `Shield response scanning: monitor, strict, or off (+${SHIELD_SURCHARGE_DISPLAY}/req)`)
+    .option('--shield <mode>', `Shield scanning: off (default), monitor, or strict (+${SHIELD_SURCHARGE_DISPLAY}/req)`)
     .addHelpText(
       'after',
       '\nExamples:\n' +
@@ -38,9 +38,9 @@ export function registerProxyCommand(program: Command): void {
         'Accepts a service name, slug, or listing UUID.\n' +
         'Browse available APIs: proxygate apis -q <search>\n\n' +
         'Shield modes:\n' +
-        '  monitor  — scan response for harmful content, log but allow (default)\n' +
-        '  strict   — block response if flagged (credits refunded)\n' +
-        '  off      — skip scanning (no surcharge)',
+        '  off      — no scanning, no surcharge (default)\n' +
+        '  monitor  — scan response for harmful content, log but allow (+$0.005/req)\n' +
+        '  strict   — block response if flagged, credits refunded (+$0.005/req)',
     )
     .action(
       async (
@@ -64,16 +64,14 @@ export function registerProxyCommand(program: Command): void {
             }
           }
 
-          // Validate shield mode
+          // Validate shield mode (default: off — opt-in to avoid surprise surcharges)
           const validShieldModes = ['monitor', 'strict', 'off'];
-          let shield: ShieldMode | undefined;
-          if (opts.shield) {
-            if (!validShieldModes.includes(opts.shield)) {
-              console.error(red(`Error: Invalid shield mode '${opts.shield}'. Use: monitor, strict, or off`));
-              process.exit(1);
-            }
-            shield = opts.shield as ShieldMode;
+          const shieldInput = opts.shield ?? 'off';
+          if (!validShieldModes.includes(shieldInput)) {
+            console.error(red(`Error: Invalid shield mode '${shieldInput}'. Use: monitor, strict, or off`));
+            process.exit(1);
           }
+          const shield = shieldInput as ShieldMode;
 
           // Determine HTTP method
           const method = (opts.method ?? (body ? 'POST' : 'GET')).toUpperCase();
