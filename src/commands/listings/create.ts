@@ -143,6 +143,9 @@ Examples:
         if (result.test_results && !opts.skipTest) {
           console.log(JSON.stringify({ id: result.id, service: result.service, is_active: result.is_active, key_masked: result.key_masked, sync_status: result.sync_status }, null, 2));
           printTestResults(result);
+          if (result.message) {
+            console.log(result.message);
+          }
           if (result.test_passed === false) {
             process.exit(1);
           }
