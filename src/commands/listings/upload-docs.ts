@@ -2,8 +2,8 @@ import { readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 import type { Command } from 'commander';
 import { getClient } from '../../helpers.js';
-import { green, red } from '../../format.js';
-import { handleError } from './helpers.js';
+import { green, red, dim, bold } from '../../format.js';
+import { handleError, printTestResults } from './helpers.js';
 
 function detectDocType(filePath: string): 'openapi' | 'markdown' {
   const ext = extname(filePath).toLowerCase();
@@ -36,6 +36,17 @@ export function registerUploadDocsSubcommand(listings: Command, program: Command
           console.log(JSON.stringify(result, null, 2));
         } else {
           console.log(green(`Documentation uploaded (${result.doc_type}) for listing ${result.listing_id}`));
+          if (result.endpoints_parsed > 0) {
+            console.log(dim(`${result.endpoints_parsed} endpoint(s) parsed from spec`));
+          }
+          if (result.test_results) {
+            printTestResults(result);
+            if (result.message) console.log(result.message);
+            if (result.test_passed === false) {
+              console.error(red('Listing remains inactive — fix failing endpoints and re-upload.'));
+              process.exit(1);
+            }
+          }
         }
       } catch (err) {
         handleError(err);
