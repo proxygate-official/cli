@@ -4,7 +4,7 @@ import type { Command } from 'commander';
 import type { CreateListingOptions, ListingAuthPattern } from '@proxygate/sdk';
 import { SHIELD_SURCHARGE_DISPLAY } from '@proxygate/sdk';
 import { getClient } from '../../helpers.js';
-import { bold, red, dim, green } from '../../format.js';
+import { bold, red, dim, green, yellow } from '../../format.js';
 import { truncate, handleError, loadPrompts, promptCredentials, printTestResults } from './helpers.js';
 
 interface CreateCliOpts {
@@ -128,7 +128,7 @@ Examples:
     .option('--relay-url <url>', 'Connector relay URL (required for --type connector)')
     .option('--relay-method <method>', 'Service HTTP method: GET, POST, PUT (default: POST)')
     .option('--platform <name>', 'Connector platform: slack, notion, discord, github, custom')
-    .option('--skip-test', 'Skip endpoint validation (listing activates immediately)')
+    .option('--skip-test', 'Deprecated: all listings are now tested before activation')
     .action(async (opts: CreateCliOpts) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
       try {
@@ -139,16 +139,11 @@ Examples:
         if (!createOpts) return;
         const result = await client.listings.create(createOpts);
 
-        // Display test results if present (not when --skip-test was used)
-        if (result.test_results && !opts.skipTest) {
+        // Always display test results
+        if (result.test_results) {
           console.log(JSON.stringify({ id: result.id, service: result.service, is_active: result.is_active, key_masked: result.key_masked, sync_status: result.sync_status }, null, 2));
           printTestResults(result);
-          if (result.message) {
-            console.log(result.message);
-          }
-          if (result.test_passed === false) {
-            process.exit(1);
-          }
+          if (result.message) console.log(result.message);
         } else {
           console.log(JSON.stringify(result, null, 2));
         }
@@ -158,11 +153,18 @@ Examples:
           try {
             const content = await readFile(opts.docs, 'utf-8');
             const docType = detectDocType(opts.docs);
-            await client.listings.uploadDocs(result.id, { doc_type: docType, content });
+            const docsResult = await client.listings.uploadDocs(result.id, { doc_type: docType, content });
             console.log(green(`Documentation uploaded (${docType})`));
+            if (docsResult.test_passed) console.log(green('Listing activated.'));
           } catch (docErr) {
             console.error(red(`Warning: listing created but docs upload failed: ${docErr instanceof Error ? docErr.message : 'unknown'}`));
           }
+        }
+
+        // Show activation hint if listing is inactive and no docs were uploaded
+        if (!result.is_active && !opts.docs) {
+          console.log(bold(yellow(`\nListing created but inactive (no validated endpoints).`)));
+          console.log(`Upload docs to activate: ${dim(`proxygate listings upload-docs ${result.id} spec.yaml`)}`);
         }
       } catch (err) {
         handleError(err);

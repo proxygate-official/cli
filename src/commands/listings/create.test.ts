@@ -91,7 +91,7 @@ describe('listings create', () => {
     expect(output).toContain('/v1/models');
   });
 
-  it('exits non-zero when test_passed is false', async () => {
+  it('shows activation hint when test_passed is false', async () => {
     mockListingsCreate.mockResolvedValue({
       id: 'test-id',
       service: 'my-api',
@@ -104,10 +104,11 @@ describe('listings create', () => {
       test_passed: false,
     });
 
-    await expect(
-      run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--credential', 'sk-test', '--categories', 'ai'),
-    ).rejects.toThrow('process.exit');
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    await run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--credential', 'sk-test', '--categories', 'ai');
+
+    const output = logSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
+    expect(output).toContain('inactive');
+    expect(output).toContain('upload-docs');
   });
 
   it('--skip-test passes skip_test=true to SDK and does not display test results', async () => {
@@ -159,9 +160,7 @@ describe('listings create', () => {
       test_passed: false,
     });
 
-    await expect(
-      run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--credential', 'sk-test', '--categories', 'ai'),
-    ).rejects.toThrow('process.exit');
+    await run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--credential', 'sk-test', '--categories', 'ai');
 
     const output = logSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
     expect(output).toContain('FAIL');
@@ -175,12 +174,9 @@ describe('listings create', () => {
       test_passed: false,
     });
 
-    await expect(
-      run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--credential', 'sk-test', '--categories', 'ai'),
-    ).rejects.toThrow('process.exit');
+    await run('--non-interactive', '--service-name', 'Test', '--base-url', 'https://api.test.com', '--auth-pattern', 'bearer', '--credential', 'sk-test', '--categories', 'ai');
 
     const output = logSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
     expect(output).toContain('WAF');
-    expect(output).toContain('retry');
   });
 });
