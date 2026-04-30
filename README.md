@@ -83,12 +83,19 @@ proxygate listings docs <id>                    # view API documentation
 
 ### Proxy
 
-Use a **service name**, slug, or listing UUID — the CLI resolves automatically:
-
 ```bash
+# Recommended — composite seller-handle/listing-slug (copy-paste from URLs)
+proxygate proxy blockdb/blockdb-api /v1/forecast -d '{"lat":52.37}'
+
+# Single-segment slug or service name (legacy)
 proxygate proxy weather-api /v1/forecast -d '{"lat":52.37}'
 proxygate proxy agent-postal-lookup /nl/1012
-proxygate proxy weather-api /v1/forecast --stream -d '{...}'
+
+# Listing UUID (advanced — scriptable, bypasses slug resolution)
+proxygate proxy abc12345-6789-abcd-ef01-234567890abc /v1/data -X GET
+
+# Streaming + Shield + Seller strategy
+proxygate proxy blockdb/blockdb-api /v1/forecast --stream -d '{...}'
 proxygate proxy weather-api /path --shield strict
 proxygate proxy weather-api /path --seller cheapest
 ```
@@ -96,6 +103,18 @@ proxygate proxy weather-api /path --seller cheapest
 Shield modes: `monitor` (log threats), `strict` (block + refund), `off`.
 
 Seller strategies: `popular` (default), `cheapest`, `best-rated`, `fastest`. When multiple sellers offer the same API, this controls which one is selected.
+
+#### Listing identifiers
+
+The `proxy` command — and any other command that takes a listing argument — accepts **three** identifier forms. The SDK auto-detects which form was passed and routes the lookup to the right gateway filter (no extra round-trips).
+
+| Form                        | Example                                      | When to use                                                              |
+| --------------------------- | -------------------------------------------- | ------------------------------------------------------------------------ |
+| `seller-handle/listing-slug` | `blockdb/blockdb-api`                        | **Recommended.** Copy-paste from URLs (`/seller/blockdb/blockdb-api`). Unambiguous when multiple sellers share a listing slug. |
+| `listing-slug` or service    | `weather-api`                                | Legacy + agent shorthand. Matches a listing slug first, then falls back to service-name resolution (gateway picks default seller). |
+| Listing UUID                 | `abc12345-6789-abcd-ef01-234567890abc`       | Advanced / scriptable. Bypasses slug resolution; always references one specific listing. Useful in CI and automation.            |
+
+The `proxygate apis` and `proxygate listings list --table` commands display the composite form in their `Listing` / `ID` columns when a slug is set, so you can copy a value straight from one command into the next.
 
 ### Balance & payments
 
