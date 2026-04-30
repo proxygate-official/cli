@@ -106,6 +106,34 @@ describe('listings command', () => {
       const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
       expect(output).toContain('No listings found');
     });
+
+    // -------------------------------------------------------------------------
+    // Phase 51-09: slug-based identifier display
+    // -------------------------------------------------------------------------
+
+    it('shows slug column with --table when slug is present', async () => {
+      mockListingsList.mockResolvedValue({
+        listings: [
+          {
+            ...LISTINGS_RESULT.listings[0],
+            slug: 'blockdb-api',
+          },
+        ],
+      });
+      await run('list', '--table');
+
+      const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+      expect(output).toContain('blockdb-api');
+    });
+
+    it('falls back to truncated UUID with --table when slug is not yet set', async () => {
+      mockListingsList.mockResolvedValue(LISTINGS_RESULT);
+      await run('list', '--table');
+
+      const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+      // First 8 chars of UUID: abc12345-...
+      expect(output).toContain('abc12345');
+    });
   });
 
   describe('update', () => {

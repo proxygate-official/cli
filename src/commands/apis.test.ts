@@ -118,4 +118,71 @@ describe('apis command', () => {
     const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
     expect(output).toContain('More available');
   });
+
+  // ---------------------------------------------------------------------------
+  // Phase 51-09: slug-based identifier display
+  // ---------------------------------------------------------------------------
+
+  describe('slug-based identifiers', () => {
+    it('shows seller_slug/slug composite as Listing column when both are present', async () => {
+      mockApis.mockResolvedValue({
+        ...APIS_RESULT,
+        data: [
+          {
+            ...APIS_RESULT.data[0],
+            slug: 'blockdb-api',
+            seller_slug: 'blockdb',
+            organization: 'Blockchain Database LTD',
+            seller_account_type: 'organization',
+          },
+        ],
+      });
+      await run();
+
+      const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+      expect(output).toContain('Listing');
+      expect(output).toContain('blockdb/blockdb-api');
+      // Seller column should display organization, not the truncated wallet
+      expect(output).toContain('Blockchain Database LTD');
+    });
+
+    it('falls back to truncated UUID when slug is not yet set (legacy listing)', async () => {
+      mockApis.mockResolvedValue({
+        ...APIS_RESULT,
+        data: [
+          {
+            ...APIS_RESULT.data[0],
+            // No slug / seller_slug fields — pre-backfill listing
+          },
+        ],
+      });
+      await run();
+
+      const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+      // Truncated UUID = first 8 chars of listing_id
+      expect(output).toContain('abc12345');
+    });
+
+    it('--json mode includes raw seller_slug + slug fields untouched', async () => {
+      const enriched = {
+        ...APIS_RESULT,
+        data: [
+          {
+            ...APIS_RESULT.data[0],
+            slug: 'blockdb-api',
+            seller_slug: 'blockdb',
+            seller_account_type: 'organization',
+          },
+        ],
+      };
+      mockApis.mockResolvedValue(enriched);
+      await run('--json');
+
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const parsed = JSON.parse(logSpy.mock.calls[0][0] as string) as typeof enriched;
+      expect(parsed.data[0].slug).toBe('blockdb-api');
+      expect(parsed.data[0].seller_slug).toBe('blockdb');
+      expect(parsed.data[0].seller_account_type).toBe('organization');
+    });
+  });
 });
