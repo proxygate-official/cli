@@ -11,16 +11,24 @@ import { handleError } from '../errors.js';
  * Sends a request through the ProxyGate proxy to an upstream API
  * using the listing-centric proxy(listingId, path, body, options?) API.
  *
+ * Listing identifier accepts three forms (resolved by SDK Phase 51-08):
+ *   1. seller-handle/listing-slug — recommended, copy-paste from URLs
+ *   2. listing-slug or service-name — single-segment, legacy + service fallback
+ *   3. UUID — advanced, scriptable, bypasses slug resolution
+ *
  * @example
- * proxygate proxy abc-123 /v1/chat/completions -d '{"model":"gpt-4","messages":[...]}'
- * proxygate proxy abc-123 /v1/models -X GET
- * proxygate proxy abc-123 /v1/chat/completions -d '...' --stream
+ * proxygate proxy blockdb/blockdb-api /v1/forecast -d '{...}'
+ * proxygate proxy weather-api /v1/forecast -d '{...}'
+ * proxygate proxy abc12345-6789-abcd-ef01-234567890abc /v1/data -X GET
  */
 export function registerProxyCommand(program: Command): void {
   program
     .command('proxy')
     .description('Send a proxied request to an upstream API through a seller listing')
-    .argument('<listing>', 'Service name, slug, or listing UUID')
+    .argument(
+      '<listing>',
+      'Listing identifier: seller-handle/listing-slug (recommended), listing-slug or service name, or listing UUID',
+    )
     .argument('<path>', 'Upstream API path (e.g., /v1/chat/completions)')
     .option('-d, --data <json>', 'Request body as JSON string')
     .option('-X, --method <method>', 'HTTP method (default: POST if -d given, GET otherwise)')
@@ -30,13 +38,21 @@ export function registerProxyCommand(program: Command): void {
     .addHelpText(
       'after',
       '\nExamples:\n' +
-        '  $ proxygate proxy agent-postal-lookup /nl/1012\n\n' +
+        '  # Composite seller-handle/listing-slug (recommended — copy-paste from URLs)\n' +
+        '  $ proxygate proxy blockdb/blockdb-api /v1/forecast \\\n' +
+        "    -d '{\"latitude\":52.37,\"longitude\":4.90}'\n\n" +
+        '  # Single-segment slug or service name (legacy, picks default seller)\n' +
         '  $ proxygate proxy weather-api /v1/forecast \\\n' +
         "    -d '{\"latitude\":52.37,\"longitude\":4.90,\"hourly\":\"temperature_2m\"}'\n\n" +
+        '  # Listing UUID (advanced, scriptable — bypasses slug resolution)\n' +
         '  $ proxygate proxy abc12345-6789-abcd-ef01-234567890abc /v1/data -X GET\n\n' +
-        '  $ proxygate proxy weather-api /v1/forecast --stream \\\n' +
+        '  # Streaming\n' +
+        '  $ proxygate proxy blockdb/blockdb-api /v1/forecast --stream \\\n' +
         "    -d '{\"latitude\":52.37,\"longitude\":4.90}'\n\n" +
-        'Accepts a service name, slug, or listing UUID.\n' +
+        'Listing identifier forms (smart-detected by the SDK):\n' +
+        '  seller-handle/listing-slug — recommended, unique per seller (e.g. blockdb/blockdb-api)\n' +
+        '  listing-slug or service     — single segment; falls back to service-name resolution\n' +
+        '  listing UUID                — explicit, bypasses slug detection\n\n' +
         'Browse available APIs: proxygate apis -q <search>\n\n' +
         'Shield modes:\n' +
         '  off      — no scanning, no surcharge (default)\n' +

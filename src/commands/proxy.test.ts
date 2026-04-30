@@ -521,4 +521,65 @@ describe('proxy command', () => {
       });
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Phase 51-09: composite seller-handle/listing-slug input
+  // ---------------------------------------------------------------------------
+
+  describe('composite seller/listing input', () => {
+    it('passes seller-handle/listing-slug composite to SDK as-is', async () => {
+      mockProxy.mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      await runProxy('blockdb/blockdb-api', '/v1/forecast');
+
+      // CLI passes the composite string as-is — SDK's smart detection
+      // (Phase 51-08 COMPOSITE_RE) routes it to ?seller_slug=&slug= filter.
+      expect(mockProxy).toHaveBeenCalledWith('blockdb/blockdb-api', '/v1/forecast', undefined, {
+        method: 'GET',
+        shield: 'off',
+      });
+    });
+
+    it('passes single-segment listing slug to SDK as-is', async () => {
+      mockProxy.mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      await runProxy('blockdb-api', '/v1/forecast');
+
+      expect(mockProxy).toHaveBeenCalledWith('blockdb-api', '/v1/forecast', undefined, {
+        method: 'GET',
+        shield: 'off',
+      });
+    });
+
+    it('--help text documents composite syntax as a first-class form', async () => {
+      const program = new Command('proxygate');
+      program.exitOverride();
+      program
+        .option('--gateway <url>')
+        .option('--keypair <path>')
+        .option('--json');
+      registerProxyCommand(program);
+
+      const proxyCmd = program.commands.find((c) => c.name() === 'proxy');
+      expect(proxyCmd).toBeDefined();
+      const helpText = proxyCmd!.helpInformation();
+
+      // All three input forms must be discoverable from --help
+      expect(helpText).toContain('seller-handle/listing-slug');
+      // Existing single-slug form (e.g. service or listing slug)
+      expect(helpText.toLowerCase()).toContain('slug');
+      // Existing UUID form
+      expect(helpText.toLowerCase()).toContain('uuid');
+    });
+  });
 });
