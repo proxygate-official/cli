@@ -25,9 +25,11 @@ export function registerListSubcommand(listings: Command, program: Command): voi
           console.log(bold(`Seller Listings (${result.listings.length})`));
           console.log();
 
+          // Phase 51-09: prefer slug as primary identifier, fall back to
+          // truncated UUID for listings created before the 51-01 backfill.
           const headers = ['ID', 'Service', 'Status', 'RPM', 'Price', 'Shield'];
           const rows = result.listings.map((l) => [
-            l.id.slice(0, 8),
+            l.slug ?? l.id.slice(0, 8),
             l.service_catalog?.name ?? 'unknown',
             l.is_active ? green('active') : yellow('paused'),
             `${l.total_rpm - (l.reserved_rpm ?? 0)}/${l.total_rpm}`,

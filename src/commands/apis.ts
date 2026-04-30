@@ -84,18 +84,30 @@ export function registerApisCommand(program: Command): void {
           ]);
           console.log(formatTable(headers, rows));
         } else {
-          const headers = ['ID', 'Service', 'Type', 'Seller', 'Price', 'RPM', 'Uptime', 'Trust', 'Verified'];
-          const rows = result.data.map((l) => [
-            l.listing_id,
-            `${bold(cyan(l.service_name))} ${dim(`(${l.service})`)}`,
-            l.listing_type ?? 'api',
-            formatWallet(l.seller_wallet),
-            l.price_per_request_usdc != null ? `$${l.price_per_request_usdc}/req` : 'per-token',
-            String(l.available_rpm),
-            `${l.uptime_percent.toFixed(1)}%`,
-            l.trust_score.toFixed(2),
-            l.is_verified ? bold(cyan('yes')) : dim('no'),
-          ]);
+          // Phase 51-09: prefer slug-based identifiers over raw UUIDs
+          // Listing column shows `seller_slug/slug` composite when available,
+          // falls back to first 8 chars of UUID for legacy listings.
+          // Seller column prefers organization > display_name > truncated wallet.
+          const headers = ['Listing', 'Service', 'Type', 'Seller', 'Price', 'RPM', 'Uptime', 'Trust', 'Verified'];
+          const rows = result.data.map((l) => {
+            const sellerSlug = l.seller_slug;
+            const listingSlug = l.slug;
+            const listingCol = sellerSlug && listingSlug
+              ? `${sellerSlug}/${listingSlug}`
+              : listingSlug ?? l.listing_id.slice(0, 8);
+            const sellerCol = l.organization ?? formatWallet(l.seller_wallet);
+            return [
+              listingCol,
+              `${bold(cyan(l.service_name))} ${dim(`(${l.service})`)}`,
+              l.listing_type ?? 'api',
+              sellerCol,
+              l.price_per_request_usdc != null ? `$${l.price_per_request_usdc}/req` : 'per-token',
+              String(l.available_rpm),
+              `${l.uptime_percent.toFixed(1)}%`,
+              l.trust_score.toFixed(2),
+              l.is_verified ? bold(cyan('yes')) : dim('no'),
+            ];
+          });
           console.log(formatTable(headers, rows));
 
           // Show endpoints when viewing a single listing or small result set
