@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { randomBytes } from 'node:crypto';
 import nacl from 'tweetnacl';
-import { ProxyGateClient } from '@proxygate/sdk';
+import { ProxygateClient } from '@proxygate/sdk';
 import { loadConfig, saveConfig, CONFIG_DIR, CONFIG_PATH } from '../config.js';
 import { bold, green, yellow, red, dim, formatCurrency } from '../format.js';
 import { parseKeypair } from '../keypair.js';
@@ -20,7 +20,7 @@ const DEFAULT_KEYPAIR_PATH = `${CONFIG_DIR}/keypair.json`;
 export function registerInitCommand(program: Command): void {
   program
     .command('init', { hidden: true })
-    .description('Initialize ProxyGate (use `proxygate login` instead)')
+    .description('Initialize Proxygate (use `proxygate login` instead)')
     .option('--gateway <url>', 'Gateway URL', 'https://gateway.proxygate.ai')
     .option('--keypair <path>', 'Path to existing keypair file (any format)')
     .option('--generate', 'Generate a new keypair')
@@ -44,7 +44,7 @@ export function registerInitCommand(program: Command): void {
 
 /** Shared init flow — used by both `init` and `login --keypair/--generate`. */
 export async function execInitFlow(opts: { gateway: string; keypair?: string; generate?: boolean }): Promise<void> {
-  console.log(bold('ProxyGate Wallet Setup'));
+  console.log(bold('Proxygate Wallet Setup'));
   console.log();
 
   if (opts.keypair && opts.generate) {
@@ -77,9 +77,9 @@ export async function execInitFlow(opts: { gateway: string; keypair?: string; ge
   }
 
   // Create client from keypair
-  let client: ProxyGateClient;
+  let client: ProxygateClient;
   try {
-    client = await ProxyGateClient.create({ gatewayUrl: opts.gateway, keypairPath });
+    client = await ProxygateClient.create({ gatewayUrl: opts.gateway, keypairPath });
   } catch (err) {
     console.error(red(`Failed to load keypair: ${err instanceof Error ? err.message : String(err)}`));
     process.exit(1);
@@ -170,7 +170,7 @@ async function generateKeypair(): Promise<string> {
   await writeFile(path, JSON.stringify(Array.from(keypair.secretKey)) + '\n', { mode: 0o600 });
 
   // Use the client to derive base58 wallet address
-  const tempClient = await ProxyGateClient.create({ gatewayUrl: 'https://gateway.proxygate.ai', keypairPath: path });
+  const tempClient = await ProxygateClient.create({ gatewayUrl: 'https://gateway.proxygate.ai', keypairPath: path });
 
   console.log(`${green('Generated keypair:')} ${path}`);
   console.log(`${green('Public key:')} ${tempClient.walletAddress}`);

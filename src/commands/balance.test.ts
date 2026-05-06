@@ -5,14 +5,14 @@ import { registerBalanceCommand } from './balance.js';
 // Mock the SDK with vault.balance() pattern
 const mockBalance = vi.fn();
 vi.mock('@proxygate/sdk', () => ({
-  ProxyGateClient: {
+  ProxygateClient: {
     create: vi.fn().mockResolvedValue({
       vault: {
         balance: (...args: unknown[]) => mockBalance(...args),
       },
     }),
   },
-  ProxyGateError: class ProxyGateError extends Error {
+  ProxygateError: class ProxygateError extends Error {
     code: string;
     action?: string;
     constructor(msg: string, code: string, action?: string) {

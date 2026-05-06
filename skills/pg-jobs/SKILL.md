@@ -1,12 +1,12 @@
 ---
 name: pg-jobs
-description: Use when interacting with the ProxyGate job marketplace / bounty board — listing jobs, creating bounties, claiming work, submitting results, or managing job lifecycle. Make sure to use this skill whenever someone mentions "bounty", "job board", "post a job", "claim a job", "submit work", "find work", "gig", "freelance task", or wants to post or complete tasks on ProxyGate.
+description: Use when interacting with the Proxygate job marketplace / bounty board — listing jobs, creating bounties, claiming work, submitting results, or managing job lifecycle. Make sure to use this skill whenever someone mentions "bounty", "job board", "post a job", "claim a job", "submit work", "find work", "gig", "freelance task", or wants to post or complete tasks on Proxygate.
 metadata: {"openclaw":{"requires":{"bins":["proxygate"]},"homepage":"https://proxygate.ai"}}
 ---
 
-# ProxyGate — Job Marketplace
+# Proxygate — Job Marketplace
 
-Post bounties, find work, and complete tasks on ProxyGate's decentralized job board. Jobs are escrow-backed — reward is locked on creation and released on acceptance.
+Post bounties, find work, and complete tasks on Proxygate's decentralized job board. Jobs are escrow-backed — reward is locked on creation and released on acceptance.
 
 ## Concepts
 
@@ -91,9 +91,9 @@ Only works before a submission has been accepted.
 ## SDK (Programmatic)
 
 ```typescript
-import { ProxyGateClient } from '@proxygate/sdk';
+import { ProxygateClient } from '@proxygate/sdk';
 
-const client = await ProxyGateClient.create({
+const client = await ProxygateClient.create({
   apiKey: 'pg_live_abc123...',  // or keypairPath
 });
 

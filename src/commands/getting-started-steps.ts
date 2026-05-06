@@ -1,7 +1,7 @@
 import { access } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { homedir } from 'node:os';
-import { ProxyGateClient, ProxyGateError } from '@proxygate/sdk';
+import { ProxygateClient, ProxygateError } from '@proxygate/sdk';
 import type { PricingServiceEntry } from '@proxygate/sdk';
 import { saveConfig, loadConfig, CONFIG_PATH } from '../config.js';
 import { bold, green, yellow, red, dim, cyan, formatTable, formatUsdc } from '../format.js';
@@ -54,13 +54,13 @@ export async function findKeypair(explicitPath?: string): Promise<string | null>
 }
 
 /** Step 2: Create client and save config. Returns client or null on failure. */
-export async function connectGateway(gatewayUrl: string, keypairPath: string): Promise<ProxyGateClient | null> {
+export async function connectGateway(gatewayUrl: string, keypairPath: string): Promise<ProxygateClient | null> {
   console.log(bold(`${cyan('Step 2')} — Connect to the gateway`));
   console.log();
 
-  let client: ProxyGateClient;
+  let client: ProxygateClient;
   try {
-    client = await ProxyGateClient.create({ gatewayUrl, keypairPath });
+    client = await ProxygateClient.create({ gatewayUrl, keypairPath });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.log(`  ${red('Failed to load keypair:')} ${message}`);
@@ -77,7 +77,7 @@ export async function connectGateway(gatewayUrl: string, keypairPath: string): P
 }
 
 /** Step 3: Check vault balance. Returns whether user has a positive balance. */
-export async function checkBalance(client: ProxyGateClient, gatewayUrl: string): Promise<boolean> {
+export async function checkBalance(client: ProxygateClient, gatewayUrl: string): Promise<boolean> {
   console.log(bold(`${cyan('Step 3')} — Check your balance`));
   console.log();
 
@@ -89,7 +89,7 @@ export async function checkBalance(client: ProxyGateClient, gatewayUrl: string):
     console.log();
     return balance.available > 0;
   } catch (err) {
-    if (err instanceof ProxyGateError) {
+    if (err instanceof ProxygateError) {
       console.log(err.code === 'vault_not_found'
         ? `  ${dim('No vault yet — it will be created on your first deposit.')}`
         : `  ${yellow(`Could not fetch balance: ${err.message}`)}`);
@@ -103,7 +103,7 @@ export async function checkBalance(client: ProxyGateClient, gatewayUrl: string):
 }
 
 /** Step 4: Show available APIs from the pricing endpoint. */
-export async function showApis(client: ProxyGateClient): Promise<void> {
+export async function showApis(client: ProxygateClient): Promise<void> {
   console.log(bold(`${cyan('Step 4')} — Available APIs`));
   console.log();
   try {

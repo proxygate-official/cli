@@ -4,12 +4,12 @@ import { registerSettlementsCommand } from './settlements.js';
 
 const mockSettlements = vi.fn();
 vi.mock('@proxygate/sdk', () => ({
-  ProxyGateClient: {
+  ProxygateClient: {
     create: vi.fn().mockResolvedValue({
       settlements: (...args: unknown[]) => mockSettlements(...args),
     }),
   },
-  ProxyGateError: class extends Error {
+  ProxygateError: class extends Error {
     code: string;
     constructor(msg: string, code: string) {
       super(msg);

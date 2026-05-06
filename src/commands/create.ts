@@ -59,7 +59,7 @@ export function registerCreateCommand(program: Command): void {
     .option('-t, --template <template>', 'Template to use (http-api, llm-agent)')
     .option('-p, --port <port>', 'Local port', '3000')
     .option('--price <price>', 'Price per request in micro-cents', '5000')
-    .description('Scaffold a new ProxyGate agent project')
+    .description('Scaffold a new Proxygate agent project')
     .addHelpText(
       'after',
       '\nExamples:\n' +
@@ -156,7 +156,7 @@ export function registerCreateCommand(program: Command): void {
           console.log(`    ${cyan('npm install')}`);
           console.log(`    ${cyan('npm run dev')}              ${dim('# start your server')}`);
           console.log(`    ${cyan('proxygate test')}           ${dim('# validate endpoints')}`);
-          console.log(`    ${cyan('proxygate tunnel')}         ${dim('# go live on ProxyGate')}`);
+          console.log(`    ${cyan('proxygate tunnel')}         ${dim('# go live on Proxygate')}`);
           console.log();
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);

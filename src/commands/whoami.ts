@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import { ProxyGateClient, ProxyGateError } from '@proxygate/sdk';
+import { ProxygateClient, ProxygateError } from '@proxygate/sdk';
 import { loadConfig, CONFIG_PATH } from '../config.js';
 import { getClient } from '../helpers.js';
 import { bold, green, dim, yellow, formatUsdc } from '../format.js';
@@ -38,7 +38,7 @@ export function registerWhoamiCommand(program: Command): void {
       let walletAddress: string | undefined;
       if (hasKeypair) {
         try {
-          const kpClient = await ProxyGateClient.create({
+          const kpClient = await ProxygateClient.create({
             gatewayUrl: config.gatewayUrl,
             keypairPath: config.keypairPath!,
           });
@@ -70,7 +70,7 @@ export function registerWhoamiCommand(program: Command): void {
         return;
       }
 
-      console.log(bold('ProxyGate Auth'));
+      console.log(bold('Proxygate Auth'));
       console.log();
       console.log(`  ${green('Auth mode:')}  ${authMode}`);
       if (hasApiKey) {
@@ -91,7 +91,7 @@ export function registerWhoamiCommand(program: Command): void {
         console.log();
         console.log(`  ${green('Balance:')}    ${formatUsdc(balance.balance)}`);
       } catch (err) {
-        if (err instanceof ProxyGateError) {
+        if (err instanceof ProxygateError) {
           console.log();
           console.log(`  ${dim('Balance:')}    ${yellow('offline')}`);
         }

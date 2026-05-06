@@ -1,4 +1,4 @@
-import { ProxyGateError } from '@proxygate/sdk';
+import { ProxygateError } from '@proxygate/sdk';
 import { red, dim } from './format.js';
 
 /** Recovery hints for common gateway error codes. */
@@ -21,7 +21,7 @@ const ERROR_HINTS: Record<string, string> = {
  * Shows error code, message, actionable hint, docs URL, and trace ID.
  */
 export function handleError(err: unknown): never {
-  if (err instanceof ProxyGateError) {
+  if (err instanceof ProxygateError) {
     console.error(red(`Error [${err.code}]: ${err.message}`));
     const hint = err.action ?? ERROR_HINTS[err.code];
     if (hint) console.error(dim(`Suggestion: ${hint}`));

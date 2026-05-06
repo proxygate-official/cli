@@ -3,7 +3,7 @@ import { Command } from 'commander';
 import { registerTunnelCommand } from './tunnel.js';
 
 vi.mock('@proxygate/sdk', () => ({
-  ProxyGate: {
+  Proxygate: {
     serve: vi.fn(),
   },
 }));

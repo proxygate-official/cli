@@ -24,11 +24,11 @@ const SKILL_TARGETS = [
 export function registerSkillsCommand(program: Command): void {
   const skills = program
     .command('skills')
-    .description('Manage agent skills for ProxyGate');
+    .description('Manage agent skills for Proxygate');
 
   skills
     .command('install')
-    .description('Install ProxyGate skills for Claude Code and Codex CLI')
+    .description('Install Proxygate skills for Claude Code and Codex CLI')
     .option('--json', 'JSON output')
     .action(installSkills);
 }

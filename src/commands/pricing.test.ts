@@ -4,12 +4,12 @@ import { registerPricingCommand } from './pricing.js';
 
 const mockPricing = vi.fn();
 vi.mock('@proxygate/sdk', () => ({
-  ProxyGateClient: {
+  ProxygateClient: {
     create: vi.fn().mockResolvedValue({
       pricing: (...args: unknown[]) => mockPricing(...args),
     }),
   },
-  ProxyGateError: class extends Error {
+  ProxygateError: class extends Error {
     code: string;
     constructor(msg: string, code: string) {
       super(msg);

@@ -34,8 +34,8 @@ export async function loginWithWalletConnectQR(
   const client: InstanceType<typeof SC> = await SC.init({
     projectId: opts?.projectId ?? process.env.WALLETCONNECT_PROJECT_ID ?? 'd141aaea95acc0c02c2e1400e02248a8',
     metadata: {
-      name: 'ProxyGate CLI',
-      description: 'Authenticate ProxyGate CLI with your wallet',
+      name: 'Proxygate CLI',
+      description: 'Authenticate Proxygate CLI with your wallet',
       url: 'https://proxygate.ai',
       icons: ['https://proxygate.ai/icon.png'],
     },

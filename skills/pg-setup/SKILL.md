@@ -1,16 +1,16 @@
 ---
 name: pg-setup
-description: Use when setting up ProxyGate for the first time, installing the CLI, configuring auth (API key or wallet), or connecting to the gateway. Make sure to use this skill whenever someone mentions "get started with proxygate", "install proxygate", "setup wallet", "configure proxygate", "connect to gateway", "login", or wants to start using ProxyGate APIs, even if they don't explicitly say "setup".
+description: Use when setting up Proxygate for the first time, installing the CLI, configuring auth (API key or wallet), or connecting to the gateway. Make sure to use this skill whenever someone mentions "get started with proxygate", "install proxygate", "setup wallet", "configure proxygate", "connect to gateway", "login", or wants to start using Proxygate APIs, even if they don't explicitly say "setup".
 metadata: {"openclaw":{"requires":{"anyBins":["npm","pnpm"]},"homepage":"https://proxygate.ai"}}
 ---
 
-# ProxyGate Setup
+# Proxygate Setup
 
-First-time setup for ProxyGate — install CLI, authenticate, start using APIs.
+First-time setup for Proxygate — install CLI, authenticate, start using APIs.
 
 ## Authentication modes
 
-ProxyGate supports multiple ways to authenticate, each suited to different use cases:
+Proxygate supports multiple ways to authenticate, each suited to different use cases:
 
 | Mode | Best for | What you get | On-chain ops? |
 |------|----------|-------------|---------------|
@@ -70,7 +70,7 @@ pnpm add -g @proxygate/cli
 Run `proxygate login` for the interactive menu:
 
 ```
-ProxyGate Login
+Proxygate Login
 
   1. API key     Paste existing or create in browser
   2. Wallet      WalletConnect, import keypair, or generate new

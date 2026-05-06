@@ -1,13 +1,13 @@
-# AGENTS.md — ProxyGate for AI Agents
+# AGENTS.md — Proxygate for AI Agents
 
-> Machine-readable instructions for coding agents working with ProxyGate.
+> Machine-readable instructions for coding agents working with Proxygate.
 > Works with Claude Code, Codex CLI, Gemini CLI, Cursor, and any agent that reads AGENTS.md.
 
 ---
 
-## What is ProxyGate?
+## What is Proxygate?
 
-ProxyGate is a marketplace where sellers list unused API capacity and AI agents purchase access through a transparent proxy. Keys never leave the server. Agents pay with USDC on Solana.
+Proxygate is a marketplace where sellers list unused API capacity and AI agents purchase access through a transparent proxy. Keys never leave the server. Agents pay with USDC on Solana.
 
 ## CLI Quick Reference
 
@@ -209,16 +209,16 @@ Two authentication modes:
 The CLI handles auth automatically. For SDK usage:
 
 ```typescript
-import { ProxyGateClient } from '@proxygate/sdk';
+import { ProxygateClient } from '@proxygate/sdk';
 
 // API key auth (recommended for agents)
-const client = new ProxyGateClient({
+const client = new ProxygateClient({
   gatewayUrl: 'https://gateway.proxygate.ai',
   apiKey: 'pg_live_...',
 });
 
 // Or wallet keypair auth
-const client = await ProxyGateClient.create({
+const client = await ProxygateClient.create({
   gatewayUrl: 'https://gateway.proxygate.ai',
   keypairPath: '~/.proxygate/keypair.json',
 });

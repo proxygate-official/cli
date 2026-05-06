@@ -5,7 +5,7 @@ import { registerCreateSubcommand } from './create.js';
 const mockListingsCreate = vi.fn();
 
 vi.mock('@proxygate/sdk', () => ({
-  ProxyGateClient: {
+  ProxygateClient: {
     create: vi.fn().mockResolvedValue({
       listings: {
         create: (...args: unknown[]) => mockListingsCreate(...args),
@@ -13,7 +13,7 @@ vi.mock('@proxygate/sdk', () => ({
     }),
   },
   SHIELD_SURCHARGE_DISPLAY: '$0.005',
-  ProxyGateError: class extends Error {
+  ProxygateError: class extends Error {
     code: string;
     constructor(msg: string, code: string) {
       super(msg);

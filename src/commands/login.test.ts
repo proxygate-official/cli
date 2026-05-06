@@ -11,8 +11,8 @@ vi.mock('@proxygate/sdk', () => {
     balance = mockBalance;
   }
   return {
-    ProxyGateClient: MockClient,
-    ProxyGateError: class ProxyGateError extends Error {
+    ProxygateClient: MockClient,
+    ProxygateError: class ProxygateError extends Error {
       statusCode: number;
       action?: string;
       constructor(body: { error: string; message: string; action?: string }, statusCode: number) {

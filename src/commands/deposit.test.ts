@@ -4,14 +4,14 @@ import { registerDepositCommand } from './deposit.js';
 
 const mockDeposit = vi.fn();
 vi.mock('@proxygate/sdk', () => ({
-  ProxyGateClient: {
+  ProxygateClient: {
     create: vi.fn().mockResolvedValue({
       vault: {
         deposit: (...args: unknown[]) => mockDeposit(...args),
       },
     }),
   },
-  ProxyGateError: class extends Error {
+  ProxygateError: class extends Error {
     code: string;
     action?: string;
     constructor(msg: string, code: string, action?: string) {

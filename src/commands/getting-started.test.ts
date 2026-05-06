@@ -3,7 +3,7 @@ import { Command } from 'commander';
 import { registerGettingStartedCommand } from './getting-started.js';
 
 vi.mock('@proxygate/sdk', () => ({
-  ProxyGateClient: {
+  ProxygateClient: {
     create: vi.fn().mockResolvedValue({
       walletAddress: '3uQP6CDmzC274Q3V5ZZDWfqTXRJuV6Kx6C6TgNKUSJF3',
       vault: {
@@ -28,7 +28,7 @@ vi.mock('@proxygate/sdk', () => ({
       }),
     }),
   },
-  ProxyGateError: class extends Error {
+  ProxygateError: class extends Error {
     code: string;
     constructor(msg: string, code: string) {
       super(msg);
@@ -74,7 +74,7 @@ describe('getting-started command', () => {
     await run('--keypair', '/tmp/key.json');
 
     const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
-    expect(output).toContain('Welcome to ProxyGate');
+    expect(output).toContain('Welcome to Proxygate');
   });
 
   it('runs through all steps with valid keypair', async () => {

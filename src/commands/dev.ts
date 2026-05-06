@@ -3,7 +3,7 @@ import { watch } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Command } from 'commander';
 import yaml from 'js-yaml';
-import { ProxyGate } from '@proxygate/sdk';
+import { Proxygate } from '@proxygate/sdk';
 import type { TunnelServiceConfig, TunnelClient } from '@proxygate/sdk';
 import { loadConfig } from '../config.js';
 import { bold, green, yellow, red, dim, cyan } from '../format.js';
@@ -66,7 +66,7 @@ export function registerDevCommand(program: Command): void {
 
         // Header
         console.log();
-        console.log(bold(`ProxyGate ${cyan('Dev Mode')}`));
+        console.log(bold(`Proxygate ${cyan('Dev Mode')}`));
         console.log();
         console.log(`  ${dim('Keypair:')} ${keypairPath}`);
         console.log(`  ${dim('Gateway:')} ${gatewayUrl}`);
@@ -99,7 +99,7 @@ export function registerDevCommand(program: Command): void {
         }, 1000);
         process.stderr.write(dim('Connecting to gateway...'));
 
-        let tunnel: TunnelClient = await ProxyGate.serve({
+        let tunnel: TunnelClient = await Proxygate.serve({
           gatewayUrl,
           keypair: keypairPath,
           services,
@@ -156,7 +156,7 @@ export function registerDevCommand(program: Command): void {
                 console.log(`${timestamp()} ${cyan('Config changed')} — reconnecting...`);
                 tunnel.disconnect();
                 services = newServices;
-                tunnel = await ProxyGate.serve({
+                tunnel = await Proxygate.serve({
                   gatewayUrl,
                   keypair: keypairPath,
                   services: newServices,

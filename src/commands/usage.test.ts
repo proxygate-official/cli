@@ -4,12 +4,12 @@ import { registerUsageCommand } from './usage.js';
 
 const mockUsage = vi.fn();
 vi.mock('@proxygate/sdk', () => ({
-  ProxyGateClient: {
+  ProxygateClient: {
     create: vi.fn().mockResolvedValue({
       usage: (...args: unknown[]) => mockUsage(...args),
     }),
   },
-  ProxyGateError: class extends Error {
+  ProxygateError: class extends Error {
     code: string;
     constructor(msg: string, code: string) {
       super(msg);

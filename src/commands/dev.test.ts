@@ -18,7 +18,7 @@ vi.mock('js-yaml', () => ({
 
 const mockServe = vi.fn();
 vi.mock('@proxygate/sdk', () => ({
-  ProxyGate: {
+  Proxygate: {
     serve: (...args: unknown[]) => mockServe(...args),
   },
 }));
@@ -71,14 +71,14 @@ describe('dev command', () => {
     program.option('--keypair <path>');
     registerDevCommand(program);
     // Don't actually await forever — the command keeps the process alive
-    // Just verify it calls ProxyGate.serve with the right args
+    // Just verify it calls Proxygate.serve with the right args
     const promise = program.parseAsync(['node', 'proxygate', 'dev', ...args]);
     // Give it a tick to start
     await new Promise((r) => setTimeout(r, 50));
     // We can't cleanly resolve since it awaits forever, so we just check mocks
   };
 
-  it('calls ProxyGate.serve with config from tunnel yaml', async () => {
+  it('calls Proxygate.serve with config from tunnel yaml', async () => {
     await runDev();
 
     expect(mockServe).toHaveBeenCalledWith(

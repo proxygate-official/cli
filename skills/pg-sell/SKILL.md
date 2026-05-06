@@ -1,10 +1,10 @@
 ---
 name: pg-sell
-description: Use when selling API capacity on ProxyGate — creating listings, managing listings (update/pause/delete), rotating keys, uploading docs, starting tunnels, managing headers, viewing earnings, or exposing local services. Make sure to use this skill whenever someone mentions "list API", "sell capacity", "create listing", "start tunnel", "expose service", "earnings", "go live", "monetize API", "rotate key", "pause listing", or wants to make their API available on ProxyGate.
+description: Use when selling API capacity on Proxygate — creating listings, managing listings (update/pause/delete), rotating keys, uploading docs, starting tunnels, managing headers, viewing earnings, or exposing local services. Make sure to use this skill whenever someone mentions "list API", "sell capacity", "create listing", "start tunnel", "expose service", "earnings", "go live", "monetize API", "rotate key", "pause listing", or wants to make their API available on Proxygate.
 metadata: {"openclaw":{"requires":{"bins":["proxygate"]},"homepage":"https://proxygate.ai"}}
 ---
 
-# ProxyGate — Sell API Capacity
+# Proxygate — Sell API Capacity
 
 Seller workflow: create listings, manage them, expose services via tunnel, track earnings.
 
@@ -12,7 +12,7 @@ Seller workflow: create listings, manage them, expose services via tunnel, track
 
 Selling requires authentication. Any auth mode works for creating/managing listings, but **a wallet keypair is recommended** for sellers to receive settlement payouts directly.
 
-- **API key or delegation token**: Can create/manage listings and start tunnels. Earnings accumulate in your ProxyGate balance.
+- **API key or delegation token**: Can create/manage listings and start tunnels. Earnings accumulate in your Proxygate balance.
 - **Wallet keypair**: Full access — earnings settle directly to your Solana wallet.
 
 ## Process
@@ -149,10 +149,10 @@ proxygate listings list --table                    # listing status overview
 ## SDK — Programmatic Serving
 
 ```typescript
-import { ProxyGate, ProxyGateClient } from '@proxygate/sdk';
+import { Proxygate, ProxygateClient } from '@proxygate/sdk';
 
 // One-liner: expose services immediately
-const tunnel = await ProxyGate.serve({
+const tunnel = await Proxygate.serve({
   keypair: '~/.proxygate/keypair.json',
   services: [
     { name: 'code-review', port: 3000, docs: './openapi.yaml' },
@@ -161,7 +161,7 @@ const tunnel = await ProxyGate.serve({
 });
 
 // Or via client for more control
-const client = await ProxyGateClient.create({
+const client = await ProxygateClient.create({
   keypairPath: '~/.proxygate/keypair.json',
 });
 

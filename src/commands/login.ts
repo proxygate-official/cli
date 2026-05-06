@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import { createInterface } from 'node:readline';
-import { ProxyGateClient, ProxyGateError } from '@proxygate/sdk';
+import { ProxygateClient, ProxygateError } from '@proxygate/sdk';
 import { loadConfig, saveConfig, CONFIG_PATH } from '../config.js';
 import { bold, green, red, yellow, dim, formatUsdc } from '../format.js';
 
@@ -54,7 +54,7 @@ export function registerLoginCommand(program: Command): void {
       }
 
       // Interactive menu
-      console.log(bold('ProxyGate Login'));
+      console.log(bold('Proxygate Login'));
       console.log();
       console.log('  1. API key     ' + dim('Paste existing or create in browser'));
       console.log();
@@ -120,13 +120,13 @@ async function loginWithApiKey(key: string, gatewayUrl: string, existingKeypairP
   }
 
   try {
-    const client = new ProxyGateClient({ gatewayUrl, apiKey: key });
+    const client = new ProxygateClient({ gatewayUrl, apiKey: key });
     const balance = await client.balance();
     console.log(green('Authenticated successfully'));
     console.log(dim(`Key: ${key.slice(0, 12)}...`));
     console.log(dim(`Balance: ${formatUsdc(balance.balance)}`));
   } catch (err) {
-    if (err instanceof ProxyGateError && (err.statusCode === 401 || err.statusCode === 403)) {
+    if (err instanceof ProxygateError && (err.statusCode === 401 || err.statusCode === 403)) {
       console.error(red(`Authentication failed: ${err.message}`));
       if (err.action) console.error(dim(err.action));
       process.exit(1);

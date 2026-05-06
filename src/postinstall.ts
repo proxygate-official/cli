@@ -107,7 +107,7 @@ async function postinstall(): Promise<void> {
     // Non-fatal
   }
 
-  console.log(`\x1b[32m+\x1b[0m Installed ${count} ProxyGate skills to ${baseDir}`);
+  console.log(`\x1b[32m+\x1b[0m Installed ${count} Proxygate skills to ${baseDir}`);
 }
 
 const STATUSLINE_SCRIPT = `#!/usr/bin/env node

@@ -4,12 +4,12 @@ import { registerRateCommand } from './rate.js';
 
 const mockRate = vi.fn();
 vi.mock('@proxygate/sdk', () => ({
-  ProxyGateClient: {
+  ProxygateClient: {
     create: vi.fn().mockResolvedValue({
       rate: (...args: unknown[]) => mockRate(...args),
     }),
   },
-  ProxyGateError: class extends Error {
+  ProxygateError: class extends Error {
     code: string;
     action?: string;
     constructor(msg: string, code: string) {

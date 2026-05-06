@@ -1,10 +1,10 @@
 ---
 name: pg-buy
-description: Use when buying API access through ProxyGate — depositing USDC, browsing available APIs, making proxy requests, streaming responses, or rating sellers. Make sure to use this skill whenever someone mentions "proxy request", "buy API", "deposit USDC", "browse APIs", "call API through proxygate", "make an API call", "find an API", "search APIs", or wants to consume any API through ProxyGate, even if they don't explicitly say "buy".
+description: Use when buying API access through Proxygate — depositing USDC, browsing available APIs, making proxy requests, streaming responses, or rating sellers. Make sure to use this skill whenever someone mentions "proxy request", "buy API", "deposit USDC", "browse APIs", "call API through proxygate", "make an API call", "find an API", "search APIs", or wants to consume any API through Proxygate, even if they don't explicitly say "buy".
 metadata: {"openclaw":{"requires":{"bins":["proxygate"]},"homepage":"https://proxygate.ai"}}
 ---
 
-# ProxyGate — Buy API Access
+# Proxygate — Buy API Access
 
 Buyer workflow: discover APIs, deposit USDC, proxy requests, stream responses, rate sellers.
 
@@ -139,15 +139,15 @@ Not available with API key or delegation token auth — use the web dashboard in
 For agent-to-agent use without CLI:
 
 ```typescript
-import { ProxyGateClient, parseSSE } from '@proxygate/sdk';
+import { ProxygateClient, parseSSE } from '@proxygate/sdk';
 
 // API key auth (simplest)
-const client = await ProxyGateClient.create({
+const client = await ProxygateClient.create({
   apiKey: 'pg_live_abc123...',
 });
 
 // Or wallet keypair auth (full access)
-const client = await ProxyGateClient.create({
+const client = await ProxygateClient.create({
   keypairPath: '~/.proxygate/keypair.json',
 });
 

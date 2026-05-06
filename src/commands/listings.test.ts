@@ -11,7 +11,7 @@ const mockListingsGet = vi.fn();
 const mockDocs = vi.fn();
 
 vi.mock('@proxygate/sdk', () => ({
-  ProxyGateClient: {
+  ProxygateClient: {
     create: vi.fn().mockResolvedValue({
       listings: {
         list: (...args: unknown[]) => mockListingsList(...args),
@@ -26,7 +26,7 @@ vi.mock('@proxygate/sdk', () => ({
     }),
   },
   SHIELD_SURCHARGE_DISPLAY: '$0.005',
-  ProxyGateError: class extends Error {
+  ProxygateError: class extends Error {
     code: string;
     action?: string;
     constructor(msg: string, code: string) {

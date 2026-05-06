@@ -13,8 +13,8 @@ vi.mock('@proxygate/sdk', () => {
     }
   }
   return {
-    ProxyGateClient: MockClient,
-    ProxyGateError: class extends Error {
+    ProxygateClient: MockClient,
+    ProxygateError: class extends Error {
       constructor(msg: string) {
         super(msg);
       }

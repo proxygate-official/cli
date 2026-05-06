@@ -4,12 +4,12 @@ import { registerCategoriesCommand } from './categories.js';
 
 const mockCategories = vi.fn();
 vi.mock('@proxygate/sdk', () => ({
-  ProxyGateClient: {
+  ProxygateClient: {
     create: vi.fn().mockResolvedValue({
       categories: (...args: unknown[]) => mockCategories(...args),
     }),
   },
-  ProxyGateError: class extends Error {
+  ProxygateError: class extends Error {
     code: string;
     constructor(msg: string, code: string) {
       super(msg);

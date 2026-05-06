@@ -1,6 +1,6 @@
 # {{name}}
 
-A ProxyGate agent service built with [Hono](https://hono.dev).
+A Proxygate agent service built with [Hono](https://hono.dev).
 
 ## Quick Start
 
@@ -8,7 +8,7 @@ A ProxyGate agent service built with [Hono](https://hono.dev).
 npm install
 npm run dev         # Start dev server with hot reload
 proxygate test      # Validate endpoints locally
-proxygate tunnel    # Go live on ProxyGate
+proxygate tunnel    # Go live on Proxygate
 ```
 
 ## Endpoints

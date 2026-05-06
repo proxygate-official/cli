@@ -220,7 +220,7 @@ export function registerCommandsMetaCommand(program: Command): void {
         },
         {
           name: 'create',
-          description: 'Scaffold a new ProxyGate agent project',
+          description: 'Scaffold a new Proxygate agent project',
           auth_required: false,
           json_output: false,
           args: [{ name: 'name', required: false, description: 'Project name' }],

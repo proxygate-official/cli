@@ -4,14 +4,14 @@ import { registerWithdrawCommand } from './withdraw.js';
 
 const mockWithdraw = vi.fn();
 vi.mock('@proxygate/sdk', () => ({
-  ProxyGateClient: {
+  ProxygateClient: {
     create: vi.fn().mockResolvedValue({
       vault: {
         withdraw: (...args: unknown[]) => mockWithdraw(...args),
       },
     }),
   },
-  ProxyGateError: class extends Error {
+  ProxygateError: class extends Error {
     code: string;
     constructor(msg: string, code: string) {
       super(msg);

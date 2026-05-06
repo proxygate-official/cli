@@ -15,7 +15,7 @@ vi.mock('@proxygate/sdk', () => {
     proxy = {};
   }
   return {
-    ProxyGateClient: MockClient,
+    ProxygateClient: MockClient,
     parseKeypairBytes: () => new Uint8Array(64),
     encodeBase58: () => 'TestWalletBase58',
   };

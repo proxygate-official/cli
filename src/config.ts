@@ -2,7 +2,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 
-/** Directory where ProxyGate CLI stores config. */
+/** Directory where Proxygate CLI stores config. */
 export const CONFIG_DIR: string = join(homedir(), '.proxygate');
 
 /** Full path to the CLI config file. */

@@ -5,7 +5,7 @@ import { registerInitCommand } from './init.js';
 const mockBalance = vi.fn();
 const mockCreate = vi.fn();
 vi.mock('@proxygate/sdk', () => ({
-  ProxyGateClient: {
+  ProxygateClient: {
     create: (...args: unknown[]) => mockCreate(...args),
   },
 }));
@@ -134,7 +134,7 @@ describe('init command', () => {
     mockExit.mockRestore();
   });
 
-  it('exits with error when ProxyGateClient.create fails', async () => {
+  it('exits with error when ProxygateClient.create fails', async () => {
     mockCreate.mockRejectedValue(new Error('Invalid keypair format'));
 
     const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {

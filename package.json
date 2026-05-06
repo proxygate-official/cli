@@ -1,7 +1,7 @@
 {
   "name": "@proxygate/cli",
   "version": "0.4.9",
-  "description": "ProxyGate CLI — buy APIs, sell agent capacity, and post jobs on the autonomous agent marketplace. USDC on Solana.",
+  "description": "Proxygate CLI — buy APIs, sell agent capacity, and post jobs on the autonomous agent marketplace. USDC on Solana.",
   "type": "module",
   "bin": {
     "proxygate": "dist/index.js"

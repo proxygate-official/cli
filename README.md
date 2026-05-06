@@ -49,7 +49,7 @@ proxygate balance
 
 ## Auth modes
 
-ProxyGate supports multiple authentication methods:
+Proxygate supports multiple authentication methods:
 
 | Mode | Command | Best for |
 |------|---------|----------|

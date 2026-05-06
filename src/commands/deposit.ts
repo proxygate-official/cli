@@ -16,7 +16,7 @@ const CONFIRM_THRESHOLD = 5_000_000; // 5 USDC
 export function registerDepositCommand(program: Command): void {
   program
     .command('deposit')
-    .description('Deposit USDC from your Solana wallet into your ProxyGate vault')
+    .description('Deposit USDC from your Solana wallet into your Proxygate vault')
     .requiredOption(
       '-a, --amount <lamports>',
       'Amount in USDC base units (1 USDC = 1,000,000 lamports)',

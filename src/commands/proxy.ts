@@ -8,7 +8,7 @@ import { handleError } from '../errors.js';
 /**
  * Register the `proxygate proxy` command.
  *
- * Sends a request through the ProxyGate proxy to an upstream API
+ * Sends a request through the Proxygate proxy to an upstream API
  * using the listing-centric proxy(listingId, path, body, options?) API.
  *
  * Listing identifier accepts three forms (resolved by SDK Phase 51-08):

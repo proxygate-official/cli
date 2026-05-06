@@ -1,6 +1,6 @@
 # {{name}}
 
-An LLM-powered ProxyGate agent built with [Hono](https://hono.dev) and [OpenAI](https://platform.openai.com).
+An LLM-powered Proxygate agent built with [Hono](https://hono.dev) and [OpenAI](https://platform.openai.com).
 
 ## Quick Start
 
@@ -9,7 +9,7 @@ npm install
 export OPENAI_API_KEY=sk-...  # Your OpenAI key
 npm run dev                    # Start dev server
 proxygate test                 # Validate endpoints
-proxygate tunnel               # Go live on ProxyGate
+proxygate tunnel               # Go live on Proxygate
 ```
 
 ## Endpoints

@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { Command } from 'commander';
 import yaml from 'js-yaml';
-import { ProxyGate } from '@proxygate/sdk';
+import { Proxygate } from '@proxygate/sdk';
 import type { TunnelServiceConfig } from '@proxygate/sdk';
 import { loadConfig } from '../config.js';
 import { bold, red, dim, green, yellow, cyan } from '../format.js';
@@ -54,12 +54,12 @@ function timestamp(): string {
 
 /**
  * Register the `proxygate tunnel` command.
- * Opens a reverse tunnel to the ProxyGate gateway, exposing local services.
+ * Opens a reverse tunnel to the Proxygate gateway, exposing local services.
  */
 export function registerTunnelCommand(program: Command): void {
   program
     .command('tunnel')
-    .description('Expose local services to ProxyGate via a reverse tunnel')
+    .description('Expose local services to Proxygate via a reverse tunnel')
     .option('-c, --config <path>', 'Path to tunnel YAML config', 'proxygate.tunnel.yaml')
     .addHelpText(
       'after',
@@ -111,7 +111,7 @@ export function registerTunnelCommand(program: Command): void {
         // ---------------------------------------------------------------
         // Print header
         // ---------------------------------------------------------------
-        console.log(bold('ProxyGate Tunnel'));
+        console.log(bold('Proxygate Tunnel'));
         console.log();
         if (apiKey) {
           console.log(`  ${dim('Auth:')} API Key (${apiKey.slice(0, 12)}...)`);
@@ -131,7 +131,7 @@ export function registerTunnelCommand(program: Command): void {
         console.log();
 
         // ---------------------------------------------------------------
-        // Connect using SDK ProxyGate.serve()
+        // Connect using SDK Proxygate.serve()
         // ---------------------------------------------------------------
         const connectStart = Date.now();
         const connectTimer = setInterval(() => {
@@ -140,7 +140,7 @@ export function registerTunnelCommand(program: Command): void {
         }, 1000);
         process.stderr.write(dim('Connecting to gateway...'));
 
-        const tunnel = await ProxyGate.serve({
+        const tunnel = await Proxygate.serve({
           gatewayUrl,
           keypair: keypairPath ?? undefined,
           apiKey,

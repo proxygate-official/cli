@@ -4,12 +4,12 @@ import { registerProxyCommand } from './proxy.js';
 
 const mockProxy = vi.fn();
 vi.mock('@proxygate/sdk', () => ({
-  ProxyGateClient: {
+  ProxygateClient: {
     create: vi.fn().mockResolvedValue({
       proxy: (...args: unknown[]) => mockProxy(...args),
     }),
   },
-  ProxyGateError: class ProxyGateError extends Error {
+  ProxygateError: class ProxygateError extends Error {
     code: string;
     action?: string;
     constructor(gatewayError: { error: string; message: string; action?: string }, _statusCode: number) {
@@ -192,9 +192,9 @@ describe('proxy command', () => {
     expect(errOutput).toContain('Status: 404');
   });
 
-  it('catches ProxyGateError and formats error with code and action', async () => {
-    const { ProxyGateError } = await import('@proxygate/sdk');
-    mockProxy.mockRejectedValue(new ProxyGateError(
+  it('catches ProxygateError and formats error with code and action', async () => {
+    const { ProxygateError } = await import('@proxygate/sdk');
+    mockProxy.mockRejectedValue(new ProxygateError(
       { error: 'CREDITS_EXHAUSTED', message: 'Insufficient credits', action: 'Deposit more USDC' },
       402,
     ));
@@ -319,9 +319,9 @@ describe('proxy command', () => {
         status: 200,
         headers: {
           'Content-Type': 'application/json',
-          'X-ProxyGate-Shield': 'monitored',
-          'X-ProxyGate-Shield-Score': '0.12',
-          'X-ProxyGate-Shield-Flags': 'none',
+          'X-Proxygate-Shield': 'monitored',
+          'X-Proxygate-Shield-Score': '0.12',
+          'X-Proxygate-Shield-Flags': 'none',
         },
       }),
     );
@@ -394,8 +394,8 @@ describe('proxy command', () => {
     });
 
     it('handles listing_not_found when no sellers exist for slug', async () => {
-      const { ProxyGateError } = await import('@proxygate/sdk');
-      mockProxy.mockRejectedValue(new ProxyGateError(
+      const { ProxygateError } = await import('@proxygate/sdk');
+      mockProxy.mockRejectedValue(new ProxygateError(
         {
           error: 'listing_not_found',
           message: 'No listing found for "nonexistent-api"',

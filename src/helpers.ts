@@ -1,4 +1,4 @@
-import { ProxyGateClient, parseKeypairBytes, encodeBase58 } from '@proxygate/sdk';
+import { ProxygateClient, parseKeypairBytes, encodeBase58 } from '@proxygate/sdk';
 import nacl from 'tweetnacl';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -8,7 +8,7 @@ import { checkDelegationExpiry } from './lib/auth-check.js';
 import { red, dim } from './format.js';
 
 /**
- * Resolve a ProxyGateClient from CLI flags or saved config.
+ * Resolve a ProxygateClient from CLI flags or saved config.
  *
  * Supports four auth modes:
  * - API key only (no keypair needed)
@@ -22,7 +22,7 @@ export async function getClient(opts: {
   gateway?: string;
   keypair?: string;
   apiKey?: string;
-}): Promise<ProxyGateClient> {
+}): Promise<ProxygateClient> {
   const config = await loadConfig();
   const gatewayUrl = opts.gateway ?? config?.gatewayUrl;
   const keypairPath = opts.keypair ?? config?.keypairPath;
@@ -42,12 +42,12 @@ export async function getClient(opts: {
 
   // Delegation token (browser-based login, no keypair)
   if (delegationToken && !keypairPath && !apiKey) {
-    return new ProxyGateClient({ gatewayUrl, delegationToken });
+    return new ProxygateClient({ gatewayUrl, delegationToken });
   }
 
   // API key only (no keypair)
   if (apiKey && !keypairPath) {
-    return new ProxyGateClient({ gatewayUrl, apiKey });
+    return new ProxygateClient({ gatewayUrl, apiKey });
   }
 
   // Dual mode (both API key and keypair)
@@ -58,7 +58,7 @@ export async function getClient(opts: {
     const raw = await readFile(resolvedPath, 'utf-8');
     const secretKey = parseKeypairBytes(raw);
     const publicKey = nacl.sign.keyPair.fromSecretKey(secretKey).publicKey;
-    return new ProxyGateClient({
+    return new ProxygateClient({
       gatewayUrl,
       apiKey,
       walletAddress: encodeBase58(publicKey),
@@ -68,7 +68,7 @@ export async function getClient(opts: {
 
   // Keypair only (existing behavior)
   if (keypairPath) {
-    return ProxyGateClient.create({ gatewayUrl, keypairPath });
+    return ProxygateClient.create({ gatewayUrl, keypairPath });
   }
 
   console.error(red('Error: Not configured. Run `proxygate login` or `proxygate init` first.'));
