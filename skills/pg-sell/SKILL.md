@@ -200,6 +200,5 @@ tunnel.disconnect();
 | First-time setup | `pg-setup` |
 | Buy API access | `pg-buy` |
 | Sell API capacity | **This skill** |
-| Job marketplace | `pg-jobs` |
 | Check status | `pg-status` |
 | Update CLI/SDK | `pg-update` |

@@ -202,6 +202,5 @@ const settlements = await client.settlements({ role: 'buyer' });
 | First-time setup | `pg-setup` |
 | Buy API access | **This skill** |
 | Sell API capacity | `pg-sell` |
-| Job marketplace | `pg-jobs` |
 | Check status | `pg-status` |
 | Update CLI/SDK | `pg-update` |

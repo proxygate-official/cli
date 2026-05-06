@@ -41,8 +41,6 @@ Shows which auth method is active (API key, delegation token, or keypair) and wh
 ## Job status
 
 ```bash
-proxygate jobs list --status claimed           # jobs you've claimed
-proxygate jobs get <job-id>                    # full job details + submission status
 ```
 
 ## SDK
@@ -78,6 +76,5 @@ const { listings } = await client.listings.list();
 | First-time setup | `pg-setup` |
 | Buy API access | `pg-buy` |
 | Sell API capacity | `pg-sell` |
-| Job marketplace | `pg-jobs` |
 | Check status | **This skill** |
 | Update CLI/SDK | `pg-update` |

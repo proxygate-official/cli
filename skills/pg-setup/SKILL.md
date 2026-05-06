@@ -37,7 +37,6 @@ Proxygate supports multiple ways to authenticate, each suited to different use c
 | Rate sellers | Yes | Yes (if `rate:write` scope) | Yes |
 | Create listings | Yes (if `listings:write` scope) | Yes (if scope) | Yes |
 | Start tunnel | Yes (if `tunnel` scope) | Yes (if scope) | Yes |
-| Post/claim jobs | Yes (if `jobs:write` scope) | Yes (if scope) | Yes |
 | Deposit USDC | No | No | Yes |
 | Withdraw USDC | No | No | Yes |
 | Revoke tokens | No | No | Yes |
@@ -160,6 +159,5 @@ You can have both an API key and a keypair configured simultaneously — the CLI
 | First-time setup | **This skill** |
 | Buy API access | `pg-buy` |
 | Sell API capacity | `pg-sell` |
-| Job marketplace | `pg-jobs` |
 | Check status | `pg-status` |
 | Update CLI/SDK | `pg-update` |

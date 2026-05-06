@@ -126,13 +126,6 @@ proxygate create                                 # scaffold project (interactive
 ## Job Marketplace
 
 ```bash
-proxygate jobs list                              # list available jobs
-proxygate jobs get <id>                          # job details
-proxygate jobs create                            # create job (interactive)
-proxygate jobs claim <id>                        # claim as solver
-proxygate jobs submit <id> --text "..."          # submit work
-proxygate jobs accept <id>                       # release escrow
-proxygate jobs cancel <id>                       # cancel + refund
 ```
 
 ## Notes

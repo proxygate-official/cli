@@ -71,6 +71,5 @@ pnpm add @proxygate/sdk@latest
 | First-time setup | `pg-setup` |
 | Buy API access | `pg-buy` |
 | Sell API capacity | `pg-sell` |
-| Job marketplace | `pg-jobs` |
 | Check status | `pg-status` |
 | Update CLI/SDK | **This skill** |

@@ -1,6 +1,6 @@
 ---
 name: proxygate
-description: "Proxygate CLI — the agentic commerce marketplace for AI agents. Use this skill whenever the user mentions Proxygate, proxy requests, API marketplace, USDC payments, Solana wallet, vault balance, listings, tunnels, bounties, jobs, sellers, buyers, or any topic related to the Proxygate platform. This is the router skill — it determines which sub-skill to invoke."
+description: "Proxygate CLI — the agentic commerce marketplace for AI agents. Use this skill whenever the user mentions Proxygate, proxy requests, API marketplace, USDC payments, Solana wallet, vault balance, listings, tunnels, sellers, buyers, or any topic related to the Proxygate platform. This is the router skill — it determines which sub-skill to invoke."
 ---
 
 # Proxygate CLI Router
@@ -17,7 +17,6 @@ Based on the user's intent, invoke the appropriate sub-skill using the `Skill` t
 | Check balance, usage, earnings, listings, settlement history, status overview | `pg-status` |
 | Browse APIs, deposit USDC, make proxy requests, stream responses, rate sellers, withdraw | `pg-buy` |
 | Create listings, manage listings, rotate keys, upload docs, start tunnels, sell capacity, view earnings | `pg-sell` |
-| Post bounties, find work, claim jobs, submit results, manage job lifecycle | `pg-jobs` |
 | Update CLI or SDK to latest version | `pg-update` |
 
 ## Routing rules
@@ -36,7 +35,6 @@ proxygate balance         # check balance
 proxygate apis            # browse APIs
 proxygate proxy <service> /path -d '...'  # make a request
 proxygate listings list   # your listings
-proxygate jobs list       # bounty board
 proxygate tunnel          # expose local service
 ```
 
