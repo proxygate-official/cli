@@ -123,11 +123,6 @@ proxygate test                                   # validate local endpoints
 proxygate create                                 # scaffold project (interactive)
 ```
 
-## Job Marketplace
-
-```bash
-```
-
 ## Notes
 
 - All USDC amounts in lamports (1 USDC = 1,000,000)

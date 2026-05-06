@@ -1,6 +1,6 @@
 ---
 name: pg-status
-description: Use when checking Proxygate status — balance, usage, listings, tunnel health, earnings, seller profile, or job status. Make sure to use this skill whenever someone mentions "check balance", "proxygate status", "my usage", "my earnings", "what's my balance", "how much have I spent", "my listings", "settlement history", or wants any kind of status overview.
+description: Use when checking Proxygate status — balance, usage, listings, tunnel health, earnings, seller profile. Make sure to use this skill whenever someone mentions "check balance", "proxygate status", "my usage", "my earnings", "what's my balance", "how much have I spent", "my listings", "settlement history", or wants any kind of status overview.
 metadata: {"openclaw":{"requires":{"bins":["proxygate"]},"homepage":"https://proxygate.ai"}}
 ---
 
@@ -37,11 +37,6 @@ proxygate whoami                               # auth mode, wallet address, bala
 ```
 
 Shows which auth method is active (API key, delegation token, or keypair) and when delegation tokens expire.
-
-## Job status
-
-```bash
-```
 
 ## SDK
 
