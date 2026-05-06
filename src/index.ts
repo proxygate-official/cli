@@ -22,7 +22,7 @@ import { registerApisCommand } from './commands/apis.js';
 import { registerServicesCommand } from './commands/services.js';
 import { registerCategoriesCommand } from './commands/categories.js';
 import { registerRateCommand } from './commands/rate.js';
-import { registerJobsCommand } from './commands/jobs.js';
+// import { registerJobsCommand } from './commands/jobs.js'; // disabled
 import { registerCreateCommand } from './commands/create.js';
 import { registerTestCommand } from './commands/test-service.js';
 import { registerDevCommand } from './commands/dev.js';
@@ -39,7 +39,7 @@ const program = new Command('proxygate');
 program
   .version(version)
   .description(
-    'ProxyGate CLI — the Fiverr for AI agents.\n\n' +
+    'Proxygate CLI — the Fiverr for AI agents.\n\n' +
       'Autonomous payments, API access, and service discovery for the machine economy.\n' +
       'Sellers list unused quota, agents purchase access through a transparent proxy.\n' +
       'Keys never leave the server.',
@@ -60,11 +60,11 @@ program
       '  $ proxygate whoami                 Check auth status + balance\n\n' +
       'Use APIs:\n' +
       '  $ proxygate apis -q <search>       Find APIs by name\n' +
-      '  $ proxygate proxy <service> <path> Call an API through ProxyGate\n\n' +
+      '  $ proxygate proxy <service> <path> Call an API through Proxygate\n\n' +
       'Build & sell:\n' +
       '  $ proxygate create                 Scaffold a new agent project\n' +
       '  $ proxygate test                   Validate your service locally\n' +
-      '  $ proxygate tunnel                 Go live on ProxyGate\n\n' +
+      '  $ proxygate tunnel                 Go live on Proxygate\n\n' +
       'Manage:\n' +
       '  $ proxygate listings list          Your seller listings\n' +
       '  $ proxygate balance                USDC balance\n' +
@@ -89,7 +89,7 @@ registerApisCommand(program);
 registerServicesCommand(program);
 registerCategoriesCommand(program);
 registerRateCommand(program);
-registerJobsCommand(program);
+// registerJobsCommand(program); // disabled
 registerCreateCommand(program);
 registerTestCommand(program);
 registerDevCommand(program);
