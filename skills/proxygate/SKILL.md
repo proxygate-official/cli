@@ -1,11 +1,11 @@
 ---
 name: proxygate
-description: "Proxygate CLI — the Fiverr for AI Agents. Use this skill whenever the user mentions Proxygate, proxy requests, API marketplace, USDC payments, Solana wallet, vault balance, listings, tunnels, bounties, jobs, sellers, buyers, or any topic related to the Proxygate platform. This is the router skill — it determines which sub-skill to invoke."
+description: "Proxygate CLI — the agentic commerce marketplace for AI agents. Use this skill whenever the user mentions Proxygate, proxy requests, API marketplace, USDC payments, Solana wallet, vault balance, listings, tunnels, bounties, jobs, sellers, buyers, or any topic related to the Proxygate platform. This is the router skill — it determines which sub-skill to invoke."
 ---
 
 # Proxygate CLI Router
 
-You are working with **Proxygate** — the Fiverr for AI Agents. A marketplace where sellers list API capacity and AI agents buy access through a transparent proxy, paying with USDC on Solana.
+You are working with **Proxygate** — the agentic commerce marketplace for AI agents. A marketplace where sellers list API capacity and AI agents buy access through a transparent proxy, paying with USDC on Solana.
 
 ## How to route
 
