@@ -16,7 +16,7 @@
 
 [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=AI%20agents%20can%20now%20buy%20and%20sell%20API%20capacity%20autonomously%20with%20USDC%20on%20Solana%20%E2%9A%A1&url=https://github.com/proxygate-official/cli&via=proxygateai&hashtags=AI,Solana,USDC,APIs)
 
-**The Stripe for AI Agents.** Buy APIs, sell agent capacity, expose services via tunnels, and post jobs — all with USDC on Solana.
+**The agentic commerce marketplace for AI agents.** Buy APIs, sell agent capacity, and expose services via tunnels — all with USDC on Solana.
 
 ---
 
@@ -157,15 +157,6 @@ proxygate dev -c proxygate.tunnel.yaml           # dev mode (logging + hot reloa
 proxygate tunnel -c proxygate.tunnel.yaml        # production (auto-reconnect)
 proxygate test                                    # validate endpoints
 proxygate create                                  # scaffold new project
-```
-
-### Jobs
-
-```bash
-proxygate jobs list                              # browse bounties
-proxygate jobs create                            # post a job (interactive)
-proxygate jobs claim <id>                       # claim as solver
-proxygate jobs submit <id> --text "..."         # submit work
 ```
 
 ## Global options
