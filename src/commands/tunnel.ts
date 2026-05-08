@@ -8,22 +8,7 @@ import { loadConfig } from '../config.js';
 import { bold, red, dim, green, yellow, cyan } from '../format.js';
 
 interface TunnelYamlConfig {
-  services: Array<{
-    name: string;
-    port: number;
-    price_per_request?: number;
-    pricing_unit?: 'per_request' | 'per_token';
-    price_per_input_token?: number;
-    price_per_output_token?: number;
-    paths?: string[];
-    description?: string;
-    endpoints?: Array<{
-      method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-      path: string;
-      description?: string;
-    }>;
-    docs?: string;
-  }>;
+  services: TunnelServiceConfig[];
 }
 
 // ---------------------------------------------------------------------------
@@ -70,11 +55,18 @@ export function registerTunnelCommand(program: Command): void {
         '  services:\n' +
         '    - name: my-api\n' +
         '      port: 8080\n' +
-        '      price_per_request: 1000\n' +
-        '      description: My local API service\n' +
-        '      docs: ./openapi.yaml          # auto-uploaded on connect\n' +
+        '      description: Real-time market data feed\n' +
+        '      category_slugs: [crypto, market-data]   # 1-3 slugs (recommended)\n' +
+        '      price_per_request: 1000                 # lamports ($0.001)\n' +
+        '      total_rpm: 500                          # capacity, default 100\n' +
+        '      reserved_rpm: 50                        # reserved for owner\n' +
+        '      listing_type: dataset                   # proxy|skill|product|dataset|service|connector\n' +
+        '      shield_enabled: true                    # PII redaction\n' +
         '      paths:\n' +
-        '        - /v1/*\n',
+        '        - /v1/prices/*\n' +
+        '      endpoints:\n' +
+        '        - { method: GET, path: /v1/prices/:symbol, description: Spot price }\n' +
+        '      docs: ./openapi.yaml                    # auto-uploaded on connect\n',
     )
     .action(async (opts: { config: string }) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; apiKey?: string }>();

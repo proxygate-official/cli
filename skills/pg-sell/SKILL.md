@@ -101,8 +101,15 @@ Create `proxygate.tunnel.yaml`:
 services:
   - name: my-api
     port: 8080
-    price_per_request: 1000           # lamports (0.001 USDC)
     description: My AI service
+    category_slugs: [ai-agents]       # 1-3 slugs (recommended for marketplace findability)
+    price_per_request: 1000           # lamports (0.001 USDC)
+    total_rpm: 500                    # capacity, default 100
+    reserved_rpm: 50                  # reserved for owner
+    listing_type: service             # proxy|skill|product|dataset|service|connector
+    shield_enabled: true              # opt-in PII / prompt-injection scanning
+    upstream_headers:                 # static headers injected upstream
+      X-Internal-Source: tunnel
     docs: ./openapi.yaml              # auto-uploaded on connect
     endpoints:
       - method: POST
@@ -121,6 +128,17 @@ services:
     price_per_input_token: 100
     price_per_output_token: 300
 ```
+
+**Field reference (parity with Studio listings):**
+
+| Field | Default | Notes |
+|---|---|---|
+| `category_slugs` | none | 1-3 slugs; without this listing won't appear under category filters |
+| `total_rpm` / `reserved_rpm` | 100 / 0 | Capacity fence (sliding window) |
+| `listing_type` | `proxy` | `proxy` for tunnels usually fine; pick `service` / `dataset` for non-API offerings |
+| `type_metadata` | `null` | Type-specific (e.g. `{ file_url: ... }` for dataset) |
+| `shield_enabled` | `false` | Seller pays for Shield request scanning. BasicScanner free; ModelArmor requires gateway env flag |
+| `upstream_headers` | `{}` | Static headers added to every upstream request |
 
 ### 6. Start tunnel
 
