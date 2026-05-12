@@ -1,5 +1,14 @@
 # @proxygate/cli release notes
 
+## 0.6.2 — sync pg-buy skill (0.6.1 shipped stale embedded copy)
+
+Build-time bugfix. `scripts/embed-skills.ts` reads from `packages/cli/skills/`
+(a tracked copy that drifted from the project-root `/skills/`). The 0.6.1
+release shipped the OLD pg-buy SKILL.md text — the new natural-language
+triggers and step-4 endpoint-discovery guidance were not in the published
+tarball. This release syncs the embedded copy to match the source skill so
+`proxygate skills install` deploys the intended content.
+
 ## 0.6.1 — proxy UX: clearer spend-limit + endpoint hint on 4xx
 
 Two agent-UX fixes for the `proxygate proxy` command.

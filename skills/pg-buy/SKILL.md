@@ -1,10 +1,10 @@
 ---
 name: pg-buy
-description: Use when buying API access through Proxygate — depositing USDC, browsing available APIs, making proxy requests, streaming responses, or rating sellers. Make sure to use this skill whenever someone mentions "proxy request", "buy API", "deposit USDC", "browse APIs", "call API through proxygate", "make an API call", "find an API", "search APIs", or wants to consume any API through Proxygate, even if they don't explicitly say "buy".
+description: Use when buying or consuming API data through ProxyGate — depositing USDC, browsing APIs, making proxy requests, streaming responses, or rating sellers. Invoke this skill for ANY natural-language data request that ProxyGate can serve, including "what's the price of <asset>", "look up <symbol>", "get weather for <city>", "fetch crypto data", "lookup <postal code>", "find an API for X", "buy API", "deposit USDC", "browse APIs", "call API through proxygate", "make an API call", "search APIs", "stream API response", "rate a seller". When the user asks for live data that an API could answer, this skill is the right entry point — agents should not bash `proxygate proxy` without loading it.
 metadata: {"openclaw":{"requires":{"bins":["proxygate"]},"homepage":"https://proxygate.ai"}}
 ---
 
-# Proxygate — Buy API Access
+# ProxyGate — Buy API Access
 
 Buyer workflow: discover APIs, deposit USDC, proxy requests, stream responses, rate sellers.
 
@@ -64,7 +64,27 @@ proxygate categories                              # browse categories
 proxygate listings docs <id>                     # view API documentation
 ```
 
-### 4. Proxy a request
+### 4. Inspect endpoints before the first call
+
+**Never guess paths.** Every listing on ProxyGate registers its allowed endpoints (`method + path + description`, and optionally a `request_schema`) — they are visible whether or not the seller uploaded a full OpenAPI spec. Always look them up before the first proxy call to a new listing.
+
+Two sources, in order of cheapness:
+
+```bash
+# 1. Endpoint table embedded in the listing (always available — no upload needed)
+proxygate apis -q blockdb                     # shows endpoints inline if 1 match
+proxygate apis --json -q blockdb              # full endpoints[] array for scripting
+
+# 2. Full OpenAPI spec — only when the seller has uploaded one (richer: request schemas, examples)
+proxygate listings docs blocksize/blocksize-crypto-bid-ask
+proxygate listings docs <listing-uuid> --raw  # raw OpenAPI YAML
+```
+
+For POST/PUT/PATCH endpoints, the body schema is the part you can't see in the table. Get it from `listings docs ... --raw` when available, or inspect `endpoints[].request_schema` in the JSON output of `apis --json`.
+
+If a proxy call fails with a non-2xx, the CLI prints the listing's allowed endpoints inline as a hint — use them on the retry instead of guessing more paths. POST/PUT endpoints in the hint are flagged so you know to fetch the body schema.
+
+### 5. Proxy a request
 
 Use a **service name**, slug, or listing UUID — the CLI resolves it automatically:
 
@@ -97,7 +117,7 @@ After each call, you'll see cost and request ID:
 cost: $0.0155 | request: 905b1a53
 ```
 
-### 5. Rate a seller
+### 6. Rate a seller
 
 Use the request ID shown after each proxy call:
 
@@ -106,7 +126,7 @@ proxygate rate --request-id <id> --up      # positive rating
 proxygate rate --request-id <id> --down    # negative rating
 ```
 
-### 6. Check usage
+### 7. Check usage
 
 ```bash
 proxygate usage                                   # recent request history
@@ -118,7 +138,7 @@ proxygate settlements -r buyer                    # cost breakdown
 proxygate settlements -s weather-api --from 2026-03-01 # filtered
 ```
 
-### 7. Withdraw (requires wallet keypair)
+### 8. Withdraw (requires wallet keypair)
 
 Convert credits back to USDC:
 
@@ -139,15 +159,15 @@ Not available with API key or delegation token auth — use the web dashboard in
 For agent-to-agent use without CLI:
 
 ```typescript
-import { ProxygateClient, parseSSE } from '@proxygate/sdk';
+import { ProxyGateClient, parseSSE } from '@proxygate/sdk';
 
 // API key auth (simplest)
-const client = await ProxygateClient.create({
+const client = await ProxyGateClient.create({
   apiKey: 'pg_live_abc123...',
 });
 
 // Or wallet keypair auth (full access)
-const client = await ProxygateClient.create({
+const client = await ProxyGateClient.create({
   keypairPath: '~/.proxygate/keypair.json',
 });
 
@@ -192,7 +212,8 @@ const settlements = await client.settlements({ role: 'buyer' });
 
 - [ ] Balance checked and sufficient for request
 - [ ] Service found via `proxygate search` or `proxygate apis`
-- [ ] Proxy request returns upstream API response
+- [ ] **Endpoint list inspected via `proxygate listings docs <id>` before first call**
+- [ ] Proxy request returns upstream API response on the documented path
 - [ ] Usage reflects the completed request
 
 ## Related skills
