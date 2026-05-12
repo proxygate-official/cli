@@ -45,7 +45,9 @@ describe('metadata command', () => {
 
     const parsed = JSON.parse(logSpy.mock.calls[0][0] as string) as Record<string, unknown>;
     const pricing = parsed.pricing as Record<string, unknown>;
-    expect(pricing.unit).toBe('lamports');
+    expect(pricing.unit).toBe('micro-USDC');
+    expect(pricing.minimum).toBe(1000);
+    expect(pricing.minimum_usdc).toBe(0.001);
     expect(pricing.currency).toBe('USDC');
     expect(pricing.platform_fee_bps).toBe(500);
   });
