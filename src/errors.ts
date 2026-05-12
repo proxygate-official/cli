@@ -14,6 +14,12 @@ const ERROR_HINTS: Record<string, string> = {
   spend_limit_exceeded: 'Increase your spend limit at app.proxygate.ai/wallets',
   invalid_config: 'Run proxygate init or proxygate login to configure.',
   invalid_api_key: 'Check your API key: proxygate login --key pg_live_...',
+  // Phase 51.5: free-tier rate-limit errors. These fire on procured listings
+  // (e.g. Open-Meteo) when the per-wallet or global daily cap is hit. Resets
+  // at 00:00 UTC. To keep going immediately, deposit USDC and call a paid
+  // listing for the same service.
+  daily_free_cap: 'Daily free limit reached for this listing. Deposit USDC for unlimited paid calls, or wait until 00:00 UTC.',
+  listing_quota_exhausted: 'This free listing has exhausted its global daily quota. Try a paid listing for the same service, or wait until 00:00 UTC.',
 };
 
 /**

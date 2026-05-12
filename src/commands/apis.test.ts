@@ -185,4 +185,84 @@ describe('apis command', () => {
       expect(parsed.data[0].seller_account_type).toBe('organization');
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Phase 51.5: FREE badge for procured listings (free_listing_approved=true)
+  // ---------------------------------------------------------------------------
+
+  describe('Phase 51.5 free-listing badge', () => {
+    it('shows FREE in the Price column for free_listing_approved listings (default table)', async () => {
+      mockApis.mockResolvedValue({
+        ...APIS_RESULT,
+        data: [
+          {
+            ...APIS_RESULT.data[0],
+            listing_id: 'd0d0d0d0-1111-2222-3333-444444444444',
+            service: 'open-meteo',
+            service_name: 'Open-Meteo Weather',
+            price_per_request_usdc: 0,
+            free_listing_approved: true,
+          },
+        ],
+      });
+      await run();
+
+      const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+      // FREE rendered (cyan ANSI codes are stripped in CI / pipe contexts but
+      // the literal token is present regardless).
+      expect(output).toContain('FREE');
+      // Paid price should NOT appear for the free listing.
+      expect(output).not.toContain('$0/req');
+    });
+
+    it('shows FREE in --compact view', async () => {
+      mockApis.mockResolvedValue({
+        ...APIS_RESULT,
+        data: [
+          {
+            ...APIS_RESULT.data[0],
+            listing_id: 'd0d0d0d0-1111-2222-3333-444444444444',
+            service: 'open-meteo',
+            service_name: 'Open-Meteo Weather',
+            price_per_request_usdc: 0,
+            free_listing_approved: true,
+          },
+        ],
+      });
+      await run('--compact');
+
+      const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+      expect(output).toContain('FREE');
+    });
+
+    it('--json --compact surfaces free: true', async () => {
+      mockApis.mockResolvedValue({
+        ...APIS_RESULT,
+        data: [
+          {
+            ...APIS_RESULT.data[0],
+            listing_id: 'd0d0d0d0-1111-2222-3333-444444444444',
+            service: 'open-meteo',
+            service_name: 'Open-Meteo Weather',
+            price_per_request_usdc: 0,
+            free_listing_approved: true,
+          },
+        ],
+      });
+      await run('--json', '--compact');
+
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const parsed = JSON.parse(logSpy.mock.calls[0][0] as string) as { data: Array<{ free: boolean; price: string }> };
+      expect(parsed.data[0].free).toBe(true);
+      expect(parsed.data[0].price).toBe('FREE');
+    });
+
+    it('paid listings still show their price (regression guard)', async () => {
+      mockApis.mockResolvedValue(APIS_RESULT);
+      await run();
+
+      const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+      expect(output).not.toContain('FREE');
+    });
+  });
 });

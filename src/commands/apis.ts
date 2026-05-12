@@ -46,6 +46,13 @@ export function registerApisCommand(program: Command): void {
           type: opts.type as import('@proxygate/sdk').ListingType | undefined,
         });
 
+        // Phase 51.5: render FREE for procured listings; cyan to match the marketing badge.
+        const formatPrice = (l: typeof result.data[number]): string => {
+          if (l.free_listing_approved === true) return bold(cyan('FREE'));
+          if (l.price_per_request_usdc != null) return `$${l.price_per_request_usdc}/req`;
+          return 'per-token';
+        };
+
         if (parentOpts.json && opts.compact) {
           const compact = {
             data: result.data.map((l) => ({
@@ -53,7 +60,8 @@ export function registerApisCommand(program: Command): void {
               name: l.service_name,
               service: l.service,
               type: l.listing_type ?? 'proxy',
-              price: l.price_per_request_usdc != null ? `$${l.price_per_request_usdc}/req` : 'per-token',
+              price: l.free_listing_approved === true ? 'FREE' : (l.price_per_request_usdc != null ? `$${l.price_per_request_usdc}/req` : 'per-token'),
+              free: l.free_listing_approved === true,
             })),
             has_more: result.has_more,
             cursor: result.cursor,
@@ -80,7 +88,7 @@ export function registerApisCommand(program: Command): void {
           const rows = result.data.map((l) => [
             l.listing_id,
             l.service_name,
-            l.price_per_request_usdc != null ? `$${l.price_per_request_usdc}/req` : 'per-token',
+            formatPrice(l),
           ]);
           console.log(formatTable(headers, rows));
         } else {
@@ -101,7 +109,7 @@ export function registerApisCommand(program: Command): void {
               `${bold(cyan(l.service_name))} ${dim(`(${l.service})`)}`,
               l.listing_type ?? 'api',
               sellerCol,
-              l.price_per_request_usdc != null ? `$${l.price_per_request_usdc}/req` : 'per-token',
+              formatPrice(l),
               String(l.available_rpm),
               `${l.uptime_percent.toFixed(1)}%`,
               l.trust_score.toFixed(2),
