@@ -29,9 +29,9 @@ export function registerMetadataCommand(program: Command): void {
         auth_patterns: ['none', 'bearer', 'header', 'query', 'basic', 'oauth2_cc'],
         categories: ['ai', 'finance', 'data', 'weather', 'location', 'health', 'security', 'devtools', 'media', 'travel', 'crypto'],
         pricing: {
-          unit: 'lamports',
-          minimum: 10000,
-          minimum_usdc: 0.01,
+          unit: 'micro-USDC',
+          minimum: 1000,
+          minimum_usdc: 0.001,
           currency: 'USDC',
           platform_fee_bps: 500,
         },

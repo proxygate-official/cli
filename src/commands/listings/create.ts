@@ -62,12 +62,12 @@ Examples:
   $ proxygate listings create --non-interactive \\
       --service-name "My API" --base-url "https://api.example.com" \\
       --auth-pattern bearer --credential "sk-..." \\
-      --categories "ai" --price 10000
+      --categories "ai" --price 1000
 
   # Public API (no auth key needed)
   $ proxygate listings create --non-interactive \\
       --service-name "Weather API" --base-url "https://api.open-meteo.com" \\
-      --auth-pattern none --categories "weather" --price 10000
+      --auth-pattern none --categories "weather" --price 1000
 
   # Skill (AI agent tool / MCP endpoint)
   $ proxygate listings create --non-interactive --type skill \\
@@ -294,7 +294,7 @@ async function runInteractiveCreate(): Promise<CreateListingOptions | null> {
 
   const totalRpm = parseInt(await input({ message: 'Total RPM capacity:', default: '60' }), 10);
   const reservedRpm = parseInt(await input({ message: 'Reserved RPM (for your own use):', default: '0' }), 10);
-  const pricePerRequest = parseInt(await input({ message: 'Price per request (micro-cents, 1000 = $0.01):', default: '1000' }), 10);
+  const pricePerRequest = parseInt(await input({ message: 'Price per request (micro-USDC, 1000 = $0.001, min 1000):', default: '1000' }), 10);
   const categorySlugs = (await input({ message: 'Category slugs (comma-separated, e.g. "llm,ai"):' }))
     .split(',').map((s) => s.trim()).filter(Boolean);
   const description = (await input({ message: 'Description (optional, press Enter to skip):' })) || undefined;

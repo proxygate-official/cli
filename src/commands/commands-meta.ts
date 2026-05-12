@@ -134,7 +134,7 @@ export function registerCommandsMetaCommand(program: Command): void {
             { flag: '--webhook-url <url>', description: 'Service webhook URL (--type service)' },
             { flag: '--relay-url <url>', description: 'Connector relay URL (--type connector)' },
             { flag: '--categories <slugs>', description: 'Comma-separated category slugs (required)' },
-            { flag: '--price <n>', description: 'Price per request in lamports', default: '10000' },
+            { flag: '--price <n>', description: 'Price per request in micro-USDC (1000 = $0.001, min 1000, or 0 for free with admin approval)', default: '1000' },
             { flag: '--total-rpm <n>', description: 'Total RPM capacity', default: '60' },
             { flag: '--description <text>', description: 'Listing description' },
             { flag: '--docs <file>', description: 'OpenAPI spec or markdown file' },
@@ -142,7 +142,7 @@ export function registerCommandsMetaCommand(program: Command): void {
           ],
           output_schema: { type: 'object', fields: 'id, service, is_active, key_masked, sync_status' },
           examples: [
-            'proxygate listings create --non-interactive --service-name "My API" --base-url "https://api.example.com" --auth-pattern bearer --api-key "sk-..." --categories "ai" --price 10000 --json',
+            'proxygate listings create --non-interactive --service-name "My API" --base-url "https://api.example.com" --auth-pattern bearer --api-key "sk-..." --categories "ai" --price 1000 --json',
             'proxygate listings create --non-interactive --type skill --service-name "Code Review" --base-url "https://myskill.com" --endpoint-url "https://myskill.com/invoke" --categories "devtools" --json',
           ],
         },
