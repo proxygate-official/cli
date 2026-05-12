@@ -150,7 +150,7 @@ Examples:
     .option('--oauth2-service-account-json <path>', 'Google service account JSON path')
     .option('--total-rpm <n>', 'Total RPM capacity', '60')
     .option('--reserved-rpm <n>', 'Reserved RPM (for own use)', '0')
-    .option('--price <n>', 'Price per request in micro-cents', '1000')
+    .option('--price <n>', 'Price per request in micro-USDC (1000 = $0.001, min 1000)', '1000')
     .option('--categories <slugs>', 'Category slugs (comma-separated)')
     .option('--description <text>', 'Listing description')
     .option('--allowed-paths <paths>', 'Allowed paths (comma-separated)')
@@ -358,7 +358,7 @@ async function runInteractiveCreate(): Promise<CreateListingOptions | null> {
   console.log(`  Base URL:    ${baseUrl}`);
   console.log(`  Auth:        ${authPattern}`);
   console.log(`  RPM:         ${totalRpm} (reserved: ${reservedRpm})`);
-  console.log(`  Price:       ${pricePerRequest} micro-cents/req`);
+  console.log(`  Price:       ${pricePerRequest} micro-USDC/req`);
   console.log(`  Categories:  ${categorySlugs.join(', ')}`);
   if (description) console.log(`  Description: ${truncate(description, 60)}`);
   if (shieldEnabled) console.log(`  Shield:      enabled`);
