@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import type { ShieldMode, SellerStrategy } from '@proxygate/sdk';
+import type { ShieldMode, SellerStrategy, ProxygateClient } from '@proxygate/sdk';
 import { parseSSE, parseShieldInfo, SHIELD_SURCHARGE_DISPLAY } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
 import { red, dim, yellow, cyan } from '../format.js';
@@ -187,9 +187,11 @@ export function registerProxyCommand(program: Command): void {
           // Print request metadata to stderr
           printRequestMeta(response);
 
-          // Print status to stderr if not 200
+          // Print status to stderr if not 200, plus best-effort endpoint hint
+          // so an agent can self-correct without guessing paths.
           if (!response.ok) {
             console.error(dim(`Status: ${response.status}`));
+            await printListingEndpointHint(client, listingId);
           }
         } catch (err) {
           handleError(err);
@@ -218,21 +220,20 @@ function printRequestMeta(response: Response): void {
     } catch { /* malformed receipt */ }
   }
 
-  // Spend limit
+  // Spend limit — shown as "spent today" so a small spend doesn't look like
+  // a near-limit warning. e.g. $4.99/$5.00 remaining (old) → $0.01 / $5.00 (new).
   const remaining = response.headers.get('x-spendlimit-remaining');
   const limit = response.headers.get('x-spendlimit-limit');
   if (remaining && limit) {
     const remainNum = parseInt(remaining, 10);
     const limitNum = parseInt(limit, 10);
     if (!isNaN(remainNum) && !isNaN(limitNum) && limitNum > 0) {
-      const usedPct = Math.round(((limitNum - remainNum) / limitNum) * 100);
-      const remainUsdc = (remainNum / 1_000_000).toFixed(2);
+      const spentNum = Math.max(0, limitNum - remainNum);
+      const usedPct = Math.round((spentNum / limitNum) * 100);
+      const spentUsdc = (spentNum / 1_000_000).toFixed(2);
       const limitUsdc = (limitNum / 1_000_000).toFixed(2);
-      if (usedPct >= 80) {
-        parts.push(yellow(`limit: $${remainUsdc}/$${limitUsdc} remaining`));
-      } else {
-        parts.push(`limit: $${remainUsdc}/$${limitUsdc}`);
-      }
+      const label = `spent today: $${spentUsdc} / $${limitUsdc}`;
+      parts.push(usedPct >= 80 ? yellow(label) : label);
     }
   }
 
@@ -258,4 +259,60 @@ function printShieldInfo(response: Response): void {
   if (info.score !== undefined) parts.push(`score: ${info.score.toFixed(3)}`);
   if (info.flags && info.flags !== 'none') parts.push(yellow(`flags: ${info.flags}`));
   console.error(dim(parts.join(' | ')));
+}
+
+/**
+ * Best-effort endpoint hint shown on any non-2xx response.
+ *
+ * When an upstream returns 404 (e.g. wrong path), agents otherwise guess paths
+ * blindly. Looking up the listing's documented endpoints and showing them inline
+ * lets the next attempt be informed without a separate `listings docs` call.
+ *
+ * Silently no-ops on any failure — never break the main command flow.
+ */
+async function printListingEndpointHint(client: ProxygateClient, listingId: string): Promise<void> {
+  try {
+    const query = listingId.includes('/') ? (listingId.split('/').pop() ?? listingId) : listingId;
+    const result = await Promise.race([
+      client.apis({ service: undefined, q: query, limit: 10 }),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('hint_timeout')), 5000)),
+    ]);
+
+    const listings = result.data;
+    const composite = listingId.includes('/') ? listingId.toLowerCase() : null;
+    const listing =
+      listings.find((l) => l.listing_id === listingId) ??
+      listings.find((l) =>
+        composite !== null && `${l.seller_slug ?? ''}/${l.slug ?? ''}`.toLowerCase() === composite,
+      ) ??
+      listings.find((l) => l.slug === query) ??
+      listings.find((l) => l.service === query) ??
+      listings[0];
+
+    if (!listing || !listing.endpoints?.length) return;
+
+    console.error('');
+    console.error(dim('Hint: This listing supports these endpoints:'));
+    const shown = listing.endpoints.slice(0, 8);
+    let anyWritesBody = false;
+    for (const ep of shown) {
+      const method = (ep.method ?? 'GET').toString().toUpperCase();
+      const isWrite = method === 'POST' || method === 'PUT' || method === 'PATCH';
+      if (isWrite) anyWritesBody = true;
+      const bodyMarker = isWrite ? ' (body)' : '';
+      const path = ep.path ?? '/';
+      const summary = ep.description ? `  ${ep.description.slice(0, 60)}` : '';
+      console.error(dim(`  ${method.padEnd(6)} ${path}${bodyMarker}${summary}`));
+    }
+    if (listing.endpoints.length > shown.length) {
+      console.error(dim(`  ... and ${listing.endpoints.length - shown.length} more`));
+    }
+    if (anyWritesBody) {
+      console.error(dim(`For request body schemas: proxygate listings docs ${listing.listing_id} --raw`));
+    } else {
+      console.error(dim(`View full docs: proxygate listings docs ${listing.listing_id}`));
+    }
+  } catch {
+    // Best-effort only — never break the command on hint lookup failure.
+  }
 }
