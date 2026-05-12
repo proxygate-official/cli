@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 import type { Command } from 'commander';
-import type { CreateListingOptions, ListingAuthPattern } from '@proxygate/sdk';
+import type { CreateListingOptions, EndpointPriceOverride, ListingAuthPattern } from '@proxygate/sdk';
 import { SHIELD_SURCHARGE_DISPLAY } from '@proxygate/sdk';
 import { getClient } from '../../helpers.js';
 import { bold, red, dim, green, yellow } from '../../format.js';
@@ -41,9 +41,47 @@ interface CreateCliOpts {
   relayMethod?: string;
   platform?: string;
   skipTest?: boolean;
+  // Phase 51.5: free-endpoint flags (repeatable). Commander returns string[] for repeatable options.
+  freeEndpoint?: string[];
+  endpointPrice?: string[];
+  freeDailyCapPerWallet?: string;
+  freeDailyCapGlobal?: string;
 }
 
 type ListingTypeValue = 'proxy' | 'skill' | 'product' | 'dataset' | 'service' | 'connector';
+
+/** Commander helper for repeatable string options. */
+function collectArr(value: string, previous: string[]): string[] {
+  return [...previous, value];
+}
+
+/**
+ * Phase 51.5: parse `--free-endpoint` and `--endpoint-price` flags into a single
+ * EndpointPriceOverride[] for SDK consumption. Returns undefined if no flags were passed.
+ *
+ *   --free-endpoint "/sample"           → { path: "/sample", price_per_request: 0 }
+ *   --free-endpoint "/v1/ping:50"       → { path: "/v1/ping", price_per_request: 0, daily_cap_per_wallet: 50 }
+ *   --endpoint-price "/v1/data=5000"    → { path: "/v1/data", price_per_request: 5000 }
+ */
+function buildEndpointPrices(
+  free: string[] | undefined,
+  paid: string[] | undefined,
+): EndpointPriceOverride[] | undefined {
+  const out: EndpointPriceOverride[] = [];
+  for (const spec of free ?? []) {
+    const [path, capStr] = spec.split(':');
+    if (!path) continue;
+    const entry: EndpointPriceOverride = { path, pricing_unit: 'per_request', price_per_request: 0 };
+    if (capStr) entry.daily_cap_per_wallet = parseInt(capStr, 10);
+    out.push(entry);
+  }
+  for (const spec of paid ?? []) {
+    const [path, priceStr] = spec.split('=');
+    if (!path || !priceStr) continue;
+    out.push({ path, pricing_unit: 'per_request', price_per_request: parseInt(priceStr, 10) });
+  }
+  return out.length > 0 ? out : undefined;
+}
 
 function detectDocType(filePath: string): 'openapi' | 'markdown' {
   const ext = extname(filePath).toLowerCase();
@@ -129,6 +167,13 @@ Examples:
     .option('--relay-method <method>', 'Service HTTP method: GET, POST, PUT (default: POST)')
     .option('--platform <name>', 'Connector platform: slack, notion, discord, github, custom')
     .option('--skip-test', 'Deprecated: all listings are now tested before activation')
+    // Phase 51.5: per-endpoint pricing + free-tier flags. Repeatable via multiple occurrences:
+    //   --free-endpoint "/sample" --free-endpoint "/v1/ping:50"   (path or path:per-wallet-cap)
+    //   --endpoint-price "/v1/data=5000" --endpoint-price "/v1/bulk=10000"
+    .option('--free-endpoint <spec>', 'Mark endpoint as free (repeatable). Format: "/path" or "/path:wallet-cap" (default cap 100/day).', collectArr, [] as string[])
+    .option('--endpoint-price <spec>', 'Per-endpoint price override (repeatable). Format: "/path=microUSDC", e.g. "/v1/data=5000".', collectArr, [] as string[])
+    .option('--free-daily-cap-per-wallet <n>', 'Listing-level per-wallet daily cap for free endpoints (overrides default 100). NULL/omit = use proxy default.')
+    .option('--free-daily-cap-global <n>', 'Listing-level global daily cap for free endpoints. NULL/omit = unlimited.')
     .action(async (opts: CreateCliOpts) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
       try {
@@ -226,6 +271,13 @@ async function buildNonInteractiveOpts(o: CreateCliOpts): Promise<CreateListingO
     ...(o.validationEndpoint ? { validation_endpoint: o.validationEndpoint } : {}),
     ...(o.shield === 'on' ? { shield_enabled: true } : {}),
     ...(o.skipTest ? { skip_test: true } : {}),
+    // Phase 51.5: endpoint overrides + listing-level free caps.
+    ...((() => {
+      const eps = buildEndpointPrices(o.freeEndpoint, o.endpointPrice);
+      return eps ? { endpoint_prices: eps } : {};
+    })()),
+    ...(o.freeDailyCapPerWallet ? { free_daily_cap_per_wallet: parseInt(o.freeDailyCapPerWallet, 10) } : {}),
+    ...(o.freeDailyCapGlobal ? { free_daily_cap_global: parseInt(o.freeDailyCapGlobal, 10) } : {}),
   };
 }
 
