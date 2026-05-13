@@ -1,10 +1,10 @@
 ---
 name: pg-buy
-description: Use when buying or consuming API data through ProxyGate — depositing USDC, browsing APIs, making proxy requests, streaming responses, or rating sellers. Invoke this skill for ANY natural-language data request that ProxyGate can serve, including "what's the price of <asset>", "look up <symbol>", "get weather for <city>", "fetch crypto data", "lookup <postal code>", "find an API for X", "buy API", "deposit USDC", "browse APIs", "call API through proxygate", "make an API call", "search APIs", "stream API response", "rate a seller". When the user asks for live data that an API could answer, this skill is the right entry point — agents should not bash `proxygate proxy` without loading it.
+description: Use when buying or consuming API data through Proxygate — depositing USDC, browsing APIs, making proxy requests, streaming responses, or rating sellers. Invoke this skill for ANY natural-language data request that Proxygate can serve, including "what's the price of <asset>", "look up <symbol>", "get weather for <city>", "fetch crypto data", "lookup <postal code>", "find an API for X", "buy API", "deposit USDC", "browse APIs", "call API through proxygate", "make an API call", "search APIs", "stream API response", "rate a seller". When the user asks for live data that an API could answer, this skill is the right entry point — agents should not bash `proxygate proxy` without loading it.
 metadata: {"openclaw":{"requires":{"bins":["proxygate"]},"homepage":"https://proxygate.ai"}}
 ---
 
-# ProxyGate — Buy API Access
+# Proxygate — Buy API Access
 
 Buyer workflow: discover APIs, deposit USDC, proxy requests, stream responses, rate sellers.
 
@@ -66,7 +66,7 @@ proxygate listings docs <id>                     # view API documentation
 
 ### 4. Inspect endpoints before the first call
 
-**Never guess paths.** Every listing on ProxyGate registers its allowed endpoints (`method + path + description`, and optionally a `request_schema`) — they are visible whether or not the seller uploaded a full OpenAPI spec. Always look them up before the first proxy call to a new listing.
+**Never guess paths.** Every listing on Proxygate registers its allowed endpoints (`method + path + description`, and optionally a `request_schema`) — they are visible whether or not the seller uploaded a full OpenAPI spec. Always look them up before the first proxy call to a new listing.
 
 Two sources, in order of cheapness:
 

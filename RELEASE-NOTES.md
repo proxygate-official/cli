@@ -68,7 +68,7 @@ Two agent-UX fixes for the `proxygate proxy` command.
 Requires `@proxygate/sdk@^0.7.0` (SAFE-06 minor bump, additive).
 
 - `proxygate apis` (alias `proxygate search`) now renders a cyan **FREE** badge
-  in the Price column for ProxyGate-procured listings (e.g. Open-Meteo). The
+  in the Price column for Proxygate-procured listings (e.g. Open-Meteo). The
   badge appears in both the default table layout and the compact (`--compact`)
   variant. The `--json --compact` form gains an extra `free: boolean` field
   per row for scripted consumers.

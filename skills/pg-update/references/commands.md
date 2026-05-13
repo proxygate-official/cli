@@ -1,4 +1,4 @@
-# ProxyGate CLI Command Reference
+# Proxygate CLI Command Reference
 
 Complete reference for the `proxygate` CLI (v0.1.8). Use `--json` on most commands for structured output.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ProxyGate update checker — runs on Claude Code SessionStart.
+# Proxygate update checker — runs on Claude Code SessionStart.
 # Writes result to ~/.claude/cache/proxygate-update-check.json.
 # Exits quickly; never blocks session startup.
 
@@ -33,5 +33,5 @@ else
   cat > "$CACHE_FILE" <<JSON
 {"update_available":true,"current":"$current","latest":"$latest","checked_at":"$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
 JSON
-  echo "ProxyGate update available: $current → $latest. Run /pg-update to upgrade."
+  echo "Proxygate update available: $current → $latest. Run /pg-update to upgrade."
 fi
