@@ -46,9 +46,8 @@ interface CreateCliOpts {
   endpointPrice?: string[];
   freeDailyCapPerWallet?: string;
   freeDailyCapGlobal?: string;
-  // Phase 51.6: listing-wide free + per-listing branding.
+  // Phase 51.6: listing-wide free flag.
   free?: boolean;
-  providerLogoUrl?: string;
 }
 
 type ListingTypeValue = 'proxy' | 'skill' | 'product' | 'dataset' | 'service' | 'connector';
@@ -177,9 +176,8 @@ Examples:
     .option('--endpoint-price <spec>', 'Per-endpoint price override (repeatable). Format: "/path=microUSDC", e.g. "/v1/data=5000".', collectArr, [] as string[])
     .option('--free-daily-cap-per-wallet <n>', 'Listing-level per-wallet daily cap for free endpoints (overrides default 100). NULL/omit = use proxy default.')
     .option('--free-daily-cap-global <n>', 'Listing-level global daily cap for free endpoints. NULL/omit = unlimited.')
-    // Phase 51.6: listing-wide free flag + per-listing branding.
+    // Phase 51.6: listing-wide free flag.
     .option('--free', 'Shortcut for --price 0. Listing enters Pending Approval until an admin sets free_listing_approved.')
-    .option('--provider-logo-url <url>', 'Optional HTTPS URL for a per-listing logo (overrides the seller avatar in marketplace renders).')
     .action(async (opts: CreateCliOpts) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
       try {
@@ -292,8 +290,6 @@ async function buildNonInteractiveOpts(o: CreateCliOpts): Promise<CreateListingO
     })()),
     ...(o.freeDailyCapPerWallet ? { free_daily_cap_per_wallet: parseInt(o.freeDailyCapPerWallet, 10) } : {}),
     ...(o.freeDailyCapGlobal ? { free_daily_cap_global: parseInt(o.freeDailyCapGlobal, 10) } : {}),
-    // Phase 51.6: per-listing branding.
-    ...(o.providerLogoUrl ? { provider_logo_url: o.providerLogoUrl } : {}),
   };
 }
 
@@ -374,8 +370,6 @@ async function runInteractiveCreate(): Promise<CreateListingOptions | null> {
   const categorySlugs = (await input({ message: 'Category slugs (comma-separated, e.g. "llm,ai"):' }))
     .split(',').map((s) => s.trim()).filter(Boolean);
   const description = (await input({ message: 'Description (optional, press Enter to skip):' })) || undefined;
-  // Phase 51.6: optional per-listing logo URL.
-  const providerLogoUrl = (await input({ message: 'Provider logo URL (optional, https://):' })) || undefined;
 
   console.log();
   console.log(bold('Review:'));
@@ -392,7 +386,6 @@ async function runInteractiveCreate(): Promise<CreateListingOptions | null> {
   console.log(`  Categories:  ${categorySlugs.join(', ')}`);
   if (description) console.log(`  Description: ${truncate(description, 60)}`);
   if (shieldEnabled) console.log(`  Shield:      enabled`);
-  if (providerLogoUrl) console.log(`  Logo:        ${providerLogoUrl}`);
   console.log();
 
   const confirmed = await confirm({ message: 'Create this listing?' });
@@ -406,6 +399,5 @@ async function runInteractiveCreate(): Promise<CreateListingOptions | null> {
     ...(typeMetadata ? { type_metadata: typeMetadata } : {}),
     ...(description ? { description } : {}), ...credentials,
     ...(shieldEnabled ? { shield_enabled: true } : {}),
-    ...(providerLogoUrl ? { provider_logo_url: providerLogoUrl } : {}),
   };
 }

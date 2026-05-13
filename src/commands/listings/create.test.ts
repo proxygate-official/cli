@@ -181,10 +181,10 @@ describe('listings create', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Phase 51.6: --free / --provider-logo-url / matrix rows
-  // Covers the four SPEC matrix rows from the CLI side, plus the new flags.
+  // Phase 51.6: --free / matrix rows
+  // Covers the four SPEC matrix rows from the CLI side, plus the new flag.
   // ---------------------------------------------------------------------------
-  describe('Phase 51.6: --free / --provider-logo-url / matrix rows', () => {
+  describe('Phase 51.6: --free / matrix rows', () => {
     function setSuccess(): void {
       mockListingsCreate.mockResolvedValue({
         id: 'new-id',
@@ -274,22 +274,6 @@ describe('listings create', () => {
       expect(overrides).toHaveLength(2);
       expect(overrides[0]).toMatchObject({ path: '/v1/premium', price_per_request: 5000 });
       expect(overrides[1]).toMatchObject({ path: '/v1/bulk', price_per_request: 10000 });
-    });
-
-    it('--provider-logo-url passes through to SDK', async () => {
-      setSuccess();
-      await run(
-        '--non-interactive',
-        '--service-name', 'Test',
-        '--base-url', 'https://api.test.com',
-        '--auth-pattern', 'none',
-        '--categories', 'ai',
-        '--provider-logo-url', 'https://cdn.example.com/openmeteo-logo.png',
-      );
-
-      expect(mockListingsCreate).toHaveBeenCalledWith(
-        expect.objectContaining({ provider_logo_url: 'https://cdn.example.com/openmeteo-logo.png' }),
-      );
     });
 
     it('--free overrides --price with warning when --price is non-default', async () => {

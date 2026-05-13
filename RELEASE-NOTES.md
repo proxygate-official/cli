@@ -1,6 +1,6 @@
 # @proxygate/cli release notes
 
-## 0.7.0 — Phase 51.6: open free listings + per-listing branding
+## 0.7.0 — Phase 51.6: open free listings
 
 Additive, non-breaking (SAFE-06 minor). Pairs with `@proxygate/sdk` 0.8.0.
 
@@ -10,21 +10,20 @@ Additive, non-breaking (SAFE-06 minor). Pairs with `@proxygate/sdk` 0.8.0.
   listings with paid endpoint overrides (matrix row 4).
 - **`proxygate listings create --price 0`**: same effect, explicit zero. The
   `--price` flag help text is updated to document the new 0-OR->=1000 contract.
-- **`proxygate listings create --provider-logo-url <https://...>`**: optional
-  HTTPS URL for a per-listing logo. Overrides the seller avatar in marketplace
-  cards, detail headers, and the seller-listings grid. Falls back to seller
-  avatar → initial bubble when omitted.
 - **`--free` overrides `--price`**: passing both prints a `--free overrides --price`
   warning and uses `price=0`.
 - **Interactive flow**: the create wizard now asks "Make this listing free
-  (price=0, pending admin approval)?" before the price prompt and adds an
-  optional "Provider logo URL (optional, https://):" step.
+  (price=0, pending admin approval)?" before the price prompt.
 - **Mixed-pricing both directions** (no CLI flag change): `--free-endpoint` and
   `--endpoint-price` from 0.6.x already cover the mixed-pricing matrix. With
   Phase 51.6 the gateway now accepts the full matrix:
   - `--price 1000 --free-endpoint /a` — paid listing with free endpoints (row 3)
   - `--free --endpoint-price /a=5000` — free listing with paid endpoints (row 4)
-- **Skill update**: `pg-sell` SKILL.md documents the four matrix rows + new flags.
+- **Skill update**: `pg-sell` SKILL.md documents the four matrix rows + new flag.
+
+> Per-listing logo upload is a web-UX feature only (drag/drop, paste-with-rehost,
+> dimension validation in the wizard). It is intentionally not exposed via the
+> CLI — sellers upload logos through the dashboard.
 
 > Publish manually with `pnpm publish --no-git-checks` (NOT `npm publish` — see
 > CLAUDE.md DO list: `npm publish` leaks `workspace:*` into the tarball, breaking

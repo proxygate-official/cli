@@ -84,16 +84,7 @@ proxygate listings create --non-interactive ... --free \
 
 `--free` and `--price` are mutually exclusive — passing both prints a warning and uses `price=0`. Per-endpoint cap shorthand: `--free-endpoint "/path:N"` sets a per-wallet daily cap of `N` on that endpoint.
 
-### Per-listing branding (Phase 51.6)
-
-Curated listings (and any seller-uploaded listing) can override the marketplace logo via `--provider-logo-url`:
-
-```bash
-proxygate listings create --non-interactive ... \
-  --provider-logo-url "https://cdn.example.com/openmeteo-logo.png"
-```
-
-HTTPS only. Renders in marketplace cards, detail headers, and the seller-listings grid. Falls back to your seller avatar (then an initial bubble) if unset.
+Per-listing logo upload is web-only — drag/drop in the seller dashboard wizard. There is no CLI flag for it.
 
 ### 4. Manage listings
 
