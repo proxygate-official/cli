@@ -179,4 +179,138 @@ describe('listings create', () => {
     const output = logSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
     expect(output).toContain('WAF');
   });
+
+  // ---------------------------------------------------------------------------
+  // Phase 51.6: --free / --provider-logo-url / matrix rows
+  // Covers the four SPEC matrix rows from the CLI side, plus the new flags.
+  // ---------------------------------------------------------------------------
+  describe('Phase 51.6: --free / --provider-logo-url / matrix rows', () => {
+    function setSuccess(): void {
+      mockListingsCreate.mockResolvedValue({
+        id: 'new-id',
+        service: 'svc',
+        is_active: false,
+        key_masked: 'none',
+        sync_status: 'pending',
+      });
+    }
+
+    it('--free maps to price=0 (matrix row 1)', async () => {
+      setSuccess();
+      await run(
+        '--non-interactive',
+        '--service-name', 'Open-Meteo',
+        '--base-url', 'https://api.open-meteo.com',
+        '--auth-pattern', 'none',
+        '--categories', 'weather',
+        '--free',
+      );
+
+      expect(mockListingsCreate).toHaveBeenCalledTimes(1);
+      expect(mockListingsCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ price_per_request: 0 }),
+      );
+      const sent = mockListingsCreate.mock.calls[0][0] as Record<string, unknown>;
+      expect(sent.endpoint_prices).toBeUndefined();
+    });
+
+    it('--price 1000 (matrix row 2: paid, no overrides)', async () => {
+      setSuccess();
+      await run(
+        '--non-interactive',
+        '--service-name', 'Paid API',
+        '--base-url', 'https://api.paid.com',
+        '--auth-pattern', 'bearer',
+        '--credential', 'sk-test',
+        '--categories', 'ai',
+        '--price', '1000',
+      );
+
+      expect(mockListingsCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ price_per_request: 1000 }),
+      );
+      const sent = mockListingsCreate.mock.calls[0][0] as Record<string, unknown>;
+      expect(sent.endpoint_prices).toBeUndefined();
+    });
+
+    it('--price 1000 + --free-endpoint /a (matrix row 3: paid + free endpoints)', async () => {
+      setSuccess();
+      await run(
+        '--non-interactive',
+        '--service-name', 'Mixed API',
+        '--base-url', 'https://api.mixed.com',
+        '--auth-pattern', 'bearer',
+        '--credential', 'sk-test',
+        '--categories', 'ai',
+        '--price', '1000',
+        '--free-endpoint', '/v1/sample',
+        '--free-endpoint', '/v1/ping:50',
+      );
+
+      const sent = mockListingsCreate.mock.calls[0][0] as Record<string, unknown>;
+      expect(sent.price_per_request).toBe(1000);
+      const overrides = sent.endpoint_prices as Array<Record<string, unknown>>;
+      expect(overrides).toHaveLength(2);
+      expect(overrides[0]).toMatchObject({ path: '/v1/sample', price_per_request: 0 });
+      expect(overrides[1]).toMatchObject({ path: '/v1/ping', price_per_request: 0, daily_cap_per_wallet: 50 });
+    });
+
+    it('--free + --endpoint-price /a=5000 (matrix row 4: free + paid endpoints)', async () => {
+      setSuccess();
+      await run(
+        '--non-interactive',
+        '--service-name', 'Free Default API',
+        '--base-url', 'https://api.free.com',
+        '--auth-pattern', 'none',
+        '--categories', 'weather',
+        '--free',
+        '--endpoint-price', '/v1/premium=5000',
+        '--endpoint-price', '/v1/bulk=10000',
+      );
+
+      const sent = mockListingsCreate.mock.calls[0][0] as Record<string, unknown>;
+      expect(sent.price_per_request).toBe(0);
+      const overrides = sent.endpoint_prices as Array<Record<string, unknown>>;
+      expect(overrides).toHaveLength(2);
+      expect(overrides[0]).toMatchObject({ path: '/v1/premium', price_per_request: 5000 });
+      expect(overrides[1]).toMatchObject({ path: '/v1/bulk', price_per_request: 10000 });
+    });
+
+    it('--provider-logo-url passes through to SDK', async () => {
+      setSuccess();
+      await run(
+        '--non-interactive',
+        '--service-name', 'Test',
+        '--base-url', 'https://api.test.com',
+        '--auth-pattern', 'none',
+        '--categories', 'ai',
+        '--provider-logo-url', 'https://cdn.example.com/openmeteo-logo.png',
+      );
+
+      expect(mockListingsCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ provider_logo_url: 'https://cdn.example.com/openmeteo-logo.png' }),
+      );
+    });
+
+    it('--free overrides --price with warning when --price is non-default', async () => {
+      setSuccess();
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      await run(
+        '--non-interactive',
+        '--service-name', 'Test',
+        '--base-url', 'https://api.test.com',
+        '--auth-pattern', 'none',
+        '--categories', 'ai',
+        '--free',
+        '--price', '5000',
+      );
+
+      expect(mockListingsCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ price_per_request: 0 }),
+      );
+      const warned = warnSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
+      expect(warned).toContain('--free overrides --price');
+      warnSpy.mockRestore();
+    });
+  });
 });

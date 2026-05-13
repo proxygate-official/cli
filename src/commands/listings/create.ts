@@ -46,6 +46,9 @@ interface CreateCliOpts {
   endpointPrice?: string[];
   freeDailyCapPerWallet?: string;
   freeDailyCapGlobal?: string;
+  // Phase 51.6: listing-wide free + per-listing branding.
+  free?: boolean;
+  providerLogoUrl?: string;
 }
 
 type ListingTypeValue = 'proxy' | 'skill' | 'product' | 'dataset' | 'service' | 'connector';
@@ -150,7 +153,7 @@ Examples:
     .option('--oauth2-service-account-json <path>', 'Google service account JSON path')
     .option('--total-rpm <n>', 'Total RPM capacity', '60')
     .option('--reserved-rpm <n>', 'Reserved RPM (for own use)', '0')
-    .option('--price <n>', 'Price per request in micro-USDC (1000 = $0.001, min 1000)', '1000')
+    .option('--price <n>', 'Price per request in micro-USDC. 0 = free (pending admin approval, Phase 51.6); >=1000 = paid ($0.001 floor)', '1000')
     .option('--categories <slugs>', 'Category slugs (comma-separated)')
     .option('--description <text>', 'Listing description')
     .option('--allowed-paths <paths>', 'Allowed paths (comma-separated)')
@@ -174,6 +177,9 @@ Examples:
     .option('--endpoint-price <spec>', 'Per-endpoint price override (repeatable). Format: "/path=microUSDC", e.g. "/v1/data=5000".', collectArr, [] as string[])
     .option('--free-daily-cap-per-wallet <n>', 'Listing-level per-wallet daily cap for free endpoints (overrides default 100). NULL/omit = use proxy default.')
     .option('--free-daily-cap-global <n>', 'Listing-level global daily cap for free endpoints. NULL/omit = unlimited.')
+    // Phase 51.6: listing-wide free flag + per-listing branding.
+    .option('--free', 'Shortcut for --price 0. Listing enters Pending Approval until an admin sets free_listing_approved.')
+    .option('--provider-logo-url <url>', 'Optional HTTPS URL for a per-listing logo (overrides the seller avatar in marketplace renders).')
     .action(async (opts: CreateCliOpts) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
       try {
@@ -247,11 +253,19 @@ async function buildNonInteractiveOpts(o: CreateCliOpts): Promise<CreateListingO
   const listingType = (o.type ?? 'proxy') as ListingTypeValue;
   const typeMetadata = buildTypeMetadata(listingType, o);
 
+  // Phase 51.6: --free is shorthand for --price 0. If both flags are passed and
+  // --price isn't the commander default ('1000'), warn that --free wins.
+  const explicitPrice = o.price !== '1000';
+  const pricePerRequest = o.free ? 0 : parseInt(o.price, 10);
+  if (o.free && explicitPrice) {
+    console.warn(yellow('--free overrides --price (using price=0)'));
+  }
+
   return {
     service_name: o.serviceName, service_base_url: o.baseUrl,
     auth_pattern: (o.authPattern as ListingAuthPattern) ?? (o.credential ? 'bearer' : 'none'),
     total_rpm: parseInt(o.totalRpm, 10), reserved_rpm: parseInt(o.reservedRpm, 10),
-    price_per_request: parseInt(o.price, 10),
+    price_per_request: pricePerRequest,
     category_slugs: o.categories.split(',').map((s) => s.trim()),
     ...(listingType !== 'proxy' ? { listing_type: listingType } : {}),
     ...(typeMetadata ? { type_metadata: typeMetadata } : {}),
@@ -278,6 +292,8 @@ async function buildNonInteractiveOpts(o: CreateCliOpts): Promise<CreateListingO
     })()),
     ...(o.freeDailyCapPerWallet ? { free_daily_cap_per_wallet: parseInt(o.freeDailyCapPerWallet, 10) } : {}),
     ...(o.freeDailyCapGlobal ? { free_daily_cap_global: parseInt(o.freeDailyCapGlobal, 10) } : {}),
+    // Phase 51.6: per-listing branding.
+    ...(o.providerLogoUrl ? { provider_logo_url: o.providerLogoUrl } : {}),
   };
 }
 
@@ -346,10 +362,20 @@ async function runInteractiveCreate(): Promise<CreateListingOptions | null> {
 
   const totalRpm = parseInt(await input({ message: 'Total RPM capacity:', default: '60' }), 10);
   const reservedRpm = parseInt(await input({ message: 'Reserved RPM (for your own use):', default: '0' }), 10);
-  const pricePerRequest = parseInt(await input({ message: 'Price per request (micro-USDC, 1000 = $0.001, min 1000):', default: '1000' }), 10);
+  // Phase 51.6: gate the price prompt on a "make this free?" question so the user
+  // can land a pending-approval row without typing 0.
+  const isFree = await confirm({
+    message: 'Make this listing free (price=0, pending admin approval)?',
+    default: false,
+  });
+  const pricePerRequest = isFree
+    ? 0
+    : parseInt(await input({ message: 'Price per request (micro-USDC, 1000 = $0.001, min 1000):', default: '1000' }), 10);
   const categorySlugs = (await input({ message: 'Category slugs (comma-separated, e.g. "llm,ai"):' }))
     .split(',').map((s) => s.trim()).filter(Boolean);
   const description = (await input({ message: 'Description (optional, press Enter to skip):' })) || undefined;
+  // Phase 51.6: optional per-listing logo URL.
+  const providerLogoUrl = (await input({ message: 'Provider logo URL (optional, https://):' })) || undefined;
 
   console.log();
   console.log(bold('Review:'));
@@ -358,10 +384,15 @@ async function runInteractiveCreate(): Promise<CreateListingOptions | null> {
   console.log(`  Base URL:    ${baseUrl}`);
   console.log(`  Auth:        ${authPattern}`);
   console.log(`  RPM:         ${totalRpm} (reserved: ${reservedRpm})`);
-  console.log(`  Price:       ${pricePerRequest} micro-USDC/req`);
+  if (isFree) {
+    console.log(`  Price:       0 (free — pending admin approval)`);
+  } else {
+    console.log(`  Price:       ${pricePerRequest} micro-USDC/req`);
+  }
   console.log(`  Categories:  ${categorySlugs.join(', ')}`);
   if (description) console.log(`  Description: ${truncate(description, 60)}`);
   if (shieldEnabled) console.log(`  Shield:      enabled`);
+  if (providerLogoUrl) console.log(`  Logo:        ${providerLogoUrl}`);
   console.log();
 
   const confirmed = await confirm({ message: 'Create this listing?' });
@@ -375,5 +406,6 @@ async function runInteractiveCreate(): Promise<CreateListingOptions | null> {
     ...(typeMetadata ? { type_metadata: typeMetadata } : {}),
     ...(description ? { description } : {}), ...credentials,
     ...(shieldEnabled ? { shield_enabled: true } : {}),
+    ...(providerLogoUrl ? { provider_logo_url: providerLogoUrl } : {}),
   };
 }

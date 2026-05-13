@@ -60,6 +60,41 @@ proxygate listings create --non-interactive \
   --description "Fast Llama 3.3 access"
 ```
 
+### Free listings (Phase 51.6)
+
+Any seller may submit a free listing. The row enters "Pending approval" until an admin sets `free_listing_approved=true`.
+
+```bash
+# Wholly free listing (admin approval required before it goes live):
+proxygate listings create --non-interactive \
+  --service-name "Open-Meteo" --base-url "https://api.open-meteo.com" \
+  --auth-pattern none --categories "weather" --free
+
+# --free is shorthand for --price 0:
+proxygate listings create --non-interactive ... --price 0
+
+# matrix row 3 — paid listing with free endpoint overrides (paid + free):
+proxygate listings create --non-interactive ... --price 1000 \
+  --free-endpoint "/v1/sample" --free-endpoint "/v1/ping:50"
+
+# matrix row 4 — free listing with paid endpoint overrides (free + paid):
+proxygate listings create --non-interactive ... --free \
+  --endpoint-price "/v1/premium=5000" --endpoint-price "/v1/bulk=10000"
+```
+
+`--free` and `--price` are mutually exclusive — passing both prints a warning and uses `price=0`. Per-endpoint cap shorthand: `--free-endpoint "/path:N"` sets a per-wallet daily cap of `N` on that endpoint.
+
+### Per-listing branding (Phase 51.6)
+
+Curated listings (and any seller-uploaded listing) can override the marketplace logo via `--provider-logo-url`:
+
+```bash
+proxygate listings create --non-interactive ... \
+  --provider-logo-url "https://cdn.example.com/openmeteo-logo.png"
+```
+
+HTTPS only. Renders in marketplace cards, detail headers, and the seller-listings grid. Falls back to your seller avatar (then an initial bubble) if unset.
+
 ### 4. Manage listings
 
 ```bash
