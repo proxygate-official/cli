@@ -36,7 +36,7 @@
   },
   "scripts": {
     "build:skills": "tsx scripts/embed-skills.ts",
-    "build": "pnpm build:skills && tsc",
+    "build": "pnpm build:skills && node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
@@ -57,6 +57,7 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.0.0",
     "@types/qrcode-terminal": "^0.12.2",
+    "esbuild": "^0.28.0",
     "tsx": "^4.0.0",
     "typescript": "^5.7.0",
     "vitest": "^4.0.0"
