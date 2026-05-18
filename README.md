@@ -170,6 +170,24 @@ proxygate create                                  # scaffold new project
 -h, --help             Show help
 ```
 
+## Performance
+
+The CLI lazy-loads only the invoked command's module, so cold-start is
+already minimal. For agents in a hot loop, prefer the SDK
+(`@proxygate/sdk`) — a long-lived client amortizes TLS + auth across
+calls instead of paying process + connection setup every invocation.
+
+Optional: if you have [Bun](https://bun.sh) installed, running the CLI
+under Bun shaves ~5 ms off interpreter cold-start:
+
+```bash
+bun "$(which proxygate)" proxy <listing> <path>
+```
+
+The default shebang stays `node` so `npm i -g @proxygate/cli` works
+without Bun. Most end-to-end latency on a proxy call is network +
+gateway-side processing, not the CLI — see the SDK for the fast path.
+
 ## Configuration
 
 Saved to `~/.proxygate/config.json`:
