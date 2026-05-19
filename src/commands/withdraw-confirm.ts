@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import { getClient } from '../helpers.js';
-import { bold, green, dim, formatUsdc } from '../format.js';
+import { bold, green, formatUsdc } from '../format.js';
 import { handleError } from '../errors.js';
 
 /**

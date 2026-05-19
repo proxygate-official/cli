@@ -43,14 +43,14 @@ function makeTestResult(overrides: Record<string, unknown> = {}) {
 
 describe('listings create', () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
-  let errorSpy: ReturnType<typeof vi.spyOn>;
-  let exitSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+    // Silence stderr; force process.exit to throw so the command under
+    // test can't kill the runner. Not asserted → not bound to a var.
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit');
     });
   });

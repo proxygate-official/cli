@@ -2,7 +2,7 @@ import type { Command } from 'commander';
 import { handleError } from '../errors.js';
 import type { SettlementDaily, SettlementSummary } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
-import { bold, green, yellow, red, dim, formatTable } from '../format.js';
+import { bold, green, yellow, dim, formatTable } from '../format.js';
 
 function isBuyerSummary(s: SettlementSummary): s is { total_requests: number; total_cost_usdc: number; total_fees_usdc: number } {
   return 'total_cost_usdc' in s;

@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 import type { Command } from 'commander';
 import { getClient } from '../../helpers.js';
-import { green, red, dim, bold } from '../../format.js';
+import { green, red, dim } from '../../format.js';
 import { handleError, printTestResults } from './helpers.js';
 
 function detectDocType(filePath: string): 'openapi' | 'markdown' {

@@ -3,7 +3,6 @@ import { handleError } from '../errors.js';
 import { getClient } from '../helpers.js';
 import {
   bold,
-  red,
   dim,
   cyan,
   formatTable,
