@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import { getClient } from '../helpers.js';
-import { bold, green, red, dim } from '../format.js';
+import { green, red } from '../format.js';
 import { handleError } from '../errors.js';
 
 export function registerRateCommand(program: Command): void {

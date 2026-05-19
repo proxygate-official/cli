@@ -38,6 +38,7 @@
     "build:skills": "tsx scripts/embed-skills.ts",
     "build": "pnpm build:skills && tsc",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
     "postinstall": "node dist/postinstall.js || true",
@@ -54,11 +55,14 @@
     "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.0.0",
     "@types/qrcode-terminal": "^0.12.2",
+    "eslint": "^9.39.4",
     "tsx": "^4.0.0",
     "typescript": "^5.7.0",
+    "typescript-eslint": "^8.58.1",
     "vitest": "^4.0.0"
   }
 }

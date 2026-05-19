@@ -17,13 +17,13 @@ const mockFetch = vi.fn();
 
 describe('test command', () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
-  let errorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal('fetch', mockFetch);
     logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // Silence stderr; not asserted → not bound to a var.
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {

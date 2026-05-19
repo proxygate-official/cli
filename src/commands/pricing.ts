@@ -6,7 +6,6 @@ import {
   dim,
   cyan,
   formatTable,
-  formatCurrency,
 } from '../format.js';
 import { handleError } from '../errors.js';
 

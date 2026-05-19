@@ -12,8 +12,6 @@
  * 9. Return credentials
  */
 
-import type SignClient from '@walletconnect/sign-client';
-
 export interface WalletConnectResult {
   wallet: string;
   delegationToken: string;

@@ -188,7 +188,6 @@ export function registerTestCommand(program: Command): void {
           console.log();
 
           let totalTests = 0;
-          let passed = 0;
           let failed = 0;
 
           for (const svc of config.services) {
@@ -222,8 +221,6 @@ export function registerTestCommand(program: Command): void {
               totalTests++;
               if (result.error || (result.status !== null && result.status >= 400)) {
                 failed++;
-              } else {
-                passed++;
               }
             }
 

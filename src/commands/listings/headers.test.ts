@@ -35,13 +35,14 @@ const LISTING_ID = '00000000-0000-0000-0000-000000000001';
 describe('listings headers', () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
   let errorSpy: ReturnType<typeof vi.spyOn>;
-  let exitSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+    // Force process.exit to throw so it can't kill the runner.
+    // Not asserted → not bound to a var.
+    vi.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit');
     });
   });

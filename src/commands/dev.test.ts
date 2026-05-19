@@ -72,7 +72,7 @@ describe('dev command', () => {
     registerDevCommand(program);
     // Don't actually await forever — the command keeps the process alive
     // Just verify it calls Proxygate.serve with the right args
-    const promise = program.parseAsync(['node', 'proxygate', 'dev', ...args]);
+    void program.parseAsync(['node', 'proxygate', 'dev', ...args]);
     // Give it a tick to start
     await new Promise((r) => setTimeout(r, 50));
     // We can't cleanly resolve since it awaits forever, so we just check mocks
