@@ -20,10 +20,15 @@ export default tseslint.config(
     },
   },
   {
+    rules: {
+      // `any` is banned everywhere — source AND tests.
+      "@typescript-eslint/no-explicit-any": "error",
+    },
+  },
+  {
     files: ["**/*.test.ts"],
     rules: {
       "@typescript-eslint/no-non-null-assertion": "off",
-      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 );
