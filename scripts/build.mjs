@@ -20,7 +20,7 @@ import { join } from 'node:path';
 const distDir = new URL('../dist/', import.meta.url);
 
 await build({
-  entryPoints: ['src/index.ts'],
+  entryPoints: ['src/index.ts', 'src/postinstall.ts'],
   outdir: 'dist',
   bundle: true,
   splitting: true, // code-split dynamic import() → preserves Opt #1 lazy load

@@ -1,5 +1,32 @@
 # @proxygate/cli release notes
 
+## 0.7.1 — Cross-platform postinstall
+
+Patch release (SAFE-06 patch). No API changes.
+
+- **Fixed: postinstall never ran.** `dist/postinstall.js` was not emitted by the
+  esbuild config — `src/postinstall.ts` was not in `entryPoints`. The shell-level
+  `|| true` fallback masked the resulting `MODULE_NOT_FOUND` on macOS/Linux. On
+  Windows `cmd` does not recognize `true`, so the error cascaded loudly.
+  Consequence: skills auto-install, update-check hook registration, and
+  statusline installation never happened on `npm i -g @proxygate/cli`. Users who
+  did not run `proxygate skills install` manually had none of these.
+- **Build**: `scripts/build.mjs` now includes `src/postinstall.ts` as a second
+  entry point, so `dist/postinstall.js` is actually produced.
+- **`package.json` postinstall**: replaced shell `|| true` with a Node-level
+  guard (`node -e "import('./dist/postinstall.js').catch(...)"`). Works
+  identically on Windows, macOS, and Linux. Missing files and internal errors
+  log a warning instead of failing `npm install`.
+- **New: `skills/pg-update/scripts/check-update.js`**. Node port of
+  `check-update.sh`. Works on Windows without Git Bash or WSL.
+- **`src/postinstall.ts`**: SessionStart hook now registers `node "..js"` instead
+  of `bash "..sh"`. Existing entries pointing at `check-update.sh` (from old
+  installs that registered manually) are migrated to the new `.js` script in
+  place, no duplicates.
+
+> Publish manually with `pnpm publish --no-git-checks` (NOT `npm publish` — see
+> CLAUDE.md DO list).
+
 ## 0.7.0 — Phase 51.6: open free listings
 
 Additive, non-breaking (SAFE-06 minor). Pairs with `@proxygate/sdk` 0.8.0.

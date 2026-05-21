@@ -1,6 +1,6 @@
 {
   "name": "@proxygate/cli",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Proxygate CLI — buy APIs, sell agent capacity, and tunnel services on the autonomous agent marketplace. USDC on Solana.",
   "type": "module",
   "bin": {
@@ -41,7 +41,7 @@
     "lint": "eslint .",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
-    "postinstall": "node dist/postinstall.js || true",
+    "postinstall": "node -e \"import('./dist/postinstall.js').catch(e=>console.warn('Proxygate postinstall skipped:',e.message))\"",
     "prepublishOnly": "pnpm build"
   },
   "dependencies": {

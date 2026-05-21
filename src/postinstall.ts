@@ -11,7 +11,7 @@ const HOOK_SCRIPT_PATH = join(
   'skills',
   'pg-update',
   'scripts',
-  'check-update.sh',
+  'check-update.js',
 );
 const HOOK_MARKER = 'proxygate-update-check';
 
@@ -57,27 +57,30 @@ async function postinstall(): Promise<void> {
       hooks?: Array<{ type?: string; command?: string }>;
     }>;
 
-    const alreadyRegistered = sessionStartEntries.some((entry) =>
-      entry.hooks?.some(
-        (h) =>
-          h.command?.includes(HOOK_MARKER) ||
-          h.command?.includes('check-update.sh'),
-      ),
-    );
+    const isProxygateHook = (cmd: string | undefined): boolean =>
+      !!cmd &&
+      (cmd.includes(HOOK_MARKER) ||
+        cmd.includes('check-update.sh') ||
+        cmd.includes('check-update.js'));
 
-    if (!alreadyRegistered) {
-      sessionStartEntries.push({
-        matcher: '',
-        hooks: [
-          {
-            type: 'command',
-            command: `bash "${HOOK_SCRIPT_PATH}" # ${HOOK_MARKER}`,
-          },
-        ],
-      });
-      hooks.SessionStart = sessionStartEntries;
-      settings.hooks = hooks;
-    }
+    const filteredEntries = sessionStartEntries
+      .map((entry) => ({
+        ...entry,
+        hooks: (entry.hooks ?? []).filter((h) => !isProxygateHook(h.command)),
+      }))
+      .filter((entry) => (entry.hooks ?? []).length > 0);
+
+    filteredEntries.push({
+      matcher: '',
+      hooks: [
+        {
+          type: 'command',
+          command: `node "${HOOK_SCRIPT_PATH}" # ${HOOK_MARKER}`,
+        },
+      ],
+    });
+    hooks.SessionStart = filteredEntries;
+    settings.hooks = hooks;
 
     await mkdir(dirname(settingsPath), { recursive: true });
     await writeFile(settingsPath, JSON.stringify(settings, null, 2) + '\n', 'utf-8');
