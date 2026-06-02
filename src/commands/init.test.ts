@@ -6,6 +6,7 @@ import { registerInitCommand } from './init.js';
 const mockBalance = vi.fn();
 const mockCreate = vi.fn();
 const mockSetEmail = vi.fn();
+const mockSetUsername = vi.fn();
 
 vi.mock('@proxygate/sdk', () => {
   // Defined inside the factory (vi.mock is hoisted above module top-level).
@@ -60,12 +61,23 @@ vi.mock('../keypair.js', () => ({
   }),
 }));
 
+// Mock readline so we can drive interactive (TTY) prompts. `promptAnswers` is a
+// FIFO queue of answers consumed by successive rl.question() calls.
+const promptAnswers: string[] = [];
+vi.mock('node:readline', () => ({
+  createInterface: () => ({
+    question: (_q: string, cb: (answer: string) => void) => cb(promptAnswers.shift() ?? ''),
+    close: () => {},
+  }),
+}));
+
 describe('init command', () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
   let errorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    promptAnswers.length = 0;
     logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -76,10 +88,12 @@ describe('init command', () => {
     mockMkdir.mockResolvedValue(undefined);
     mockBalance.mockResolvedValue({ balance: 5_000_000 });
     mockSetEmail.mockResolvedValue({ success: true });
+    mockSetUsername.mockResolvedValue({ success: true });
     mockCreate.mockResolvedValue({
       walletAddress: 'TestWallet11111111111111111111111111111111111',
       balance: (...args: unknown[]) => mockBalance(...args),
       setContactEmail: (...args: unknown[]) => mockSetEmail(...args),
+      setUsername: (...args: unknown[]) => mockSetUsername(...args),
     });
     mockSaveConfig.mockResolvedValue(undefined);
   });
@@ -95,7 +109,7 @@ describe('init command', () => {
   };
 
   it('happy path: keypair exists, gateway reachable, config saved', async () => {
-    await runInit('--keypair', '/tmp/test-key.json', '--gateway', 'http://localhost:3001');
+    await runInit('--keypair', '/tmp/test-key.json', '--gateway', 'http://localhost:3001', '--username', 'agent-007');
 
     const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
     expect(output).toContain('TestWallet1111');
@@ -125,7 +139,7 @@ describe('init command', () => {
   it('saves config even when gateway is unreachable (non-fatal)', async () => {
     mockBalance.mockRejectedValue(new Error('ECONNREFUSED'));
 
-    await runInit('--keypair', '/tmp/test-key.json', '--gateway', 'http://localhost:3001');
+    await runInit('--keypair', '/tmp/test-key.json', '--gateway', 'http://localhost:3001', '--username', 'agent-007');
 
     const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
     expect(output).toContain('Could not connect to gateway');
@@ -134,7 +148,7 @@ describe('init command', () => {
   });
 
   it('uses custom --gateway flag value', async () => {
-    await runInit('--keypair', '/tmp/test-key.json', '--gateway', 'https://custom-gw.io');
+    await runInit('--keypair', '/tmp/test-key.json', '--gateway', 'https://custom-gw.io', '--username', 'agent-007');
 
     const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
     expect(output).toContain('https://custom-gw.io');
@@ -183,7 +197,7 @@ describe('init command', () => {
   // -------------------------------------------------------------------------
 
   it('--email submits the email and prints the verification notice', async () => {
-    await runInit('--keypair', '/tmp/test-key.json', '--email', 'agent@example.com');
+    await runInit('--keypair', '/tmp/test-key.json', '--username', 'agent-007', '--email', 'agent@example.com');
 
     expect(mockSetEmail).toHaveBeenCalledWith({ email: 'agent@example.com' });
     const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
@@ -195,7 +209,7 @@ describe('init command', () => {
 
   it('non-interactive (no TTY) with no --email skips email capture silently', async () => {
     // Vitest runs without a TTY, so process.stdin.isTTY is falsy here.
-    await runInit('--keypair', '/tmp/test-key.json');
+    await runInit('--keypair', '/tmp/test-key.json', '--username', 'agent-007');
 
     expect(mockSetEmail).not.toHaveBeenCalled();
     const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
@@ -206,7 +220,7 @@ describe('init command', () => {
   it('email submit failure does NOT abort init — config is still saved', async () => {
     mockSetEmail.mockRejectedValue(new Error('gateway 500'));
 
-    await runInit('--keypair', '/tmp/test-key.json', '--email', 'agent@example.com');
+    await runInit('--keypair', '/tmp/test-key.json', '--username', 'agent-007', '--email', 'agent@example.com');
 
     expect(mockSetEmail).toHaveBeenCalledOnce();
     const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
@@ -225,7 +239,7 @@ describe('init command', () => {
       }),
     );
 
-    await runInit('--keypair', '/tmp/test-key.json', '--email', 'taken@example.com');
+    await runInit('--keypair', '/tmp/test-key.json', '--username', 'agent-007', '--email', 'taken@example.com');
 
     const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
     expect(output).toContain('verification_required');
@@ -233,5 +247,114 @@ describe('init command', () => {
     expect(output).toContain('docs.proxygate.ai/email-conflict');
     expect(output).toContain('Config saved');
     expect(mockSaveConfig).toHaveBeenCalledOnce();
+  });
+
+  // -------------------------------------------------------------------------
+  // Username hard-proxy-gate (client side): username is REQUIRED on init
+  // -------------------------------------------------------------------------
+
+  it('--username submits the username and prints confirmation', async () => {
+    await runInit('--keypair', '/tmp/test-key.json', '--username', 'agent-007');
+
+    expect(mockSetUsername).toHaveBeenCalledWith({ username: 'agent-007' });
+    const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    expect(output).toContain('Username set:');
+    expect(output).toContain('agent-007');
+    expect(mockSaveConfig).toHaveBeenCalledOnce();
+  });
+
+  it('non-interactive (no TTY) without --username exits with the required error', async () => {
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit');
+    });
+
+    await expect(runInit('--keypair', '/tmp/test-key.json')).rejects.toThrow('process.exit');
+
+    const errOutput = errorSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    expect(errOutput).toContain('A username is required. Pass --username <name>.');
+    expect(mockSetUsername).not.toHaveBeenCalled();
+    expect(mockSaveConfig).not.toHaveBeenCalled();
+    mockExit.mockRestore();
+  });
+
+  it('username_taken in non-TTY fails with "pick another" (no re-prompt possible)', async () => {
+    mockSetUsername.mockRejectedValue(
+      new MockProxygateError({ error: 'username_taken', message: 'This username is already taken' }),
+    );
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit');
+    });
+
+    await expect(
+      runInit('--keypair', '/tmp/test-key.json', '--username', 'taken-name'),
+    ).rejects.toThrow('process.exit');
+
+    expect(mockSetUsername).toHaveBeenCalledWith({ username: 'taken-name' });
+    const errOutput = errorSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    expect(errOutput).toContain('That username is taken, pick another');
+    expect(mockSaveConfig).not.toHaveBeenCalled();
+    mockExit.mockRestore();
+  });
+
+  it('username submit failure (gateway down) does NOT abort init — config is still saved', async () => {
+    mockSetUsername.mockRejectedValue(new Error('ECONNREFUSED'));
+
+    await runInit('--keypair', '/tmp/test-key.json', '--username', 'agent-007');
+
+    expect(mockSetUsername).toHaveBeenCalledOnce();
+    const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    expect(output).toContain('Could not set username');
+    expect(output).toContain('Config saved');
+    expect(mockSaveConfig).toHaveBeenCalledOnce();
+  });
+
+  it('invalid_request (malformed username) in non-TTY fails (required input has teeth)', async () => {
+    mockSetUsername.mockRejectedValue(
+      new MockProxygateError({ error: 'invalid_request', message: 'A valid username is required' }),
+    );
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit');
+    });
+
+    await expect(
+      runInit('--keypair', '/tmp/test-key.json', '--username', 'Bad_Name'),
+    ).rejects.toThrow('process.exit');
+
+    expect(mockSetUsername).toHaveBeenCalledWith({ username: 'Bad_Name' });
+    const errOutput = errorSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    expect(errOutput).toContain('Invalid username');
+    expect(mockSaveConfig).not.toHaveBeenCalled();
+    mockExit.mockRestore();
+  });
+
+  it('interactive: username_taken re-prompts and proceeds with the new name', async () => {
+    // First setUsername call rejects taken; second succeeds.
+    mockSetUsername
+      .mockRejectedValueOnce(
+        new MockProxygateError({ error: 'username_taken', message: 'This username is already taken' }),
+      )
+      .mockResolvedValueOnce({ success: true });
+    // Drive the re-prompt: readline returns the new name.
+    promptAnswers.push('agent-008');
+
+    // isTTY is undefined under vitest; define it as a true getter for this test.
+    const origDescriptor = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
+    Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
+
+    try {
+      // First name passed via --username is taken; re-prompt supplies agent-008.
+      await runInit('--keypair', '/tmp/test-key.json', '--username', 'taken-name');
+
+      expect(mockSetUsername).toHaveBeenNthCalledWith(1, { username: 'taken-name' });
+      expect(mockSetUsername).toHaveBeenNthCalledWith(2, { username: 'agent-008' });
+      const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+      expect(output).toContain('That username is taken, pick another');
+      expect(output).toContain('Username set:');
+      expect(output).toContain('agent-008');
+      expect(mockSaveConfig).toHaveBeenCalledOnce();
+    } finally {
+      if (origDescriptor) Object.defineProperty(process.stdin, 'isTTY', origDescriptor);
+      else delete (process.stdin as unknown as { isTTY?: boolean }).isTTY;
+    }
   });
 });

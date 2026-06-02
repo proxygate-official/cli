@@ -25,6 +25,7 @@ export function registerInitCommand(program: Command): void {
     .option('--gateway <url>', 'Gateway URL', 'https://gateway.proxygate.ai')
     .option('--keypair <path>', 'Path to existing keypair file (any format)')
     .option('--generate', 'Generate a new keypair')
+    .option('--username <name>', 'Username for the wallet (required: 3-32 chars, lowercase letters, digits, single dashes)')
     .option('--email <email>', 'Contact email for the wallet (sends a verification email)')
     .addHelpText(
       'after',
@@ -39,11 +40,12 @@ export function registerInitCommand(program: Command): void {
         '  $ proxygate init --keypair ~/phantom.txt   # import Phantom base58 key\n' +
         '  $ proxygate init --keypair ~/id.json       # import Solana CLI keypair\n',
     )
-    .action(async (opts: { gateway: string; keypair?: string; generate?: boolean; email?: string }) => {
-      // `promptEmail: true` is set ONLY by the `init` command, so the shared
-      // flow may prompt for an email when running interactively. `login`
-      // delegates to execInitFlow WITHOUT this flag, so it never prompts.
-      await execInitFlow({ ...opts, promptEmail: true });
+    .action(async (opts: { gateway: string; keypair?: string; generate?: boolean; username?: string; email?: string }) => {
+      // `promptEmail` / `requireUsername` are set ONLY by the `init` command, so
+      // the shared flow may prompt for an email and REQUIRE a username when run
+      // interactively. `login` delegates to execInitFlow WITHOUT these flags, so
+      // it never prompts and never requires a username.
+      await execInitFlow({ ...opts, promptEmail: true, requireUsername: true });
     });
 }
 
@@ -52,10 +54,18 @@ export async function execInitFlow(opts: {
   gateway: string;
   keypair?: string;
   generate?: boolean;
+  /** Username to set. When set, it is submitted even non-interactively. */
+  username?: string;
   /** Contact email to submit. When set, capture runs even non-interactively. */
   email?: string;
   /** When true (init command only), prompt for an email if running in a TTY. */
   promptEmail?: boolean;
+  /**
+   * When true (init command only), a username is REQUIRED: prompt for it in a
+   * TTY, else demand `--username`. `login` does NOT set this, so it never
+   * requires a username (unchanged behavior).
+   */
+  requireUsername?: boolean;
 }): Promise<void> {
   console.log(bold('Proxygate Wallet Setup'));
   console.log();
@@ -114,6 +124,12 @@ export async function execInitFlow(opts: {
     console.log(dim('be set up automatically with your first deposit.'));
   }
 
+  // Username (REQUIRED when the init command asks for it). Unlike email, the
+  // INPUT is required — but SUBMISSION is offline-tolerant (a gateway outage
+  // does not abort init; the server-side gate re-prompts via
+  // registration_required on the next proxy call). See captureUsername.
+  await captureUsername(client, opts);
+
   // Fase 1: capture + verify a contact email (light path). Best-effort —
   // wrapped in try/catch so a submit failure NEVER aborts init (mirrors the
   // balance try/catch above). Headless/autonomous wallets are protected: we
@@ -148,6 +164,100 @@ function askEmail(): Promise<string> {
       resolve(answer.trim());
     });
   });
+}
+
+/** Prompt for a username on stderr (so stdout stays clean for piping). */
+function askUsername(prompt = 'Choose a username (required): '): Promise<string> {
+  const rl = createInterface({ input: process.stdin, output: process.stderr });
+  return new Promise((resolve) => {
+    rl.question(prompt, (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
+/**
+ * Resolve + submit a REQUIRED username (init command only).
+ *
+ * Required INPUT (no gateway needed to enforce):
+ *   - `--username <name>` provided → use it.
+ *   - else interactive TTY → prompt, loop until non-empty.
+ *   - else (non-TTY, no --username) → hard error + exit(1):
+ *       "A username is required. Pass --username <name>."
+ *
+ * SUBMISSION is offline-tolerant (mirrors the balance/email try/catch):
+ *   - `username_taken` (ProxygateError) → interactive: re-prompt; non-TTY:
+ *     print + exit(1) (a definitive bad-input signal).
+ *   - other ProxygateError / network failure → warn + continue (non-fatal).
+ *     The server-side gate (registration_required) re-prompts on the next
+ *     proxy call, so a transient submit failure self-heals.
+ *
+ * When `requireUsername` is not set (e.g. `login`), this is a no-op.
+ */
+async function captureUsername(
+  client: ProxygateClient,
+  opts: { username?: string; requireUsername?: boolean },
+): Promise<void> {
+  if (!opts.requireUsername) return; // login / non-init callers: no-op
+
+  let username = opts.username?.trim();
+
+  if (!username) {
+    if (!process.stdin.isTTY) {
+      console.error(red('A username is required. Pass --username <name>.'));
+      process.exit(1);
+    }
+    // Interactive: loop until the user provides a non-empty value.
+    while (!username) {
+      username = await askUsername();
+    }
+  }
+
+  // Submission loop: on username_taken in a TTY we re-prompt for a new name.
+  for (;;) {
+    try {
+      await client.setUsername({ username });
+      console.log();
+      console.log(`${green('Username set:')} ${username}`);
+      return;
+    } catch (err) {
+      // Definitive bad-input signals (username already taken, or malformed and
+      // rejected by the gateway): "required input has teeth" — re-prompt when
+      // interactive, fail clearly when not. A transient outage is NOT one of
+      // these (handled below).
+      if (
+        err instanceof ProxygateError &&
+        (err.code === 'username_taken' || err.code === 'invalid_request')
+      ) {
+        const taken = err.code === 'username_taken';
+        const notice = taken ? 'That username is taken, pick another' : `Invalid username: ${err.message}`;
+        if (process.stdin.isTTY) {
+          console.log(yellow(notice));
+          let next = '';
+          while (!next) next = await askUsername('Choose a different username: ');
+          username = next;
+          continue; // retry submission with the new name
+        }
+        // Non-interactive: cannot re-prompt — fail clearly.
+        console.error(red(`${notice} (pass a different --username <name>).`));
+        process.exit(1);
+      }
+      // Any other failure (gateway down, 500, etc.) is non-fatal: warn and
+      // continue so init still completes; the server-side gate will prompt
+      // again via registration_required on the next proxy call.
+      console.log();
+      if (err instanceof ProxygateError) {
+        console.log(yellow(`Could not set username (${err.code}): ${err.message}`));
+        if (err.action) console.log(dim(`  ${err.action}`));
+      } else {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.log(yellow(`Could not set username: ${msg}`));
+      }
+      console.log(dim('  Init will continue; set it later with: proxygate init --username <name>'));
+      return;
+    }
+  }
 }
 
 /**

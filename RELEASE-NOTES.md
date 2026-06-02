@@ -1,5 +1,27 @@
 # @proxygate/cli release notes
 
+## 0.9.0 — Username hard-proxy-gate (client side)
+
+Additive, non-breaking at the export level (SAFE-06 minor).
+
+- **`proxygate init` now sets a REQUIRED username.** New `--username <name>`
+  flag (3-32 chars, lowercase letters/digits, single dashes). Resolution:
+  `--username` if passed; else prompt when interactive (TTY), looping until
+  non-empty; else (non-TTY, no `--username`) exit(1) with
+  "A username is required. Pass --username <name>." Submitted via the SDK
+  `client.setUsername`.
+- **Collision UX.** On `username_taken` the CLI prints "That username is taken,
+  pick another" and re-prompts when interactive, or exits(1) when non-TTY.
+- **Submission is offline-tolerant.** A gateway/network failure during submit
+  warns and does NOT abort init (mirrors the balance + email try/catch); the
+  server-side gate re-prompts via `registration_required` on the next proxy
+  call. `--email` remains optional and unchanged. `login` does NOT require a
+  username (unchanged behavior).
+- **`registration_required` surfacing confirmed:** `handleError` already renders
+  `err.action` for any `ProxygateError`, and the gateway sends
+  `registration_required` with an action pointer ("Run 'proxygate init'"), so it
+  is surfaced as-is — no `handleError`/`ERROR_HINTS` change.
+
 ## 0.8.0 — Fase 1: contact-email capture
 
 Additive, non-breaking (SAFE-06 minor).
