@@ -1,5 +1,31 @@
 # @proxygate/cli release notes
 
+## 0.8.0 — Fase 1: contact-email capture
+
+Additive, non-breaking (SAFE-06 minor).
+
+- **`proxygate init --email <email>`** (optional). Submits a contact email for
+  the wallet via the SDK `setContactEmail` and prints
+  `Verification email sent to <email>`. Email capture only runs when `--email`
+  is provided OR `init` is running interactively in a TTY (it prompts, Enter to
+  skip). Headless / autonomous wallets (no TTY, no `--email`) skip silently so
+  the flow never hangs on stdin. Email submission is best-effort: a failure is
+  printed but NEVER aborts `init` (config is still saved), mirroring the
+  existing balance-probe behavior.
+- **On a collision** (`verification_required` / `email_conflict`), `init` prints
+  the gateway's `action` / `docs` web-claim pointer ("sign in with the original
+  method, link your wallet in Settings") and continues. It does not crash.
+- **New command `proxygate verify-email --token <token>`** → calls the SDK
+  `verifyContactEmail`. Human + `--json` output. On the collision path,
+  `handleError` surfaces the `action` / `docs` pointer.
+- The heavy web-claim path is Fase 2; the CLI only detects + surfaces it.
+
+Requires `@proxygate/sdk` >= 0.9.0 (the `setContactEmail` / `verifyContactEmail`
+methods). No commands or flags were removed.
+
+> Publish manually with `pnpm publish --no-git-checks` (NOT `npm publish` — see
+> CLAUDE.md DO list).
+
 ## 0.7.1 — Cross-platform postinstall
 
 Patch release (SAFE-06 patch). No API changes.

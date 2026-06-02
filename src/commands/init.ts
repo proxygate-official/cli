@@ -3,8 +3,9 @@ import { readFile, writeFile, access, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { randomBytes } from 'node:crypto';
+import { createInterface } from 'node:readline';
 import nacl from 'tweetnacl';
-import { ProxygateClient } from '@proxygate/sdk';
+import { ProxygateClient, ProxygateError } from '@proxygate/sdk';
 import { loadConfig, saveConfig, CONFIG_DIR, CONFIG_PATH } from '../config.js';
 import { bold, green, yellow, red, dim, formatCurrency } from '../format.js';
 import { parseKeypair } from '../keypair.js';
@@ -24,6 +25,7 @@ export function registerInitCommand(program: Command): void {
     .option('--gateway <url>', 'Gateway URL', 'https://gateway.proxygate.ai')
     .option('--keypair <path>', 'Path to existing keypair file (any format)')
     .option('--generate', 'Generate a new keypair')
+    .option('--email <email>', 'Contact email for the wallet (sends a verification email)')
     .addHelpText(
       'after',
       '\nSupported keypair formats:\n' +
@@ -37,13 +39,24 @@ export function registerInitCommand(program: Command): void {
         '  $ proxygate init --keypair ~/phantom.txt   # import Phantom base58 key\n' +
         '  $ proxygate init --keypair ~/id.json       # import Solana CLI keypair\n',
     )
-    .action(async (opts: { gateway: string; keypair?: string; generate?: boolean }) => {
-      await execInitFlow(opts);
+    .action(async (opts: { gateway: string; keypair?: string; generate?: boolean; email?: string }) => {
+      // `promptEmail: true` is set ONLY by the `init` command, so the shared
+      // flow may prompt for an email when running interactively. `login`
+      // delegates to execInitFlow WITHOUT this flag, so it never prompts.
+      await execInitFlow({ ...opts, promptEmail: true });
     });
 }
 
 /** Shared init flow — used by both `init` and `login --keypair/--generate`. */
-export async function execInitFlow(opts: { gateway: string; keypair?: string; generate?: boolean }): Promise<void> {
+export async function execInitFlow(opts: {
+  gateway: string;
+  keypair?: string;
+  generate?: boolean;
+  /** Contact email to submit. When set, capture runs even non-interactively. */
+  email?: string;
+  /** When true (init command only), prompt for an email if running in a TTY. */
+  promptEmail?: boolean;
+}): Promise<void> {
   console.log(bold('Proxygate Wallet Setup'));
   console.log();
 
@@ -101,6 +114,14 @@ export async function execInitFlow(opts: { gateway: string; keypair?: string; ge
     console.log(dim('be set up automatically with your first deposit.'));
   }
 
+  // Fase 1: capture + verify a contact email (light path). Best-effort —
+  // wrapped in try/catch so a submit failure NEVER aborts init (mirrors the
+  // balance try/catch above). Headless/autonomous wallets are protected: we
+  // only capture when an --email was passed OR we are running interactively
+  // (a TTY) and were asked to prompt. Otherwise we skip silently so the flow
+  // never blocks on stdin.
+  await captureContactEmail(client, opts);
+
   // Save config (preserve existing API key)
   const existing = await loadConfig();
   console.log();
@@ -116,6 +137,62 @@ export async function execInitFlow(opts: { gateway: string; keypair?: string; ge
 function resolvePath(path: string): string {
   if (path.startsWith('~')) return resolve(path.replace(/^~/, homedir()));
   return resolve(path);
+}
+
+/** Prompt for a single line on stderr (so stdout stays clean for piping). */
+function askEmail(): Promise<string> {
+  const rl = createInterface({ input: process.stdin, output: process.stderr });
+  return new Promise((resolve) => {
+    rl.question('Contact email (optional, press Enter to skip): ', (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
+/**
+ * Capture + submit a contact email (Fase 1, light path).
+ *
+ * Resolves the email from `--email`, else prompts ONLY when interactive
+ * (`process.stdin.isTTY`) and `promptEmail` was set by the `init` command.
+ * Headless/autonomous wallets (no TTY, no --email) skip silently so the flow
+ * never hangs on stdin.
+ *
+ * On a collision (`verification_required` / `email_conflict`) the gateway
+ * returns a ProxygateError carrying the web-claim pointer — we PRINT
+ * `err.action` / `err.docs` and continue. Any failure is non-fatal (never
+ * aborts init), mirroring the balance try/catch.
+ */
+async function captureContactEmail(
+  client: ProxygateClient,
+  opts: { email?: string; promptEmail?: boolean },
+): Promise<void> {
+  let email = opts.email?.trim();
+
+  if (!email) {
+    if (!opts.promptEmail || !process.stdin.isTTY) return; // headless-safe skip
+    email = await askEmail();
+    if (!email) return; // user skipped
+  }
+
+  try {
+    await client.setContactEmail({ email });
+    console.log();
+    console.log(`${green('Verification email sent to')} ${email}`);
+    console.log(dim('  Confirm it with: proxygate verify-email --token <token>'));
+  } catch (err) {
+    console.log();
+    if (err instanceof ProxygateError) {
+      // Collision / web-claim pointer — surface it, do NOT crash, do NOT abort init.
+      console.log(yellow(`Could not save email (${err.code}): ${err.message}`));
+      if (err.action) console.log(dim(`  ${err.action}`));
+      if (err.docs) console.log(dim(`  Docs: ${err.docs}`));
+    } else {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.log(yellow(`Could not save email: ${msg}`));
+    }
+    console.log(dim('  Init will continue; you can add an email later.'));
+  }
 }
 
 /** Import a keypair from any supported format, convert to Solana CLI format. */

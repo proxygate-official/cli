@@ -1,14 +1,37 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Command } from 'commander';
+import { ProxygateError } from '@proxygate/sdk';
 import { registerInitCommand } from './init.js';
 
 const mockBalance = vi.fn();
 const mockCreate = vi.fn();
-vi.mock('@proxygate/sdk', () => ({
-  ProxygateClient: {
-    create: (...args: unknown[]) => mockCreate(...args),
-  },
-}));
+const mockSetEmail = vi.fn();
+
+vi.mock('@proxygate/sdk', () => {
+  // Defined inside the factory (vi.mock is hoisted above module top-level).
+  class MockProxygateError extends Error {
+    code: string;
+    action?: string;
+    docs?: string;
+    constructor(gatewayError: { error: string; message: string; action?: string; docs?: string }) {
+      super(gatewayError.message);
+      this.code = gatewayError.error;
+      this.action = gatewayError.action;
+      this.docs = gatewayError.docs;
+    }
+  }
+  return {
+    ProxygateClient: {
+      create: (...args: unknown[]) => mockCreate(...args),
+    },
+    ProxygateError: MockProxygateError,
+  };
+});
+
+// Bound to the mocked class above (the import is rewritten by vi.mock).
+const MockProxygateError = ProxygateError as unknown as new (
+  gatewayError: { error: string; message: string; action?: string; docs?: string },
+) => Error;
 
 const mockSaveConfig = vi.fn();
 vi.mock('../config.js', () => ({
@@ -52,9 +75,11 @@ describe('init command', () => {
     mockWriteFile.mockResolvedValue(undefined);
     mockMkdir.mockResolvedValue(undefined);
     mockBalance.mockResolvedValue({ balance: 5_000_000 });
+    mockSetEmail.mockResolvedValue({ success: true });
     mockCreate.mockResolvedValue({
       walletAddress: 'TestWallet11111111111111111111111111111111111',
       balance: (...args: unknown[]) => mockBalance(...args),
+      setContactEmail: (...args: unknown[]) => mockSetEmail(...args),
     });
     mockSaveConfig.mockResolvedValue(undefined);
   });
@@ -151,5 +176,62 @@ describe('init command', () => {
     expect(errOutput).toContain('Failed to load keypair');
     expect(mockSaveConfig).not.toHaveBeenCalled();
     mockExit.mockRestore();
+  });
+
+  // -------------------------------------------------------------------------
+  // Fase 1: contact-email capture
+  // -------------------------------------------------------------------------
+
+  it('--email submits the email and prints the verification notice', async () => {
+    await runInit('--keypair', '/tmp/test-key.json', '--email', 'agent@example.com');
+
+    expect(mockSetEmail).toHaveBeenCalledWith({ email: 'agent@example.com' });
+    const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    expect(output).toContain('Verification email sent to');
+    expect(output).toContain('agent@example.com');
+    // Email capture is part of a successful init.
+    expect(mockSaveConfig).toHaveBeenCalledOnce();
+  });
+
+  it('non-interactive (no TTY) with no --email skips email capture silently', async () => {
+    // Vitest runs without a TTY, so process.stdin.isTTY is falsy here.
+    await runInit('--keypair', '/tmp/test-key.json');
+
+    expect(mockSetEmail).not.toHaveBeenCalled();
+    const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    expect(output).toContain('Config saved');
+    expect(mockSaveConfig).toHaveBeenCalledOnce();
+  });
+
+  it('email submit failure does NOT abort init — config is still saved', async () => {
+    mockSetEmail.mockRejectedValue(new Error('gateway 500'));
+
+    await runInit('--keypair', '/tmp/test-key.json', '--email', 'agent@example.com');
+
+    expect(mockSetEmail).toHaveBeenCalledOnce();
+    const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    expect(output).toContain('Could not save email');
+    expect(output).toContain('Config saved');
+    expect(mockSaveConfig).toHaveBeenCalledOnce();
+  });
+
+  it('email collision surfaces the web-claim pointer without aborting init', async () => {
+    mockSetEmail.mockRejectedValue(
+      new MockProxygateError({
+        error: 'verification_required',
+        message: 'This email is already linked to another account.',
+        action: 'Sign in with the original method, then link this wallet in Settings.',
+        docs: 'https://docs.proxygate.ai/email-conflict',
+      }),
+    );
+
+    await runInit('--keypair', '/tmp/test-key.json', '--email', 'taken@example.com');
+
+    const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    expect(output).toContain('verification_required');
+    expect(output).toContain('link this wallet in Settings');
+    expect(output).toContain('docs.proxygate.ai/email-conflict');
+    expect(output).toContain('Config saved');
+    expect(mockSaveConfig).toHaveBeenCalledOnce();
   });
 });

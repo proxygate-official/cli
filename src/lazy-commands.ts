@@ -114,6 +114,11 @@ export const LAZY_COMMANDS: readonly LazyCommand[] = [
     load: () => import('./commands/rate.js').then((m) => m.registerRateCommand),
   },
   {
+    name: 'verify-email',
+    describe: 'Confirm your contact email with the one-time token from the email',
+    load: () => import('./commands/verify-email.js').then((m) => m.registerVerifyEmailCommand),
+  },
+  {
     name: 'create',
     describe: 'Scaffold a new Proxygate agent project',
     load: () => import('./commands/create.js').then((m) => m.registerCreateCommand),
