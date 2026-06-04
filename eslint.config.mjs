@@ -7,7 +7,9 @@ import tseslint from "typescript-eslint";
 // `console` is its output channel and is intentionally allowed.
 // Genuine issues are fixed in source; no rule hides a real bug.
 export default tseslint.config(
-  { ignores: ["dist/**", "node_modules/**", "coverage/**", "templates/**"] },
+  // skills/ = embedded skill content + CommonJS helper scripts (bundled by
+  // build:skills, not CLI TS source); src/generated/** = generated. Not linted.
+  { ignores: ["dist/**", "node_modules/**", "coverage/**", "templates/**", "skills/**", "src/generated/**"] },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
