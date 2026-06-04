@@ -37,7 +37,7 @@
   "scripts": {
     "build:skills": "tsx scripts/embed-skills.ts",
     "build": "pnpm build:skills && node scripts/build.mjs",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "pnpm build:skills && tsc --noEmit",
     "lint": "eslint .",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
