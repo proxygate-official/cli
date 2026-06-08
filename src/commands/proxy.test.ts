@@ -356,6 +356,42 @@ describe('proxy command', () => {
     mockExit.mockRestore();
   });
 
+  // --- GraphQL 200-with-errors warning ---
+
+  describe('GraphQL error warning', () => {
+    it('warns on stderr when /graphql returns HTTP 200 with an errors array', async () => {
+      mockProxy.mockResolvedValue(
+        new Response(
+          JSON.stringify({ data: null, errors: [{ message: 'Field not found' }] }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      );
+
+      await runProxy('blockdb/blockdb-api', '/graphql', '-d', '{"query":"{ foo }"}');
+
+      const errOutput = errorSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+      expect(errOutput).toContain('GraphQL returned');
+      expect(errOutput).toContain('Field not found');
+      // Response body is still printed to stdout (display-only warning).
+      const outOutput = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+      expect(outOutput).toContain('Field not found');
+    });
+
+    it('does not warn when /graphql returns a clean 200 body', async () => {
+      mockProxy.mockResolvedValue(
+        new Response(JSON.stringify({ data: { ok: true } }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      await runProxy('blockdb/blockdb-api', '/graphql', '-d', '{"query":"{ ok }"}');
+
+      const errOutput = errorSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+      expect(errOutput).not.toContain('GraphQL returned');
+    });
+  });
+
   // --- Multi-seller per service slug ---
 
   describe('multi-seller per slug', () => {

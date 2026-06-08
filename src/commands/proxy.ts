@@ -4,6 +4,7 @@ import { parseSSE, parseShieldInfo, SHIELD_SURCHARGE_DISPLAY } from '@proxygate/
 import { getClient } from '../helpers.js';
 import { red, dim, yellow, cyan } from '../format.js';
 import { handleError } from '../errors.js';
+import { graphqlErrorWarning } from './graphql-warning.js';
 
 /**
  * Register the `proxygate proxy` command.
@@ -177,15 +178,25 @@ export function registerProxyCommand(program: Command): void {
 
           // Print response
           const text = await response.text();
+          let parsed: unknown = undefined;
+          let parsedOk = false;
           try {
-            const json: unknown = JSON.parse(text);
-            console.log(JSON.stringify(json, null, 2));
+            parsed = JSON.parse(text);
+            parsedOk = true;
+            console.log(JSON.stringify(parsed, null, 2));
           } catch {
             console.log(text);
           }
 
           // Print request metadata to stderr
           printRequestMeta(response);
+
+          // GraphQL fails with HTTP 200 + an `errors` body, so the agent must be
+          // warned even on a 2xx. Warning goes to stderr only; stdout stays clean.
+          if (parsedOk) {
+            const gqlWarning = graphqlErrorWarning(path, parsed);
+            if (gqlWarning) console.error(gqlWarning);
+          }
 
           // Print status to stderr if not 200, plus best-effort endpoint hint
           // so an agent can self-correct without guessing paths.

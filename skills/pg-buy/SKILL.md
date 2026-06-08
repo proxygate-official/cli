@@ -75,12 +75,19 @@ Two sources, in order of cheapness:
 proxygate apis -q blockdb                     # shows endpoints inline if 1 match
 proxygate apis --json -q blockdb              # full endpoints[] array for scripting
 
-# 2. Full OpenAPI spec — only when the seller has uploaded one (richer: request schemas, examples)
+# 2. Full OpenAPI docs (when the seller uploaded a spec): compact, filterable endpoint index
 proxygate listings docs blocksize/blocksize-crypto-bid-ask
-proxygate listings docs <listing-uuid> --raw  # raw OpenAPI YAML
+proxygate listings docs <id> --search orders --limit 20   # filter a large index
+proxygate listings docs <id> --raw -o spec.yaml           # full spec to a FILE (not your context)
 ```
 
-For POST/PUT/PATCH endpoints, the body schema is the part you can't see in the table. Get it from `listings docs ... --raw` when available, or inspect `endpoints[].request_schema` in the JSON output of `apis --json`.
+For POST/PUT/PATCH endpoints, the request body schema is the part you can't see in the table. Pull just that one endpoint (params + request/response body, `$ref`s resolved one level) instead of the whole spec:
+
+```bash
+proxygate listings docs <id> --endpoint "POST /v1/orders"   # one endpoint, body schema included
+```
+
+Only fall back to the full spec if you really need it, and write it to a file so it never floods your context: `proxygate listings docs <id> --raw -o spec.yaml` (then grep the file locally).
 
 If a proxy call fails with a non-2xx, the CLI prints the listing's allowed endpoints inline as a hint — use them on the retry instead of guessing more paths. POST/PUT endpoints in the hint are flagged so you know to fetch the body schema.
 
@@ -116,6 +123,57 @@ After each call, you'll see cost and request ID:
 ```
 cost: $0.0155 | request: 905b1a53
 ```
+
+#### Calling a GraphQL API
+
+Some listings expose a GraphQL API instead of REST. You can tell because `proxygate listings docs <id>` shows an **Operations** table (Type / Operation / Args / Returns) rather than an endpoint table, and the only HTTP endpoint is `POST /graphql`.
+
+Discovery flow:
+
+```bash
+# 1. Find the listing
+proxygate apis -q <term>
+
+# 2. See the available operations (compact index; Args is a count - drill in for the details)
+proxygate listings docs <id>
+# Operations:
+# Type      Operation    Args  Returns
+# --------  -----------  ----  ---------
+# query     prices       1     PriceList
+# mutation  placeOrder   1     Order
+#
+# Big schema? The index is filterable: proxygate listings docs <id> --search price --limit 20
+
+# 3. Construct a query from those operations and send it
+proxygate proxy <listing> /graphql \
+  -d '{"query":"query { prices(symbol:\"BTC\") { bid ask } }","variables":{}}'
+```
+
+The index lists operation names only. To build a query you need an operation's argument types and the fields of its return type. Pull just those for one operation, not the whole schema:
+
+```bash
+proxygate listings docs <id> --operation prices    # args + return-type fields (one level)
+proxygate listings docs <id> --type PriceList       # any type's fields (one level), to go deeper
+```
+
+Drill type by type as you nest the selection set. Only use `--raw` for the entire schema, and write it to a file so it never floods your context (a large schema's introspection is hundreds of KB):
+
+```bash
+proxygate listings docs <id> --raw -o schema.graphql   # full SDL to a file; grep it locally
+```
+
+Queries can also be sent as GET (`/graphql?query=...`) if the upstream supports it; mutations always use POST.
+
+The body is always `{"query":"...","variables":{...}}` posted to `/graphql`. SDK form:
+
+```typescript
+const res = await client.proxy('<listing>', '/graphql', {
+  query: 'query { prices(symbol: "BTC") { bid ask } }',
+  variables: {},
+});
+```
+
+**GraphQL returns HTTP 200 even on failure.** Check the response body for an `errors` array, not just the status code. A response can carry partial `data` and `errors` together, which is valid. You are billed for the call regardless of whether the query succeeded, so always read the body. The CLI prints a warning to stderr when a `/graphql` response contains errors.
 
 ### 6. Rate a seller
 
@@ -159,15 +217,15 @@ Not available with API key or delegation token auth — use the web dashboard in
 For agent-to-agent use without CLI:
 
 ```typescript
-import { ProxyGateClient, parseSSE } from '@proxygate/sdk';
+import { ProxygateClient, parseSSE } from '@proxygate/sdk';
 
 // API key auth (simplest)
-const client = await ProxyGateClient.create({
+const client = await ProxygateClient.create({
   apiKey: 'pg_live_abc123...',
 });
 
 // Or wallet keypair auth (full access)
-const client = await ProxyGateClient.create({
+const client = await ProxygateClient.create({
   keypairPath: '~/.proxygate/keypair.json',
 });
 

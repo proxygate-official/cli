@@ -85,9 +85,10 @@ function buildEndpointPrices(
   return out.length > 0 ? out : undefined;
 }
 
-function detectDocType(filePath: string): 'openapi' | 'markdown' {
+function detectDocType(filePath: string): 'openapi' | 'markdown' | 'graphql' {
   const ext = extname(filePath).toLowerCase();
   if (ext === '.md' || ext === '.markdown') return 'markdown';
+  if (ext === '.graphql' || ext === '.gql') return 'graphql';
   return 'openapi';
 }
 

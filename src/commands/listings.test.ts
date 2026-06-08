@@ -197,8 +197,45 @@ describe('listings command', () => {
 
       const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
       expect(output).toContain('Documentation');
-      expect(output).toContain('Endpoints');
+      expect(output).toContain('/v1/chat');
       expect(output).toContain('Chat completion');
+    });
+
+    it('renders a compact GraphQL operations index by default', async () => {
+      mockDocs.mockResolvedValue({
+        listing_id: 'abc', doc_type: 'graphql', updated_at: '2026-03-01',
+        content: 'type Continent { code: ID! } type Query { continents(first: Int): [Continent!]! }',
+        parsed_endpoints: null,
+      });
+      await run('docs', 'abc');
+      const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+      expect(output).toContain('continents');
+      expect(output).toContain('[Continent!]!');
+      expect(output).toContain('--operation'); // drill-in hint
+    });
+
+    it('drills into one GraphQL operation with --operation (return type fields resolved)', async () => {
+      mockDocs.mockResolvedValue({
+        listing_id: 'abc', doc_type: 'graphql', updated_at: '2026-03-01',
+        content: 'type Continent { code: ID! name: String! } type Query { continents: [Continent!]! }',
+        parsed_endpoints: null,
+      });
+      await run('docs', 'abc', '--operation', 'continents');
+      const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+      expect(output).toContain('Returns');
+      expect(output).toContain('code'); // a field of the resolved return type
+      expect(output).toContain('name');
+    });
+
+    it('--raw converts GraphQL introspection JSON to compact SDL', async () => {
+      mockDocs.mockResolvedValue({
+        listing_id: 'abc', doc_type: 'graphql', updated_at: '2026-03-01',
+        content: 'type Query { ping: String }',
+        parsed_endpoints: null,
+      });
+      await run('docs', 'abc', '--raw');
+      const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+      expect(output).toContain('type Query');
     });
 
     it('shows message when no docs', async () => {

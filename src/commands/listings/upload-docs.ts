@@ -5,9 +5,12 @@ import { getClient } from '../../helpers.js';
 import { green, red, dim } from '../../format.js';
 import { handleError, printTestResults } from './helpers.js';
 
-function detectDocType(filePath: string): 'openapi' | 'markdown' {
+type DocType = 'openapi' | 'markdown' | 'graphql';
+
+function detectDocType(filePath: string): DocType {
   const ext = extname(filePath).toLowerCase();
   if (ext === '.md' || ext === '.markdown') return 'markdown';
+  if (ext === '.graphql' || ext === '.gql') return 'graphql';
   return 'openapi';
 }
 
@@ -15,17 +18,17 @@ function detectDocType(filePath: string): 'openapi' | 'markdown' {
 export function registerUploadDocsSubcommand(listings: Command, program: Command): void {
   listings
     .command('upload-docs <id> <file>')
-    .description('Upload OpenAPI spec (.yaml/.json) or markdown (.md) documentation for a listing')
-    .option('--type <type>', 'Force doc type: openapi or markdown (auto-detected from extension)')
+    .description('Upload OpenAPI (.yaml/.json), GraphQL schema (.graphql/.gql or introspection JSON), or markdown (.md) docs for a listing')
+    .option('--type <type>', 'Force doc type: openapi, graphql, or markdown (auto-detected from extension). Use --type graphql for an introspection .json file.')
     .action(async (id: string, file: string, opts: { type?: string }) => {
       const parentOpts = program.opts<{ gateway?: string; keypair?: string; json?: boolean }>();
 
       try {
         const content = await readFile(file, 'utf-8');
-        const docType = (opts.type as 'openapi' | 'markdown') ?? detectDocType(file);
+        const docType = (opts.type as DocType) ?? detectDocType(file);
 
-        if (docType !== 'openapi' && docType !== 'markdown') {
-          console.error(red('Error: --type must be "openapi" or "markdown"'));
+        if (docType !== 'openapi' && docType !== 'markdown' && docType !== 'graphql') {
+          console.error(red('Error: --type must be "openapi", "graphql", or "markdown"'));
           process.exit(1);
         }
 
