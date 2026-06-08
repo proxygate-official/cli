@@ -4,6 +4,7 @@ import { Command } from 'commander';
 import { createRequire } from 'node:module';
 import { setNoColor } from './format.js';
 import { LAZY_COMMANDS, resolveInvokedCommand, findLazyCommand } from './lazy-commands.js';
+import { registerGlobalOptions } from './global-options.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json') as { version: string };
@@ -17,12 +18,11 @@ program
       'Autonomous payments, API access, and service discovery for the machine economy.\n' +
       'Sellers list unused quota, agents purchase access through a transparent proxy.\n' +
       'Keys never leave the server.',
-  )
-  .option('--gateway <url>', 'Override gateway URL (default: from config)')
-  .option('--keypair <path>', 'Path to Solana keypair JSON file (default: from config)')
-  .option('--api-key <key>', 'Override API key (default: from config)')
-  .option('--json', 'Machine-readable JSON output (for scripting)')
-  .option('--no-color', 'Disable colored output')
+  );
+
+registerGlobalOptions(program);
+
+program
   .hook('preAction', () => {
     if (program.opts().color === false) setNoColor(true);
   })

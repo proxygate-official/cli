@@ -35,6 +35,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
+    "gen:command-ref": "tsx scripts/gen-command-ref.ts",
     "build:skills": "tsx scripts/embed-skills.ts",
     "build": "pnpm build:skills && node scripts/build.mjs",
     "typecheck": "pnpm build:skills && tsc --noEmit",
