@@ -2,7 +2,18 @@ import type { Command } from 'commander';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { version } = require('../../package.json') as { version: string };
+// Source layout needs ../../ (src/commands/ -> package root); the esbuild
+// bundle emits this file as a chunk directly in dist/ where ../ is correct.
+const { version } = ((): { version: string } => {
+  for (const rel of ['../package.json', '../../package.json']) {
+    try {
+      return require(rel) as { version: string };
+    } catch {
+      // try the next layout
+    }
+  }
+  return { version: '0.0.0' };
+})();
 
 /** Machine-readable project metadata for coding agents. */
 export function registerMetadataCommand(program: Command): void {

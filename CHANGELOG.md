@@ -1,5 +1,27 @@
 # @proxygate/cli
 
+## 0.10.1
+
+### Patch Changes
+
+- Fix the published package crashing on `proxy`, `listings`, and `metadata`.
+
+  The esbuild bundle left ALL bare imports external (`packages: 'external'`),
+  including the private workspace packages (`@proxygate/api-types`,
+  `@proxygate/openapi-parser`, `@proxygate/graphql-parser`) that never reach
+  npm. The workspace symlink resolved them in every local gate, but the
+  installed tarball crashed with `ERR_MODULE_NOT_FOUND` on exactly those lazy
+  chunks (0.10.0).
+
+  - externals are now derived from `package.json` dependencies, so private
+    workspace packages are always bundled in
+  - a `createRequire` banner restores `require()` for bundled CJS dependencies
+  - `metadata` resolves the package version in both source and bundle layouts
+  - `dist/` is cleaned before each build so stale chunks cannot ship
+  - new tarball smoke test (CI + `scripts/smoke-tarball.sh`) installs the packed
+    artifact outside the workspace and loads every lazy chunk
+  - @proxygate/sdk@0.12.0
+
 ## 0.10.0
 
 ### Minor Changes
