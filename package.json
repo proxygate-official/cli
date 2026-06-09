@@ -58,6 +58,8 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@proxygate/api-types": "workspace:*",
+    "@proxygate/graphql-parser": "workspace:*",
+    "@proxygate/openapi-parser": "workspace:*",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.9.1",
     "@types/qrcode-terminal": "^0.12.2",
