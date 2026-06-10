@@ -134,12 +134,37 @@ async function loginWithApiKey(key: string, gatewayUrl: string, existingKeypairP
     console.log(yellow('Could not reach gateway. API key saved anyway.'));
   }
 
+  const sellerStatus = await fetchSellerStatus(gatewayUrl, key);
   await saveConfig({
     gatewayUrl,
     keypairPath: existingKeypairPath,
     apiKey: key,
+    ...(sellerStatus ? { sellerStatus } : {}),
   });
   console.log(green(`Config saved to ${CONFIG_PATH}`));
+}
+
+/**
+ * P6 seller gate: cache the account's seller_status (from GET /v1/me) so the
+ * CLI can hide seller commands for pure buyers. Best-effort: any failure
+ * leaves the status unknown and the full command surface visible.
+ */
+async function fetchSellerStatus(
+  gatewayUrl: string,
+  bearer: string,
+): Promise<'none' | 'applicant' | 'accepted' | undefined> {
+  try {
+    const res = await fetch(`${gatewayUrl}/v1/me`, {
+      headers: { Authorization: `Bearer ${bearer}` },
+    });
+    if (!res.ok) return undefined;
+    const body = (await res.json()) as { seller_status?: string };
+    return body.seller_status === 'none' || body.seller_status === 'applicant' || body.seller_status === 'accepted'
+      ? body.seller_status
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 async function loginWithWalletConnect(gatewayUrl: string): Promise<void> {
@@ -173,11 +198,15 @@ async function loginWithWalletConnect(gatewayUrl: string): Promise<void> {
       if (result.expires_at) console.log(dim(`Expires: ${result.expires_at}`));
     }
 
+    const sellerStatus = result.delegation_token
+      ? await fetchSellerStatus(gatewayUrl, result.delegation_token)
+      : undefined;
     await saveConfig({
       gatewayUrl,
       delegationToken: result.delegation_token,
       wallet: result.wallet,
       delegationExpiresAt: result.expires_at,
+      ...(sellerStatus ? { sellerStatus } : {}),
     });
     console.log(green(`Config saved to ${CONFIG_PATH}`));
   } catch (err) {

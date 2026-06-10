@@ -16,6 +16,8 @@ export interface CliConfig {
   delegationToken?: string;
   wallet?: string;
   delegationExpiresAt?: string;
+  /** P6 seller gate: cached from GET /v1/me at login; drives seller-command visibility. */
+  sellerStatus?: 'none' | 'applicant' | 'accepted';
 }
 
 /**
@@ -47,6 +49,9 @@ export async function loadConfig(): Promise<CliConfig | null> {
       if (hasDelegation) config.delegationToken = obj.delegationToken as string;
       if (typeof obj.wallet === 'string') config.wallet = obj.wallet;
       if (typeof obj.delegationExpiresAt === 'string') config.delegationExpiresAt = obj.delegationExpiresAt;
+      if (obj.sellerStatus === 'none' || obj.sellerStatus === 'applicant' || obj.sellerStatus === 'accepted') {
+        config.sellerStatus = obj.sellerStatus;
+      }
       return config;
     }
 

@@ -25,6 +25,9 @@ export interface LazyCommand {
   readonly aliases?: readonly string[];
   /** Deprecated/internal commands hidden from `proxygate --help`. */
   readonly hidden?: boolean;
+  /** P6 seller gate: hidden from help (with a friendly CTA on invoke) until
+   *  the cached seller_status is applicant/accepted. */
+  readonly sellerOnly?: boolean;
 }
 
 export const LAZY_COMMANDS: readonly LazyCommand[] = [
@@ -80,11 +83,13 @@ export const LAZY_COMMANDS: readonly LazyCommand[] = [
   {
     name: 'listings',
     describe: 'Manage your seller listings (create, update, pause, delete, rotate keys)',
+    sellerOnly: true,
     load: () => import('./commands/listings.js').then((m) => m.registerListingsCommand),
   },
   {
     name: 'tunnel',
     describe: 'Expose local services to Proxygate via a reverse tunnel',
+    sellerOnly: true,
     load: () => import('./commands/tunnel.js').then((m) => m.registerTunnelCommand),
   },
   {
