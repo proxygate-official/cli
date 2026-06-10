@@ -43,6 +43,8 @@ Proxygate supports multiple ways to authenticate, each suited to different use c
 
 **Don't have a Solana wallet yet?** Start with an **API key** — you can make proxy calls, browse APIs, and use the full marketplace. On-chain operations (deposit/withdraw) can be done through the web dashboard at [app.proxygate.ai](https://app.proxygate.ai). Onramping (buying USDC with fiat) and bridging (moving USDC from other chains) are coming soon.
 
+**Keypair users:** you can deposit gaslessly straight from the CLI with `proxygate deposit`. Proxygate covers the network fee (a small USDC fee applies), so your wallet never needs SOL.
+
 ## Process
 
 ### 1. Check existing install

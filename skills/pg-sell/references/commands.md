@@ -65,7 +65,8 @@ Send a proxied request to an upstream API through a seller listing
 Deposit USDC from your Solana wallet into your Proxygate vault
 
 - `-a, --amount <lamports>` - Amount in USDC base units (1 USDC = 1,000,000 lamports)
-- `--rpc <url>` - Solana RPC URL (default: mainnet)
+- `--rpc <url>` - Solana RPC URL (default: mainnet-beta)
+- `--legacy` - Force the self-paid deposit path (you pay the network fee in SOL)
 - `-y, --yes` - Skip confirmation prompt
 - `--dry-run` - Show what would happen without sending the transaction
 

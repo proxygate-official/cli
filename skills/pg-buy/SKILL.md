@@ -38,6 +38,8 @@ proxygate deposit -a 1000000      # 1 USDC
 **Via web dashboard (any auth mode):**
 Visit [app.proxygate.ai](https://app.proxygate.ai) → Connect wallet → Deposit.
 
+Deposits are gasless by default: Proxygate covers the network fee (a small USDC fee applies), so you never need SOL. The CLI does this automatically. Pass `--legacy` to pay the network fee yourself in SOL.
+
 Vault auto-initializes on first deposit. Use `--rpc <url>` for custom RPC.
 
 ### 3. Discover APIs
