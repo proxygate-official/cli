@@ -132,7 +132,7 @@ export function showNextSteps(hasBalance: boolean): void {
     console.log(bold('  Prerequisites:'));
     console.log(`    1. Your wallet needs a ${bold('USDC token account')} on Solana mainnet`);
     console.log('    2. Fund it with USDC');
-    console.log('    3. Keep some SOL for transaction fees (~0.01 SOL)');
+    console.log('    3. Proxygate covers network fees for deposits (a small USDC fee applies). You never need SOL.');
     console.log();
     console.log(dim('  Create a USDC token account (if you don\'t have one):'));
     console.log(`  ${cyan('$ spl-token create-account EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v')}`);
