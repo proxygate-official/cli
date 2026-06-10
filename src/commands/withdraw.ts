@@ -83,7 +83,7 @@ export function registerWithdrawCommand(program: Command): void {
 
         if (opts.dryRun) {
           const label = amount ? `${(amount / 1_000_000).toFixed(6)} USDC` : 'all available USDC';
-          console.log(bold('Dry run — no transaction sent'));
+          console.log(bold('Dry run: no transaction sent'));
           console.log();
           console.log(`  ${dim('Amount:')}   ${label}`);
           console.log(`  ${dim('Gateway:')}  ${client.gatewayUrl}`);

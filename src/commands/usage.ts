@@ -89,7 +89,7 @@ export function registerUsageCommand(program: Command): void {
 
           if (result.has_more) {
             console.log();
-            console.log(dim(`Showing ${result.usage.length} entries. More available — use -l <n> to increase or --json for full data.`));
+            console.log(dim(`Showing ${result.usage.length} entries. More available, use -l <n> to increase or --json for full data.`));
           }
         } catch (err) {
           handleError(err);

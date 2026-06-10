@@ -84,7 +84,7 @@ export function registerSettlementsCommand(program: Command): void {
         if (result.role === 'seller' && result.pending_payout_usdc && result.pending_payout_usdc > 0) {
           console.log();
           if (result.ata_status === 'missing') {
-            console.log(yellow(`  Pending Earnings: $${result.pending_payout_usdc} — create a USDC token account to receive payouts`));
+            console.log(yellow(`  Pending Earnings: $${result.pending_payout_usdc}. Create a USDC token account to receive payouts`));
             console.log(dim(`  Run: spl-token create-account EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`));
           } else {
             console.log(dim(`  Pending Settlement: $${result.pending_payout_usdc}`));

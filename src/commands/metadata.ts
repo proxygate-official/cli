@@ -24,7 +24,7 @@ export function registerMetadataCommand(program: Command): void {
       console.log(JSON.stringify({
         name: 'proxygate',
         version,
-        description: 'API marketplace for AI agents — buy and sell API access with USDC on Solana',
+        description: 'API marketplace for AI agents: buy and sell API access with USDC on Solana',
         type: 'api-marketplace',
         cli: '@proxygate/cli',
         sdk: '@proxygate/sdk',

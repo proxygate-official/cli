@@ -35,7 +35,7 @@ export function registerGettingStartedCommand(program: Command): void {
     .action(async (opts: { gateway: string; keypair?: string }) => {
       console.log();
       console.log(bold('Welcome to Proxygate'));
-      console.log(dim('The agentic commerce marketplace for AI agents — autonomous payments, API access, and service discovery.'));
+      console.log(dim('The agentic commerce marketplace for AI agents: autonomous payments, API access, and service discovery.'));
       console.log();
 
       // Step 1: Find keypair

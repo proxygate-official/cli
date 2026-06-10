@@ -47,7 +47,7 @@ export function registerUpdateSubcommand(listings: Command, program: Command): v
     .option('--description <text>', 'Listing description')
     .option('--allowed-paths <paths>', 'Allowed paths (comma-separated)')
     .option('--endpoints <file>', 'Path to JSON file containing EndpointSpec[]')
-    .option('--shield <on|off>', `Shield request scanning — ${SHIELD_SURCHARGE_DISPLAY}/req from payout`)
+    .option('--shield <on|off>', `Shield request scanning: ${SHIELD_SURCHARGE_DISPLAY}/req from payout`)
     // Phase 51.5: per-endpoint pricing + free-tier flags. Repeatable.
     .option('--free-endpoint <spec>', 'Mark endpoint as free (repeatable). Format: "/path" or "/path:wallet-cap".', collectArr, [] as string[])
     .option('--endpoint-price <spec>', 'Per-endpoint price override (repeatable). Format: "/path=microUSDC".', collectArr, [] as string[])

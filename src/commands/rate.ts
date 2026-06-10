@@ -40,7 +40,7 @@ export function registerRateCommand(program: Command): void {
 
         const emoji = opts.up ? green('👍') : red('👎');
         const verb = result.is_update ? 'Updated' : 'Submitted';
-        console.log(`${emoji} Rating ${verb.toLowerCase()} — ${opts.up ? 'positive' : 'negative'}`);
+        console.log(`${emoji} Rating ${verb.toLowerCase()}: ${opts.up ? 'positive' : 'negative'}`);
       } catch (err) {
         handleError(err);
       }

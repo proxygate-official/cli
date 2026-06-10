@@ -82,7 +82,7 @@ export function registerDevCommand(program: Command): void {
             console.log(`  ${green('OK')}  ${svc.name} (localhost:${svc.port})`);
           } catch {
             console.log(
-              `  ${yellow('WARN')}  ${svc.name} (localhost:${svc.port}) — not reachable. Is your server running?`,
+              `  ${yellow('WARN')}  ${svc.name} (localhost:${svc.port}) not reachable. Is your server running?`,
             );
           }
         }
@@ -125,13 +125,13 @@ export function registerDevCommand(program: Command): void {
             let hint = '';
             const msg = error.message;
             if (msg.includes('ECONNREFUSED')) {
-              hint = ' — is your server running?';
+              hint = '. Is your server running?';
             } else if (msg.includes('invalid_services')) {
-              hint = ' — use lowercase letters, numbers, and hyphens for service names';
+              hint = '. Use lowercase letters, numbers, and hyphens for service names';
             } else if (msg.includes('4409') || msg.includes('Duplicate')) {
-              hint = ' — close the other tunnel connection first';
+              hint = '. Close the other tunnel connection first';
             } else if (msg.includes('timed out')) {
-              hint = ' — check your service logs for slow responses';
+              hint = '. Check your service logs for slow responses';
             }
             console.error(`${timestamp()} ${red('Error:')} ${msg}${hint}`);
           },
@@ -153,7 +153,7 @@ export function registerDevCommand(program: Command): void {
             debounceTimer = setTimeout(async () => {
               try {
                 const newServices = await loadTunnelConfig();
-                console.log(`${timestamp()} ${cyan('Config changed')} — reconnecting...`);
+                console.log(`${timestamp()} ${cyan('Config changed')}, reconnecting...`);
                 tunnel.disconnect();
                 services = newServices;
                 tunnel = await Proxygate.serve({

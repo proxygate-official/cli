@@ -23,7 +23,7 @@ function formatPrice(svc: PricingServiceEntry): string {
 
 /** Step 1: Find a Solana keypair from flags, config, or default paths. */
 export async function findKeypair(explicitPath?: string): Promise<string | null> {
-  console.log(bold(`${cyan('Step 1')} — Find your Solana keypair`));
+  console.log(bold(`${cyan('Step 1')}: Find your Solana keypair`));
   console.log();
 
   if (explicitPath) {
@@ -55,7 +55,7 @@ export async function findKeypair(explicitPath?: string): Promise<string | null>
 
 /** Step 2: Create client and save config. Returns client or null on failure. */
 export async function connectGateway(gatewayUrl: string, keypairPath: string): Promise<ProxygateClient | null> {
-  console.log(bold(`${cyan('Step 2')} — Connect to the gateway`));
+  console.log(bold(`${cyan('Step 2')}: Connect to the gateway`));
   console.log();
 
   let client: ProxygateClient;
@@ -78,7 +78,7 @@ export async function connectGateway(gatewayUrl: string, keypairPath: string): P
 
 /** Step 3: Check vault balance. Returns whether user has a positive balance. */
 export async function checkBalance(client: ProxygateClient, gatewayUrl: string): Promise<boolean> {
-  console.log(bold(`${cyan('Step 3')} — Check your balance`));
+  console.log(bold(`${cyan('Step 3')}: Check your balance`));
   console.log();
 
   try {
@@ -91,7 +91,7 @@ export async function checkBalance(client: ProxygateClient, gatewayUrl: string):
   } catch (err) {
     if (err instanceof ProxygateError) {
       console.log(err.code === 'vault_not_found'
-        ? `  ${dim('No vault yet — it will be created on your first deposit.')}`
+        ? `  ${dim('No vault yet. It will be created on your first deposit.')}`
         : `  ${yellow(`Could not fetch balance: ${err.message}`)}`);
     } else {
       console.log(`  ${yellow('Could not connect to gateway. Is it running?')}`);
@@ -104,7 +104,7 @@ export async function checkBalance(client: ProxygateClient, gatewayUrl: string):
 
 /** Step 4: Show available APIs from the pricing endpoint. */
 export async function showApis(client: ProxygateClient): Promise<void> {
-  console.log(bold(`${cyan('Step 4')} — Available APIs`));
+  console.log(bold(`${cyan('Step 4')}: Available APIs`));
   console.log();
   try {
     const pricing = await client.pricing();
@@ -124,7 +124,7 @@ export async function showApis(client: ProxygateClient): Promise<void> {
 
 /** Step 5: Show next steps based on balance status. */
 export function showNextSteps(hasBalance: boolean): void {
-  console.log(bold(`${cyan('Step 5')} — Next steps`));
+  console.log(bold(`${cyan('Step 5')}: Next steps`));
   console.log();
   if (!hasBalance) {
     console.log('  You need credits to make proxy requests.');
@@ -147,10 +147,10 @@ export function showNextSteps(hasBalance: boolean): void {
   }
   console.log();
   console.log(dim('  Useful commands:'));
-  console.log(`    ${dim('proxygate balance')}    ${dim('— Check your balance')}`);
-  console.log(`    ${dim('proxygate pricing')}    ${dim('— Browse APIs')}`);
-  console.log(`    ${dim('proxygate usage')}      ${dim('— View usage history')}`);
-  console.log(`    ${dim('proxygate --help')}     ${dim('— All commands')}`);
+  console.log(`    ${dim('proxygate balance')}    ${dim('Check your balance')}`);
+  console.log(`    ${dim('proxygate pricing')}    ${dim('Browse APIs')}`);
+  console.log(`    ${dim('proxygate usage')}      ${dim('View usage history')}`);
+  console.log(`    ${dim('proxygate --help')}     ${dim('All commands')}`);
   console.log();
   console.log(dim('  Docs: https://gateway.proxygate.ai/docs'));
   console.log();

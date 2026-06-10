@@ -118,7 +118,7 @@ export function registerTunnelCommand(program: Command): void {
           const reachable = await checkService(svc.name, svc.port);
           console.log(reachable
             ? `  ${green('OK')}  ${svc.name} (localhost:${svc.port})`
-            : `  ${yellow('WARN')}  ${svc.name} (localhost:${svc.port}) — not reachable yet`);
+            : `  ${yellow('WARN')}  ${svc.name} (localhost:${svc.port}) not reachable yet`);
         }
         console.log();
 
@@ -174,7 +174,7 @@ export function registerTunnelCommand(program: Command): void {
             } else if (msg.includes('4409') || msg.includes('Duplicate')) {
               hint = '\n    You already have a tunnel open for this wallet. Close the other connection first.';
             } else if (msg.includes('timed out')) {
-              hint = '\n    Check your service logs — the request took longer than 30 seconds';
+              hint = '\n    Check your service logs. The request took longer than 30 seconds';
             }
             console.error(`${timestamp()} ${red('Error:')} ${msg}${hint}`);
           },

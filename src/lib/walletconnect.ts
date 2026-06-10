@@ -61,7 +61,7 @@ export async function loginWithWalletConnectQR(
     console.log(qrString);
   } catch {
     // URI too long for terminal QR — skip, user can use browser link
-    console.log('  (QR too large for terminal — use the browser link instead)');
+    console.log('  (QR too large for terminal, use the browser link instead)');
     console.log();
   }
 

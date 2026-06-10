@@ -107,7 +107,7 @@ async function testEndpoint(
     const message = err instanceof Error ? err.message : String(err);
     const hint =
       message.includes('ECONNREFUSED') || message.includes('fetch failed')
-        ? ` — is your server running on port ${port}?`
+        ? `. Is your server running on port ${port}?`
         : '';
 
     return {
@@ -227,7 +227,7 @@ export function registerTestCommand(program: Command): void {
             // Warn if no docs
             if (!svc.docs) {
               console.log(
-                `  ${yellow('!')}   No docs file configured — buyers won't see endpoint documentation`,
+                `  ${yellow('!')}   No docs file configured, buyers won't see endpoint documentation`,
               );
               console.log(
                 dim('      Add `docs: ./openapi.yaml` to your tunnel config'),

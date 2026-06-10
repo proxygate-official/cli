@@ -84,12 +84,20 @@ export function registerDocsSubcommand(listings: Command, program: Command): voi
           console.log('description' in res ? renderGraphQLOperation(res.description) : renderGraphQLType(res.type));
           return;
         }
-        if (docs.doc_type !== 'graphql' && opts.endpoint) {
+        if (docs.doc_type === 'openapi' && opts.endpoint) {
           const [maybeMethod, maybePath] = opts.endpoint.includes(' ') ? opts.endpoint.split(/\s+/, 2) : ['GET', opts.endpoint];
           const res = describeEndpoint(docs.content, maybeMethod, maybePath);
           if (!res.success) { console.error(red(res.error + (res.availableMethods ? ` (available: ${res.availableMethods.join(', ')})` : ''))); process.exit(1); }
           console.log(renderEndpoint(res.endpoint));
           return;
+        }
+        // Drill-down flags only apply to structured docs. For markdown (or a
+        // doc/flag mismatch) say so plainly instead of feeding markdown to the
+        // OpenAPI/GraphQL parser, which threw a confusing "Invalid JSON or YAML".
+        if (opts.endpoint || opts.operation || opts.type) {
+          console.error(red(`Drill-down flags (--endpoint/--operation/--type) only apply to OpenAPI or GraphQL docs. This listing has ${docs.doc_type} docs.`));
+          console.error(dim('Run `listings docs <id>` without a flag to view them, or `--raw -o <file>` to save the full doc.'));
+          process.exit(1);
         }
 
         // --- Default: compact, filterable index ---
@@ -112,7 +120,19 @@ export function registerDocsSubcommand(listings: Command, program: Command): voi
           console.log(dim('\nDrill in: listings docs <id> --operation <name>  |  --type <Name>  |  --raw -o schema.graphql'));
           return;
         }
-        if (docs.doc_type === 'markdown' || !docs.parsed_endpoints) { console.log(docs.content); return; }
+        if (docs.doc_type === 'markdown' || !docs.parsed_endpoints) {
+          if (opts.search) {
+            // Markdown has no endpoint index to filter, so do grep-style
+            // case-insensitive line matching (was previously ignored).
+            const term = opts.search.toLowerCase();
+            const matches = docs.content.split('\n').filter((line) => line.toLowerCase().includes(term));
+            if (matches.length === 0) { console.log(dim(`No lines match "${opts.search}".`)); return; }
+            console.log(matches.join('\n'));
+            return;
+          }
+          console.log(docs.content);
+          return;
+        }
 
         const listing = await client.apis({ service: undefined, q: undefined, limit: 100 }).then((r) => r.data.find((l) => l.listing_id === id)).catch(() => undefined);
         const prices = listing?.endpoint_prices as Parameters<typeof formatEndpointPrice>[1];

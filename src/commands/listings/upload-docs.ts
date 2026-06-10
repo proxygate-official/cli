@@ -46,7 +46,7 @@ export function registerUploadDocsSubcommand(listings: Command, program: Command
             printTestResults(result);
             if (result.message) console.log(result.message);
             if (result.test_passed === false) {
-              console.error(red('Listing remains inactive — fix failing endpoints and re-upload.'));
+              console.error(red('Listing remains inactive. Fix failing endpoints and re-upload.'));
               process.exit(1);
             }
           }

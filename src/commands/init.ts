@@ -22,7 +22,7 @@ export function registerInitCommand(program: Command): void {
   program
     .command('init', { hidden: true })
     .description('Initialize Proxygate (use `proxygate login` instead)')
-    .option('--gateway <url>', 'Gateway URL', 'https://gateway.proxygate.ai')
+    .option('--gateway <url>', 'Gateway URL')
     .option('--keypair <path>', 'Path to existing keypair file (any format)')
     .option('--generate', 'Generate a new keypair')
     .option('--username <name>', 'Username for the wallet (required: 3-32 chars, lowercase letters, digits, single dashes)')
@@ -40,12 +40,20 @@ export function registerInitCommand(program: Command): void {
         '  $ proxygate init --keypair ~/phantom.txt   # import Phantom base58 key\n' +
         '  $ proxygate init --keypair ~/id.json       # import Solana CLI keypair\n',
     )
-    .action(async (opts: { gateway: string; keypair?: string; generate?: boolean; username?: string; email?: string }) => {
+    .action(async (opts: { gateway?: string; keypair?: string; generate?: boolean; username?: string; email?: string }) => {
+      // Resolve the gateway with the same precedence as every other command:
+      // explicit subcommand --gateway, then the global --gateway, then saved
+      // config, then the prod default. Previously the subcommand carried a
+      // hardcoded default that always won, so `init --gateway <url>` was
+      // silently ignored and username/email submissions went to prod.
+      const parentOpts = program.opts<{ gateway?: string }>();
+      const gateway =
+        opts.gateway ?? parentOpts.gateway ?? (await loadConfig())?.gatewayUrl ?? 'https://gateway.proxygate.ai';
       // `promptEmail` / `requireUsername` are set ONLY by the `init` command, so
       // the shared flow may prompt for an email and REQUIRE a username when run
       // interactively. `login` delegates to execInitFlow WITHOUT these flags, so
       // it never prompts and never requires a username.
-      await execInitFlow({ ...opts, promptEmail: true, requireUsername: true });
+      await execInitFlow({ ...opts, gateway, promptEmail: true, requireUsername: true });
     });
 }
 

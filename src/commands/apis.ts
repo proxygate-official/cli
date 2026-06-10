@@ -148,7 +148,7 @@ export function registerApisCommand(program: Command): void {
                 const epsWithBodyOverrides = eps.filter((ep) => ep.body_overrides && Object.keys(ep.body_overrides).length > 0);
                 const epsWithQueryOverrides = eps.filter((ep) => ep.query_overrides && Object.keys(ep.query_overrides).length > 0);
                 if (epsWithBodyOverrides.length > 0) {
-                  console.log(dim('  Body overrides (fields forced by seller — you cannot change these):'));
+                  console.log(dim('  Body overrides (fields forced by seller, you cannot change these):'));
                   for (const ep of epsWithBodyOverrides) {
                     console.log(dim(`    ${ep.path}: ${JSON.stringify(ep.body_overrides)}`));
                   }
@@ -166,7 +166,7 @@ export function registerApisCommand(program: Command): void {
 
         if (result.has_more) {
           console.log();
-          console.log(dim(`More available — next page: --cursor ${result.cursor}`));
+          console.log(dim(`More available. Next page: --cursor ${result.cursor}`));
         }
       } catch (err) {
         handleError(err);

@@ -121,7 +121,7 @@ Create a new seller listing
 - `--allowed-paths <paths>` - Allowed paths (comma-separated)
 - `--endpoints <file>` - Path to JSON file containing EndpointSpec[]
 - `--validation-endpoint <path>` - Validation endpoint path
-- `--shield <on|off>` - Shield request scanning — $0.005/req from payout (default: off)
+- `--shield <on|off>` - Shield request scanning: $0.005/req from payout (default: off)
 - `--docs <file>` - Path to OpenAPI spec (.yaml/.json) or markdown (.md) documentation
 - `--type <type>` - Listing type: proxy, skill, product, dataset, service, connector (default: proxy)
 - `--endpoint-url <url>` - Skill endpoint URL (required for --type skill)
@@ -149,7 +149,7 @@ Update a listing (capacity, pricing, categories, description, paths, free endpoi
 - `--description <text>` - Listing description
 - `--allowed-paths <paths>` - Allowed paths (comma-separated)
 - `--endpoints <file>` - Path to JSON file containing EndpointSpec[]
-- `--shield <on|off>` - Shield request scanning — $0.005/req from payout
+- `--shield <on|off>` - Shield request scanning: $0.005/req from payout
 - `--free-endpoint <spec>` - Mark endpoint as free (repeatable). Format: "/path" or "/path:wallet-cap".
 - `--endpoint-price <spec>` - Per-endpoint price override (repeatable). Format: "/path=microUSDC".
 - `--free-daily-cap-per-wallet <n>` - Listing-level per-wallet daily cap for free endpoints.

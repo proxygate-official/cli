@@ -20,13 +20,13 @@ export function registerCommandsMetaCommand(program: Command): void {
       const commands: CommandMeta[] = [
         {
           name: 'metadata',
-          description: 'Project metadata — version, capabilities, config paths',
+          description: 'Project metadata: version, capabilities, config paths',
           auth_required: false,
           json_output: true,
         },
         {
           name: 'commands',
-          description: 'This command — lists all commands with args and schemas',
+          description: 'This command: lists all commands with args and schemas',
           auth_required: false,
           json_output: true,
         },

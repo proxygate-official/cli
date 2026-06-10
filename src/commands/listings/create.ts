@@ -159,7 +159,7 @@ Examples:
     .option('--allowed-paths <paths>', 'Allowed paths (comma-separated)')
     .option('--endpoints <file>', 'Path to JSON file containing EndpointSpec[]')
     .option('--validation-endpoint <path>', 'Validation endpoint path')
-    .option('--shield <on|off>', `Shield request scanning — ${SHIELD_SURCHARGE_DISPLAY}/req from payout (default: off)`)
+    .option('--shield <on|off>', `Shield request scanning: ${SHIELD_SURCHARGE_DISPLAY}/req from payout (default: off)`)
     .option('--docs <file>', 'Path to OpenAPI spec (.yaml/.json) or markdown (.md) documentation')
     .option('--type <type>', 'Listing type: proxy, skill, product, dataset, service, connector (default: proxy)')
     .option('--endpoint-url <url>', 'Skill endpoint URL (required for --type skill)')
@@ -380,7 +380,7 @@ async function runInteractiveCreate(): Promise<CreateListingOptions | null> {
   console.log(`  Auth:        ${authPattern}`);
   console.log(`  RPM:         ${totalRpm} (reserved: ${reservedRpm})`);
   if (isFree) {
-    console.log(`  Price:       0 (free — pending admin approval)`);
+    console.log(`  Price:       0 (free, pending admin approval)`);
   } else {
     console.log(`  Price:       ${pricePerRequest} micro-USDC/req`);
   }

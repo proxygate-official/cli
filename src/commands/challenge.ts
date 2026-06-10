@@ -33,7 +33,7 @@ export function registerChallengeCommand(program: Command): void {
     .action(async () => {
       console.log(`\n  Opening ${bold(APPLY_URL)} in your browser...\n`);
       console.log(`  ${dim('The application requires email verification, wallet connection,')}`);
-      console.log(`  ${dim('and a tweet mentioning @proxygateai — all handled in the web UI.')}\n`);
+      console.log(`  ${dim('and a tweet mentioning @proxygateai, all handled in the web UI.')}\n`);
 
       const { openBrowser } = await import('../lib/browser.js');
       openBrowser(APPLY_URL);

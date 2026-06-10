@@ -39,31 +39,31 @@ export function registerProxyCommand(program: Command): void {
     .addHelpText(
       'after',
       '\nExamples:\n' +
-        '  # Composite seller-handle/listing-slug (recommended — copy-paste from URLs)\n' +
+        '  # Composite seller-handle/listing-slug (recommended, copy-paste from URLs)\n' +
         '  $ proxygate proxy blockdb/blockdb-api /v1/forecast \\\n' +
         "    -d '{\"latitude\":52.37,\"longitude\":4.90}'\n\n" +
         '  # Single-segment slug or service name (legacy, picks default seller)\n' +
         '  $ proxygate proxy weather-api /v1/forecast \\\n' +
         "    -d '{\"latitude\":52.37,\"longitude\":4.90,\"hourly\":\"temperature_2m\"}'\n\n" +
-        '  # Listing UUID (advanced, scriptable — bypasses slug resolution)\n' +
+        '  # Listing UUID (advanced, scriptable, bypasses slug resolution)\n' +
         '  $ proxygate proxy abc12345-6789-abcd-ef01-234567890abc /v1/data -X GET\n\n' +
         '  # Streaming\n' +
         '  $ proxygate proxy blockdb/blockdb-api /v1/forecast --stream \\\n' +
         "    -d '{\"latitude\":52.37,\"longitude\":4.90}'\n\n" +
         'Listing identifier forms (smart-detected by the SDK):\n' +
-        '  seller-handle/listing-slug — recommended, unique per seller (e.g. blockdb/blockdb-api)\n' +
-        '  listing-slug or service     — single segment; falls back to service-name resolution\n' +
-        '  listing UUID                — explicit, bypasses slug detection\n\n' +
+        '  seller-handle/listing-slug : recommended, unique per seller (e.g. blockdb/blockdb-api)\n' +
+        '  listing-slug or service    : single segment; falls back to service-name resolution\n' +
+        '  listing UUID               : explicit, bypasses slug detection\n\n' +
         'Browse available APIs: proxygate apis -q <search>\n\n' +
         'Shield modes:\n' +
-        '  off      — no scanning, no surcharge (default)\n' +
-        '  monitor  — scan response for harmful content, log but allow (+$0.005/req)\n' +
-        '  strict   — block response if flagged, credits refunded (+$0.005/req)\n\n' +
+        '  off      : no scanning, no surcharge (default)\n' +
+        '  monitor  : scan response for harmful content, log but allow (+$0.005/req)\n' +
+        '  strict   : block response if flagged, credits refunded (+$0.005/req)\n\n' +
         'Seller strategies:\n' +
-        '  popular    — highest capacity (default)\n' +
-        '  cheapest   — lowest price per request\n' +
-        '  best-rated — highest trust score\n' +
-        '  fastest    — lowest average latency',
+        '  popular    : highest capacity (default)\n' +
+        '  cheapest   : lowest price per request\n' +
+        '  best-rated : highest trust score\n' +
+        '  fastest    : lowest average latency',
     )
     .action(
       async (

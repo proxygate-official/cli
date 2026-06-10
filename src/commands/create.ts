@@ -98,7 +98,7 @@ export function registerCreateCommand(program: Command): void {
               template = (await prompts.select({
                 message: 'Template:',
                 choices: TEMPLATES.map((t) => ({
-                  name: `${t.padEnd(12)} — ${TEMPLATE_DESCRIPTIONS[t]}`,
+                  name: `${t.padEnd(12)}   ${TEMPLATE_DESCRIPTIONS[t]}`,
                   value: t,
                 })),
               })) as TemplateName;
