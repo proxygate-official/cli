@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import type { ShieldMode, SellerStrategy, ProxygateClient } from '@proxygate/sdk';
-import { parseSSE, parseShieldInfo, SHIELD_SURCHARGE_DISPLAY } from '@proxygate/sdk';
+import { parseSSE, parseShieldInfo, spendLimitErrorFromResponse, SHIELD_SURCHARGE_DISPLAY } from '@proxygate/sdk';
 import { getClient } from '../helpers.js';
 import { red, dim, yellow, cyan } from '../format.js';
 import { handleError } from '../errors.js';
@@ -132,18 +132,23 @@ export function registerProxyCommand(program: Command): void {
           // Execute request
           const response = await client.proxy(listingId, path, body, { method, shield, seller });
 
-          // Handle 429 — could be spend limit, gateway rate limit, or upstream rate limit
+          // Handle 429 — could be spend limit, gateway rate limit, or upstream rate limit.
           if (response.status === 429) {
+            // Classify spend-limit blocks via the SDK so daily vs per-transaction
+            // wording stays in sync with the gateway error codes. The helper
+            // consumes a response body, so hand it a clone and keep the original
+            // for the rate-limit branches below.
+            const spendLimit = await spendLimitErrorFromResponse(response.clone());
             const text = await response.text();
             let body: Record<string, unknown> | null = null;
             try { body = JSON.parse(text) as Record<string, unknown>; } catch { /* not JSON */ }
             const errorCode = body?.error as string ?? body?.code as string ?? '';
-            const isSpendLimit = errorCode.includes('spend_limit') || errorCode === 'daily_spend_limit_exceeded' || errorCode === 'per_tx_spend_limit_exceeded';
             const isGatewayRateLimit = errorCode === 'rate_limited';
-            if (isSpendLimit) {
-              console.error(red('Spend limit exceeded'));
-              if (body?.message) console.error(dim(body.message as string));
-              console.error(dim('Increase your limit: app.proxygate.ai/wallets'));
+            if (spendLimit) {
+              const window = spendLimit.reason === 'per_tx' ? 'per-transaction' : 'daily';
+              console.error(red(`Blocked: this call would exceed your ${window} spend limit.`));
+              console.error(dim(spendLimit.message));
+              console.error(dim('Adjust it in the Proxygate web app under Wallets > Limits.'));
             } else if (isGatewayRateLimit) {
               console.error(red('Rate limited by gateway'));
               if (body?.message) console.error(dim(body.message as string));

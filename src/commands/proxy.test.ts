@@ -20,6 +20,16 @@ vi.mock('@proxygate/sdk', () => ({
   },
   parseSSE: vi.fn(),
   parseShieldInfo: vi.fn().mockReturnValue(null),
+  // Mirrors the real helper: returns a SpendLimitError-shaped object for a 429
+  // with a spend-limit code, else null. Carries `reason` so the command can
+  // pick daily vs per-transaction wording.
+  spendLimitErrorFromResponse: vi.fn(async (response: Response) => {
+    if (response.status !== 429) return null;
+    let raw: { error?: string; message?: string } | undefined;
+    try { raw = JSON.parse(await response.text()) as { error?: string; message?: string }; } catch { return null; }
+    if (raw?.error !== 'daily_spend_limit_exceeded' && raw?.error !== 'per_tx_spend_limit_exceeded') return null;
+    return { reason: raw.error === 'per_tx_spend_limit_exceeded' ? 'per_tx' : 'daily', message: raw.message ?? '' };
+  }),
   SHIELD_SURCHARGE_DISPLAY: '$0.005',
 }));
 
@@ -303,6 +313,73 @@ describe('proxy command', () => {
     expect(errOutput).toContain('Shield blocked');
     expect(errOutput).toContain('0.89');
     expect(errOutput).toContain('Credits refunded');
+    mockExit.mockRestore();
+  });
+
+  it('shows a clear message on a daily spend-limit block (429)', async () => {
+    mockProxy.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: 'daily_spend_limit_exceeded',
+          message: 'Daily spend limit exceeded',
+        }),
+        { status: 429, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit');
+    });
+
+    await expect(runProxy('abc-123', '/v1/chat/completions')).rejects.toThrow('process.exit');
+
+    const errOutput = errorSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    expect(errOutput).toContain('daily spend limit');
+    expect(errOutput).toContain('Wallets > Limits');
+    expect(errOutput).not.toContain('Rate limited by upstream');
+    mockExit.mockRestore();
+  });
+
+  it('shows a per-transaction message on a per-tx spend-limit block (429)', async () => {
+    mockProxy.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: 'per_tx_spend_limit_exceeded',
+          message: 'Per-transaction spend limit exceeded',
+        }),
+        { status: 429, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit');
+    });
+
+    await expect(runProxy('abc-123', '/v1/chat/completions')).rejects.toThrow('process.exit');
+
+    const errOutput = errorSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    expect(errOutput).toContain('per-transaction spend limit');
+    expect(errOutput).toContain('Wallets > Limits');
+    mockExit.mockRestore();
+  });
+
+  it('treats a non-spend 429 as an upstream rate limit', async () => {
+    mockProxy.mockResolvedValue(
+      new Response(JSON.stringify({ error: 'too_many_requests', message: 'slow down' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit');
+    });
+
+    await expect(runProxy('abc-123', '/v1/chat/completions')).rejects.toThrow('process.exit');
+
+    const errOutput = errorSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    expect(errOutput).toContain('Rate limited by upstream API');
+    expect(errOutput).not.toContain('Wallets > Limits');
     mockExit.mockRestore();
   });
 

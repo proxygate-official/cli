@@ -60,6 +60,11 @@ export const LAZY_COMMANDS: readonly LazyCommand[] = [
     load: () => import('./commands/usage.js').then((m) => m.registerUsageCommand),
   },
   {
+    name: 'limits',
+    describe: 'View or change your wallet spend limits (daily and per-transaction)',
+    load: () => import('./commands/limits.js').then((m) => m.registerLimitsCommand),
+  },
+  {
     name: 'proxy',
     describe: 'Send a proxied request to an upstream API through a seller listing',
     load: () => import('./commands/proxy.js').then((m) => m.registerProxyCommand),

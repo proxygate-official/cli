@@ -50,6 +50,21 @@ View your API usage history with per-service summaries
 - `--to <date>` - End date (ISO 8601)
 - `-l, --limit <n>` - Number of entries to show (default: 20)
 
+### `proxygate limits`
+
+View or change your wallet spend limits (daily and per-transaction)
+
+#### `proxygate limits get`
+
+Show the current daily and per-transaction spend limits
+
+#### `proxygate limits set`
+
+Set the daily and/or per-transaction spend limit (USDC; "none" clears)
+
+- `--daily <usdc>` - Daily spend limit in USDC, or "none" to clear
+- `--per-tx <usdc>` - Per-transaction spend limit in USDC, or "none" to clear
+
 ### `proxygate proxy <listing> <path>`
 
 Send a proxied request to an upstream API through a seller listing

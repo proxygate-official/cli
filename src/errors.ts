@@ -12,6 +12,10 @@ const ERROR_HINTS: Record<string, string> = {
   auth_required: 'Log in first: proxygate login --key pg_live_...',
   rate_limited: 'Too many requests. Wait and retry.',
   spend_limit_exceeded: 'Increase your spend limit at app.proxygate.ai/wallets',
+  // Spend-limit blocks (429). Surfaced distinctly by the proxy command; this
+  // hint covers any other path that lets a SpendLimitError reach handleError.
+  daily_spend_limit_exceeded: 'This call would exceed your daily spend limit. Adjust it in the Proxygate web app under Wallets > Limits.',
+  per_tx_spend_limit_exceeded: 'This call would exceed your per-transaction spend limit. Adjust it in the Proxygate web app under Wallets > Limits.',
   invalid_config: 'Run proxygate init or proxygate login to configure.',
   invalid_api_key: 'Check your API key: proxygate login --key pg_live_...',
   // Phase 51.5: free-tier rate-limit errors. These fire on procured listings
