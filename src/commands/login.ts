@@ -34,6 +34,10 @@ export function registerLoginCommand(program: Command): void {
         '  $ proxygate login --key pg_live_abc123...     # API key (for agents)\n' +
         '  $ proxygate login --keypair ~/id.json         # wallet keypair\n' +
         '  $ proxygate login --generate                  # generate new wallet\n\n' +
+        'Spending agent? An API key is the least-privilege choice: a scoped,\n' +
+        'revocable token tied to your wallet, not the wallet private key. Use the\n' +
+        'keypair path only when the agent must sign on-chain itself (deposit or\n' +
+        'withdraw). Manage funds in the browser with a connected wallet.\n\n' +
         'Get an API key: app.proxygate.ai/wallets',
     )
     .action(async (opts: { key?: string; keypair?: string; generate?: boolean }) => {
@@ -56,9 +60,9 @@ export function registerLoginCommand(program: Command): void {
       // Interactive menu
       console.log(bold('Proxygate Login'));
       console.log();
-      console.log('  1. API key     ' + dim('Paste existing or create in browser'));
+      console.log('  1. API key     ' + dim('Recommended for spending agents. Paste existing or create in browser'));
       console.log();
-      console.log('  2. Wallet      ' + dim('WalletConnect, import keypair, or generate new'));
+      console.log('  2. Wallet      ' + dim('WalletConnect, import keypair, or generate new. For on-chain signing'));
       console.log();
 
       const choice = await ask('Choose auth method (1/2): ');

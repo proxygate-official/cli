@@ -58,6 +58,10 @@ Proxygate supports multiple authentication methods:
 | **Import keypair** | `proxygate login --keypair ~/id.json` | Developers, sellers |
 | **Generate keypair** | `proxygate login --generate` | New users |
 
+**Which should an agent use?** If your agent only spends from a pre-funded balance, use an **API key**. It is the least-privilege choice: a scoped, revocable token (`pg_live_...`) tied to your wallet, not the wallet private key. It is also simpler and faster, with no per-request signing. Reach for the keypair path only when the agent must sign on-chain transactions itself (autonomous deposit or withdraw) or be self-custodial.
+
+Humans manage funds in the browser with a connected wallet (Phantom, Solflare, WalletConnect), so there is no private key to hand to an agent.
+
 **Don't have a wallet?** Start with an API key — get one at [app.proxygate.ai/wallets](https://app.proxygate.ai/wallets). No Solana wallet needed.
 
 ```bash
