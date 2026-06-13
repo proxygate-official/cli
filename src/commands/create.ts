@@ -1,4 +1,5 @@
 import { readdir, readFile, writeFile, mkdir, access } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Command } from 'commander';
@@ -14,11 +15,18 @@ const TEMPLATE_DESCRIPTIONS: Record<TemplateName, string> = {
 
 /** Resolve the templates directory relative to this file's location. */
 function templatesDir(): string {
-  const thisFile = fileURLToPath(import.meta.url);
-  // In dist/commands/create.js → go up to dist/, then to templates/
-  // In src/commands/create.ts → go up to src/, then to ../templates/
-  const cliRoot = resolve(dirname(thisFile), '..', '..');
-  return join(cliRoot, 'templates');
+  const dir = dirname(fileURLToPath(import.meta.url));
+  // Layout depends on the build: esbuild bundles to dist/index.js (templates at
+  // ../templates), while a non-bundled tsc build is dist/commands/create.js
+  // (templates at ../../templates), and src/commands/create.ts is ../../templates.
+  // Try each candidate and use the first that exists, so `create` works from the
+  // published bundle, a plain build, and source alike.
+  for (const up of ['..', join('..', '..')]) {
+    const candidate = join(resolve(dir, up), 'templates');
+    if (existsSync(candidate)) return candidate;
+  }
+  // Fallback to the bundle layout (dist/index.js → ../templates).
+  return join(resolve(dir, '..'), 'templates');
 }
 
 /** Recursively copy a directory, replacing placeholders in file contents. */
