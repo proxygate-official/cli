@@ -1,5 +1,24 @@
 # @proxygate/cli
 
+## 0.11.0
+
+### Minor Changes
+
+- 4d1961c: `proxygate deposit` is now gasless-first: it tries the x402 top-up rail (Proxygate covers the network fee, so buyers need zero SOL) and falls back to the classic self-paid deposit only when the rail is off (gateway 503). Adds a `--legacy` flag to force the self-paid path. Onboarding and `--rpc` help text updated for the mainnet-beta default and the gasless flow.
+- e737c8d: `proxygate proxy` now prints a clear, stack-trace-free message when a call is blocked by a spend limit, distinguishing the daily from the per-transaction window and pointing to Wallets > Limits in the Proxygate web app. Classification uses the SDK so the wording stays in sync with the gateway error codes.
+- e737c8d: New `proxygate limits` command. `proxygate limits get` prints the wallet's current daily and per-transaction spend limits in USDC; `proxygate limits set --daily <usdc> --per-tx <usdc>` updates them (pass `none` to clear a limit). USDC is converted to and from micro-USDC, an unspecified flag leaves that limit untouched, and a key lacking the `wallet:limits` scope gets a clear message pointing to the Proxygate web app.
+
+### Patch Changes
+
+- Fix `proxygate create` failing with ENOENT (affected 0.10.1): the bundled CLI (dist/index.js) resolved the templates directory one level too high (packages/templates instead of the package's own templates/), so scaffolding never found a template. It now probes both candidate layouts and uses whichever exists.
+- c6c5d1a: Fix `init --gateway <url>` being silently ignored: the subcommand carried a hardcoded prod default that always won, so username/email registration went to prod regardless of the flag. Gateway now resolves with the standard precedence (subcommand flag, global flag, saved config, prod default). Also: markdown docs no longer crash through the OpenAPI parser when `--endpoint` is passed (clear message instead), `--search` now filters markdown docs line-wise instead of being ignored, and user-facing copy no longer uses em-dashes.
+- Updated dependencies [d3cd7e5]
+- Updated dependencies [4d1961c]
+- Updated dependencies [e737c8d]
+- Updated dependencies [e737c8d]
+- Updated dependencies [4d1961c]
+  - @proxygate/sdk@0.13.0
+
 ## 0.10.1
 
 ### Patch Changes
