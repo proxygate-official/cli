@@ -127,7 +127,7 @@ export function registerApisCommand(program: Command): void {
                 const defaultPrice = l.price_per_request_usdc != null ? `$${l.price_per_request_usdc}/req` : 'per-token';
                 const epPrices = (l.endpoint_prices ?? []) as Array<{ path: string; pricing_unit: string; price_per_request?: number; price_per_input_token?: number; price_per_output_token?: number }>;
                 const epHeaders = ['Method', 'Path', 'Description', 'Price'];
-                const epRows = (l.endpoints as Array<{ method?: string; path?: string; description?: string }>).map((ep) => {
+                const epRows = (l.endpoints as Array<{ method?: string; path?: string; description?: string; label?: string }>).map((ep) => {
                   const match = epPrices.find((p) => p.path === ep.path);
                   let price = defaultPrice;
                   if (match) {
@@ -139,7 +139,10 @@ export function registerApisCommand(program: Command): void {
                       price = `$${(match.price_per_request / 1_000_000).toFixed(4)}/req`;
                     }
                   }
-                  return [ep.method ?? '', ep.path ?? '', ep.description ?? '', price];
+                  // Variant endpoints carry a friendly label (e.g. "News + sentiment").
+                  // Show it next to the path so priced variants are distinguishable.
+                  const pathCol = ep.label ? `${ep.path ?? ''} ${dim(`(${ep.label})`)}` : ep.path ?? '';
+                  return [ep.method ?? '', pathCol, ep.description ?? '', price];
                 });
                 console.log(formatTable(epHeaders, epRows));
 
