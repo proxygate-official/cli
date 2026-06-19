@@ -1,5 +1,13 @@
 # @proxygate/cli
 
+## 0.12.1
+
+### Patch Changes
+
+- Document that priced-variant forced params are per-endpoint and do not cascade. SDK `EndpointSpec` `query_overrides`/`body_overrides` type comments now note that overrides apply only to their own endpoint (never to or from same-upstream variants), and the pg-sell skill gains a "Priced variants" section.
+- Updated dependencies
+  - @proxygate/sdk@0.14.1
+
 ## 0.12.0
 
 ### Minor Changes
