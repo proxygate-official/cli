@@ -84,6 +84,14 @@ proxygate listings create --non-interactive ... --free \
 
 `--free` and `--price` are mutually exclusive — passing both prints a warning and uses `price=0`. Per-endpoint cap shorthand: `--free-endpoint "/path:N"` sets a per-wallet daily cap of `N` on that endpoint.
 
+### Priced variants (same upstream, different price)
+
+Charge differently for the same upstream path depending on what it returns (e.g. `GET /stories` with vs without sentiment). A variant is its own buyer-facing endpoint that forwards to the base upstream path but has its own price, optional name, and one or more **forced params** (`query_overrides`/`body_overrides`) that distinguish it. Buyers cannot change a forced param, so it both differentiates the product and guarantees what the buyer pays for.
+
+Forced params are **per-endpoint and do not cascade**: each endpoint only ever applies its own forced params. The base endpoint's overrides never bleed into a variant, and a variant's never bleed into the base. You only add a forced param to lock in what a variant should send, never to "escape" the base.
+
+Setting up variants (the buyer path + upstream-path mapping + forced params) is web-only — use the endpoints editor in the seller dashboard. The variant then appears as a normal, separately priced endpoint in the catalog, CLI, SDK, and MCP, carrying its `label`.
+
 Per-listing logo upload is web-only — drag/drop in the seller dashboard wizard. There is no CLI flag for it.
 
 ### 4. Manage listings
